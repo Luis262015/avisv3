@@ -6,15 +6,22 @@ import AppLayout from '@/layouts/app-layout';
 import { useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 
-interface Supplier { id: number; name: string }
+interface Supplier { id: number; name: string; payment_terms: string | null }
 interface Store { id: number; name: string }
 interface Product { id: number; name: string; sku: string | null; cost: string }
-
+interface PurchaseOrder { id: number; folio: string; supplier_id: number | null; total: string; expected_date: string | null; supplier: { name: string } | null }
 interface Item { product_id: string; quantity: string; cost: string }
 
-export default function PurchaseCreate({ suppliers, stores, products }: { suppliers: Supplier[]; stores: Store[]; products: Product[] }) {
+export default function PurchaseCreate({
+    suppliers, stores, products, purchaseOrders,
+}: {
+    suppliers: Supplier[]; stores: Store[]; products: Product[]; purchaseOrders: PurchaseOrder[];
+}) {
     const { data, setData, post, processing, errors } = useForm<any>({
-        supplier_id: '', store_id: '', date: new Date().toISOString().split('T')[0], tax: '0', notes: '',
+        supplier_id: '', store_id: '', purchase_order_id: '',
+        date: new Date().toISOString().split('T')[0],
+        invoice_number: '', invoice_date: '', tax: '0',
+        notes: '', audit_notes: '',
         items: [{ product_id: '', quantity: '1', cost: '0' }] as Item[],
     });
 
@@ -30,6 +37,14 @@ export default function PurchaseCreate({ suppliers, stores, products }: { suppli
         setData('items', items);
     };
 
+    const handleOrderChange = (orderId: string) => {
+        setData('purchase_order_id', orderId);
+        if (orderId) {
+            const order = purchaseOrders.find((o) => o.id === parseInt(orderId));
+            if (order?.supplier_id) setData('supplier_id', order.supplier_id.toString());
+        }
+    };
+
     const subtotal = data.items.reduce((s: number, i: Item) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.cost) || 0), 0);
     const total = subtotal + (parseFloat(data.tax) || 0);
 
@@ -39,40 +54,63 @@ export default function PurchaseCreate({ suppliers, stores, products }: { suppli
             <div className="mx-auto max-w-4xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Nueva Compra</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/purchases'); }} className="space-y-6">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <h2 className="mb-4 font-semibold text-gray-700">Datos generales</h2>
+
+                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                        <h2 className="font-semibold text-gray-700">Datos generales</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                                <Label>Orden de compra (opcional)</Label>
+                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.purchase_order_id} onChange={(e) => handleOrderChange(e.target.value)}>
+                                    <option value="">— Sin orden —</option>
+                                    {purchaseOrders.map((o) => (
+                                        <option key={o.id} value={o.id}>{o.folio} — {o.supplier?.name ?? 'Sin proveedor'}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div>
                                 <Label>Proveedor</Label>
                                 <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.supplier_id} onChange={(e) => setData('supplier_id', e.target.value)}>
                                     <option value="">— Sin proveedor —</option>
-                                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}{s.payment_terms ? ` (${s.payment_terms})` : ''}</option>)}
                                 </select>
                             </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Tienda destino *</Label>
+                                <Label>Tienda destino</Label>
                                 <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
                                     <option value="">— Sin tienda —</option>
                                     {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                                 {errors.store_id && <p className="mt-1 text-xs text-red-500">{errors.store_id}</p>}
-                                <p className="mt-1 text-xs text-gray-400">El stock se acreditará a esta tienda al recibir la compra.</p>
                             </div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
                             <div>
                                 <Label>Fecha *</Label>
                                 <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div>
+                                <Label>N° Factura</Label>
+                                <Input value={data.invoice_number} onChange={(e) => setData('invoice_number', e.target.value)} placeholder="Ej: F-001234" />
+                            </div>
+                            <div>
+                                <Label>Fecha factura</Label>
+                                <Input type="date" value={data.invoice_date} onChange={(e) => setData('invoice_date', e.target.value)} />
                             </div>
                             <div>
                                 <Label>IVA ($)</Label>
                                 <Input type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />
                             </div>
                         </div>
-                        <div className="mt-4">
+                        <div>
                             <Label>Notas</Label>
                             <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Notas de auditoría</Label>
+                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} placeholder="Observaciones internas, justificación de compra..." value={data.audit_notes} onChange={(e) => setData('audit_notes', e.target.value)} />
                         </div>
                     </div>
 

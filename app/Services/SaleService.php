@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CashShift;
 use App\Models\Product;
+use App\Models\Promotion;
 use App\Models\Sale;
 use App\Models\StoreStock;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,7 @@ class SaleService
     public function __construct(
         private readonly InventoryService $inventory,
         private readonly SiatService $siat,
+        private readonly PromotionService $promotions,
     ) {}
 
     public function create(CashShift $shift, array $data, array $items): Sale
@@ -25,9 +27,11 @@ class SaleService
 
             $this->validateStock($items, $storeId);
 
-            $subtotal = collect($items)->sum(fn($i) => $i['quantity'] * $i['price']);
-            $discount = $data['discount'] ?? 0;
+            $subtotal = collect($items)->sum(fn($i) => $i['quantity'] * $i['price'] - ($i['discount'] ?? 0));
             $tax      = $data['tax'] ?? 0;
+
+            [$discount, $promotionId] = $this->resolvePromotion($data, $items, $subtotal);
+
             $total    = $subtotal - $discount + $tax;
             $paid     = $data['amount_paid'];
             $change   = $paid - $total;
@@ -35,6 +39,8 @@ class SaleService
             $sale = Sale::create([
                 'cash_shift_id'  => $shift->id,
                 'user_id'        => Auth::id(),
+                'customer_id'    => $data['customer_id'] ?? null,
+                'promotion_id'   => $promotionId,
                 'folio'          => $this->generateFolio(),
                 'subtotal'       => $subtotal,
                 'tax'            => $tax,
@@ -46,6 +52,10 @@ class SaleService
                 'status'         => 'completed',
                 'notes'          => $data['notes'] ?? null,
             ]);
+
+            if ($promotionId) {
+                Promotion::find($promotionId)?->incrementUsage();
+            }
 
             foreach ($items as $item) {
                 $sale->items()->create([
@@ -130,8 +140,16 @@ class SaleService
                 }
             }
 
-            $discount   = $data['discount'] ?? 0;
             $tax        = $data['tax'] ?? 0;
+
+            // Keep the originally applied promotion and recompute its discount;
+            // otherwise honour the manual global discount.
+            if ($sale->promotion_id && ($promotion = Promotion::find($sale->promotion_id))) {
+                $discount = min($this->promotions->calculateDiscount($promotion, $this->buildCart($items)), $subtotal);
+            } else {
+                $discount = $data['discount'] ?? 0;
+            }
+
             $total      = $subtotal - $discount + $tax;
             $amountPaid = $data['amount_paid'];
 
@@ -232,6 +250,47 @@ class SaleService
                 ]);
             }
         }
+    }
+
+    /**
+     * Resolve the effective discount for a sale. When a valid promotion is
+     * supplied, its computed discount overrides the manual global discount.
+     *
+     * @return array{0: float, 1: int|null}
+     */
+    private function resolvePromotion(array $data, array $items, float $subtotal): array
+    {
+        $promotionId = $data['promotion_id'] ?? null;
+
+        if (! $promotionId) {
+            return [(float) ($data['discount'] ?? 0), null];
+        }
+
+        $promotion = Promotion::find($promotionId);
+        if (! $promotion) {
+            return [(float) ($data['discount'] ?? 0), null];
+        }
+
+        $discount = $this->promotions->validateForCart($promotion, $this->buildCart($items));
+
+        return [min($discount, $subtotal), $promotionId];
+    }
+
+    /**
+     * @return array<int, array{product_id:int, category_id:int|null, quantity:float, price:float, subtotal:float}>
+     */
+    private function buildCart(array $items): array
+    {
+        $categories = Product::whereIn('id', collect($items)->pluck('product_id'))
+            ->pluck('category_id', 'id');
+
+        return collect($items)->map(fn($i) => [
+            'product_id'  => (int) $i['product_id'],
+            'category_id' => $categories[$i['product_id']] ?? null,
+            'quantity'    => (float) $i['quantity'],
+            'price'       => (float) $i['price'],
+            'subtotal'    => (float) $i['quantity'] * (float) $i['price'] - (float) ($i['discount'] ?? 0),
+        ])->all();
     }
 
     private function generateFolio(): string

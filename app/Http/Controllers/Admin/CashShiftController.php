@@ -78,14 +78,15 @@ class CashShiftController extends Controller
             return back()->withErrors(['cash_register_id' => 'Ya existe un turno abierto en esta caja.']);
         }
 
-        CashShift::create([
+        $shift = CashShift::create([
             ...$request->validated(),
             'user_id'    => Auth::id(),
             'opened_at'  => now(),
             'status'     => 'open',
         ]);
 
-        return redirect()->route('admin.cash-shifts.index')->with('success', 'Turno iniciado.');
+        return redirect()->route('admin.cash-shifts.show', $shift)
+            ->with('success', 'Turno iniciado. ¡Listo para vender!');
     }
 
     public function show(CashShift $cashShift): Response

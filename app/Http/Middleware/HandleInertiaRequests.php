@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CashShift;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -52,6 +53,21 @@ class HandleInertiaRequests extends Middleware
                 'error'         => $request->session()->get('error'),
                 'print_receipt' => $request->session()->get('print_receipt'),
             ],
+            'activeCashShift' => function () use ($request) {
+                if (! $request->user()) {
+                    return null;
+                }
+                $shift = CashShift::where('user_id', $request->user()->id)
+                    ->where('status', 'open')
+                    ->with('cashRegister:id,name')
+                    ->select(['id', 'cash_register_id'])
+                    ->first();
+
+                return $shift ? [
+                    'id'            => $shift->id,
+                    'register_name' => $shift->cashRegister->name,
+                ] : null;
+            },
         ]);
     }
 }

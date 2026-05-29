@@ -11,14 +11,16 @@ class PurchaseItem extends Model
         'purchase_id',
         'product_id',
         'quantity',
+        'received_quantity',
         'cost',
         'subtotal',
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:2',
-        'cost'     => 'decimal:2',
-        'subtotal' => 'decimal:2',
+        'quantity'          => 'decimal:2',
+        'received_quantity' => 'decimal:2',
+        'cost'              => 'decimal:2',
+        'subtotal'          => 'decimal:2',
     ];
 
     public function purchase(): BelongsTo
@@ -29,5 +31,10 @@ class PurchaseItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function pendingQuantity(): float
+    {
+        return max(0, (float) $this->quantity - (float) ($this->received_quantity ?? 0));
     }
 }

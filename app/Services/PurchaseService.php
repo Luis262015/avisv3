@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\PurchaseAuditLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -18,16 +19,21 @@ class PurchaseService
             $tax      = $data['tax'] ?? 0;
 
             $purchase = Purchase::create([
-                'supplier_id' => $data['supplier_id'] ?? null,
-                'store_id'    => $data['store_id'] ?? null,
-                'user_id'     => Auth::id(),
-                'folio'       => $this->generateFolio(),
-                'date'        => $data['date'],
-                'subtotal'    => $subtotal,
-                'tax'         => $tax,
-                'total'       => $subtotal + $tax,
-                'status'      => 'pending',
-                'notes'       => $data['notes'] ?? null,
+                'supplier_id'       => $data['supplier_id'] ?? null,
+                'store_id'          => $data['store_id'] ?? null,
+                'user_id'           => Auth::id(),
+                'purchase_order_id' => $data['purchase_order_id'] ?? null,
+                'folio'             => $this->generateFolio(),
+                'invoice_number'    => $data['invoice_number'] ?? null,
+                'invoice_date'      => $data['invoice_date'] ?? null,
+                'date'              => $data['date'],
+                'subtotal'          => $subtotal,
+                'tax'               => $tax,
+                'total'             => $subtotal + $tax,
+                'status'            => 'pending',
+                'payment_status'    => 'unpaid',
+                'notes'             => $data['notes'] ?? null,
+                'audit_notes'       => $data['audit_notes'] ?? null,
             ]);
 
             foreach ($items as $item) {
@@ -38,6 +44,8 @@ class PurchaseService
                     'subtotal'   => $item['quantity'] * $item['cost'],
                 ]);
             }
+
+            $this->log($purchase, 'created', "Compra #{$purchase->folio} registrada");
 
             return $purchase;
         });
@@ -92,14 +100,20 @@ class PurchaseService
 
             $tax = $data['tax'] ?? 0;
             $purchase->update([
-                'supplier_id' => $data['supplier_id'] ?? null,
-                'store_id'    => $data['store_id'] ?? null,
-                'date'        => $data['date'],
-                'subtotal'    => $subtotal,
-                'tax'         => $tax,
-                'total'       => $subtotal + $tax,
-                'notes'       => $data['notes'] ?? null,
+                'supplier_id'       => $data['supplier_id'] ?? null,
+                'store_id'          => $data['store_id'] ?? null,
+                'purchase_order_id' => $data['purchase_order_id'] ?? $purchase->purchase_order_id,
+                'invoice_number'    => $data['invoice_number'] ?? null,
+                'invoice_date'      => $data['invoice_date'] ?? null,
+                'date'              => $data['date'],
+                'subtotal'          => $subtotal,
+                'tax'               => $tax,
+                'total'             => $subtotal + $tax,
+                'notes'             => $data['notes'] ?? null,
+                'audit_notes'       => $data['audit_notes'] ?? $purchase->audit_notes,
             ]);
+
+            $this->log($purchase, 'updated', "Compra #{$purchase->folio} actualizada");
 
             return $purchase;
         });
@@ -122,9 +136,70 @@ class PurchaseService
                 );
 
                 $item->product->update(['cost' => $item->cost]);
+                $item->update(['received_quantity' => $item->quantity]);
             }
 
-            $purchase->update(['status' => 'received']);
+            $purchase->update([
+                'status'      => 'received',
+                'received_at' => now(),
+            ]);
+
+            $this->createPayableIfNeeded($purchase);
+            $this->log($purchase, 'received', "Compra #{$purchase->folio} recibida completamente");
+
+            return $purchase;
+        });
+    }
+
+    public function receivePartial(Purchase $purchase, array $receivedItems): Purchase
+    {
+        return DB::transaction(function () use ($purchase, $receivedItems) {
+            $purchase->load('items.product');
+            $storeId   = $purchase->store_id;
+            $allFilled = true;
+
+            $receivedMap = collect($receivedItems)->keyBy('id');
+
+            foreach ($purchase->items as $item) {
+                $entry       = $receivedMap->get($item->id);
+                $receivedQty = (float) ($entry['received_quantity'] ?? 0);
+
+                if ($receivedQty <= 0) {
+                    $allFilled = false;
+                    continue;
+                }
+
+                $this->inventory->recordMovement(
+                    $item->product,
+                    'in',
+                    $receivedQty,
+                    $purchase,
+                    "Recepción parcial compra #{$purchase->folio}",
+                    $storeId
+                );
+
+                $item->product->update(['cost' => $item->cost]);
+
+                $newReceived = (float) ($item->received_quantity ?? 0) + $receivedQty;
+                $item->update(['received_quantity' => $newReceived]);
+
+                if ($newReceived < (float) $item->quantity) {
+                    $allFilled = false;
+                }
+            }
+
+            $newStatus = $allFilled ? 'received' : 'partial';
+
+            $purchase->update([
+                'status'      => $newStatus,
+                'received_at' => $purchase->received_at ?? now(),
+            ]);
+
+            if ($newStatus === 'received') {
+                $this->createPayableIfNeeded($purchase);
+            }
+
+            $this->log($purchase, 'received_partial', "Recepción parcial registrada para compra #{$purchase->folio}");
 
             return $purchase;
         });
@@ -133,30 +208,76 @@ class PurchaseService
     public function cancel(Purchase $purchase): Purchase
     {
         return DB::transaction(function () use ($purchase) {
-            if ($purchase->status === 'received') {
+            if (in_array($purchase->status, ['received', 'partial'])) {
                 $purchase->load('items.product');
                 $storeId = $purchase->store_id;
 
                 foreach ($purchase->items as $item) {
-                    $this->inventory->recordMovement(
-                        $item->product,
-                        'out',
-                        $item->quantity,
-                        $purchase,
-                        "Cancelación de compra #{$purchase->folio}",
-                        $storeId
-                    );
+                    $qty = (float) ($item->received_quantity ?? $item->quantity);
+                    if ($qty > 0) {
+                        $this->inventory->recordMovement(
+                            $item->product,
+                            'out',
+                            $qty,
+                            $purchase,
+                            "Cancelación de compra #{$purchase->folio}",
+                            $storeId
+                        );
+                    }
                 }
             }
 
             $purchase->update(['status' => 'cancelled']);
+            $purchase->payable?->update(['status' => 'cancelled']);
+            $this->log($purchase, 'cancelled', "Compra #{$purchase->folio} cancelada");
+
             return $purchase;
         });
     }
 
+    public function attachDocument(Purchase $purchase, string $path): Purchase
+    {
+        $purchase->update(['document_path' => $path]);
+        $this->log($purchase, 'document_attached', "Documento de factura adjuntado a compra #{$purchase->folio}");
+        return $purchase;
+    }
+
+    private function createPayableIfNeeded(Purchase $purchase): void
+    {
+        if ($purchase->payable()->exists()) {
+            return;
+        }
+
+        $description = "Compra #{$purchase->folio}";
+        if ($purchase->invoice_number) {
+            $description .= " - Factura {$purchase->invoice_number}";
+        }
+
+        $purchase->payable()->create([
+            'supplier_id' => $purchase->supplier_id,
+            'user_id'     => Auth::id(),
+            'description' => $description,
+            'amount'      => $purchase->total,
+            'amount_paid' => 0,
+            'balance'     => $purchase->total,
+            'due_date'    => now()->addDays(30)->toDateString(),
+            'status'      => 'pending',
+        ]);
+    }
+
+    private function log(Purchase $purchase, string $action, string $description, array $metadata = []): void
+    {
+        PurchaseAuditLog::create([
+            'purchase_id' => $purchase->id,
+            'user_id'     => Auth::id(),
+            'action'      => $action,
+            'description' => $description,
+            'metadata'    => $metadata ?: null,
+        ]);
+    }
+
     private function generateFolio(): string
     {
-        $last = Purchase::max('id') ?? 0;
-        return 'C-' . str_pad($last + 1, 6, '0', STR_PAD_LEFT);
+        return Purchase::nextFolio();
     }
 }

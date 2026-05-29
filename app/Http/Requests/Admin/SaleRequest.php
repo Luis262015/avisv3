@@ -13,6 +13,8 @@ class SaleRequest extends FormRequest
     {
         return [
             'cash_shift_id'        => ['required', 'exists:cash_shifts,id'],
+            'customer_id'          => ['nullable', 'exists:customers,id'],
+            'promotion_id'         => ['nullable', 'exists:promotions,id'],
             'discount'             => ['nullable', 'numeric', 'min:0'],
             'tax'                  => ['nullable', 'numeric', 'min:0'],
             'amount_paid'          => ['required', 'numeric', 'min:0'],

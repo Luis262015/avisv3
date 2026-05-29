@@ -9,10 +9,47 @@ import { AlertTriangle, Camera, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Shift { id: number; cash_register: { name: string; store: { name: string } } }
-interface Product { id: number; name: string; sku: string | null; barcode: string | null; price: string; stock: number; track_inventory: boolean; primary_image: { url: string } | null }
-interface Item { product_id: number; product_name: string; quantity: string; price: string; discount: string }
+interface Product { id: number; name: string; sku: string | null; barcode: string | null; price: string; stock: number; track_inventory: boolean; category_id: number | null; primary_image: { url: string } | null }
+interface Item { product_id: number; product_name: string; quantity: string; price: string; discount: string; combo_name?: string }
+interface Customer { id: number; name: string }
+interface Promotion {
+    id: number; name: string; code: string | null; type: 'percentage' | 'fixed' | 'buy_x_get_y';
+    value: string; scope: 'all' | 'product' | 'category'; min_purchase: string;
+    buy_qty: number | null; get_qty: number | null; product_ids: number[]; category_ids: number[];
+}
+interface ComboLine { product_id: number; name: string; sku: string | null; price: string; quantity: string }
+interface Combo { id: number; name: string; combo_price: string; items: ComboLine[] }
 
-export default function SaleCreate({ activeShift, openShifts, products }: { activeShift: Shift | null; openShifts: Shift[]; products: Product[] }) {
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+interface CartLine { product_id: number; category_id: number | null; quantity: number; price: number; subtotal: number }
+
+function applicableLines(promo: Promotion, cart: CartLine[]): CartLine[] {
+    if (promo.scope === 'all') return cart;
+    if (promo.scope === 'product') return cart.filter((l) => promo.product_ids.includes(l.product_id));
+    return cart.filter((l) => l.category_id !== null && promo.category_ids.includes(l.category_id));
+}
+
+function calcPromoDiscount(promo: Promotion, cart: CartLine[]): number {
+    const lines = applicableLines(promo, cart);
+    const base = lines.reduce((s, l) => s + l.subtotal, 0);
+    if (base <= 0) return 0;
+    const value = parseFloat(promo.value) || 0;
+    if (promo.type === 'percentage') return base * (value / 100);
+    if (promo.type === 'fixed') return Math.min(value, base);
+    // buy_x_get_y
+    const buy = promo.buy_qty ?? 0;
+    const get = promo.get_qty ?? 0;
+    if (buy <= 0 || get <= 0) return 0;
+    const totalQty = lines.reduce((s, l) => s + l.quantity, 0);
+    if (totalQty <= 0) return 0;
+    const freeUnits = Math.floor(totalQty / (buy + get)) * get;
+    return freeUnits * (base / totalQty);
+}
+
+export default function SaleCreate({ activeShift, openShifts, products, customers, promotions, combos }: {
+    activeShift: Shift | null; openShifts: Shift[]; products: Product[]; customers: Customer[]; promotions: Promotion[]; combos: Combo[];
+}) {
     const [search, setSearch] = useState('');
     const [scannerOpen, setScannerOpen] = useState(false);
     const [lastAdded, setLastAdded] = useState<string | null>(null);
@@ -21,6 +58,7 @@ export default function SaleCreate({ activeShift, openShifts, products }: { acti
 
     const { data, setData, post, processing, errors } = useForm<any>({
         cash_shift_id: activeShift?.id.toString() ?? (openShifts[0]?.id.toString() ?? ''),
+        customer_id: '', promotion_id: '',
         discount: '0', tax: '0', amount_paid: '', payment_method: 'cash', notes: '',
         items: [] as Item[],
     });
@@ -39,6 +77,37 @@ export default function SaleCreate({ activeShift, openShifts, products }: { acti
             setData('items', [...data.items, { product_id: p.id, product_name: p.name, quantity: '1', price: p.price, discount: '0' }]);
         }
         setSearch('');
+    };
+
+    // Agrega un combo expandiéndolo en sus productos como líneas reales del carrito.
+    // El ahorro (precio regular − precio del combo) se reparte como descuento por línea,
+    // de modo que la suma de las líneas equivale al precio del combo.
+    const addCombo = (combo: Combo) => {
+        if (combo.items.length === 0) return;
+        const regularTotal = combo.items.reduce((s, it) => s + (parseFloat(it.price) || 0) * (parseFloat(it.quantity) || 0), 0);
+        const comboPrice = parseFloat(combo.combo_price) || 0;
+        const totalDiscount = Math.max(0, Math.min(regularTotal, regularTotal - comboPrice));
+
+        let allocated = 0;
+        const newLines: Item[] = combo.items.map((it, idx) => {
+            const lineRegular = (parseFloat(it.price) || 0) * (parseFloat(it.quantity) || 0);
+            let lineDiscount: number;
+            if (idx === combo.items.length - 1) {
+                lineDiscount = round2(totalDiscount - allocated);
+            } else {
+                lineDiscount = regularTotal > 0 ? round2(totalDiscount * (lineRegular / regularTotal)) : 0;
+                allocated += lineDiscount;
+            }
+            return {
+                product_id: it.product_id,
+                product_name: it.name,
+                quantity: String(parseFloat(it.quantity) || 0),
+                price: it.price,
+                discount: String(Math.max(0, lineDiscount)),
+                combo_name: combo.name,
+            };
+        });
+        setData('items', [...data.items, ...newLines]);
     };
 
     const handleBarcodeScan = (barcode: string): boolean => {
@@ -82,7 +151,17 @@ export default function SaleCreate({ activeShift, openShifts, products }: { acti
 
     const subtotal = data.items.reduce((s: number, i: Item) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.price) || 0) - (parseFloat(i.discount) || 0), 0);
     const tax = parseFloat(data.tax) || 0;
-    const discount = parseFloat(data.discount) || 0;
+
+    const selectedPromo = promotions.find((p) => p.id.toString() === data.promotion_id);
+    const cart: CartLine[] = data.items.map((i: Item) => {
+        const prod = products.find((p) => p.id === i.product_id);
+        const qty = parseFloat(i.quantity) || 0;
+        const price = parseFloat(i.price) || 0;
+        return { product_id: i.product_id, category_id: prod?.category_id ?? null, quantity: qty, price, subtotal: qty * price - (parseFloat(i.discount) || 0) };
+    });
+    const promoDiscount = selectedPromo ? Math.min(calcPromoDiscount(selectedPromo, cart), subtotal) : 0;
+    const promoBelowMin = selectedPromo ? subtotal < (parseFloat(selectedPromo.min_purchase) || 0) : false;
+    const discount = selectedPromo ? promoDiscount : (parseFloat(data.discount) || 0);
     const total = subtotal - discount + tax;
     const change = (parseFloat(data.amount_paid) || 0) - total;
 
@@ -176,6 +255,34 @@ export default function SaleCreate({ activeShift, openShifts, products }: { acti
                             )}
                         </div>
 
+                        {combos.length > 0 && (
+                            <div className="rounded-lg border bg-white p-4 shadow-sm">
+                                <Label>Combos disponibles</Label>
+                                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    {combos.map((c) => {
+                                        const regular = c.items.reduce((s, it) => s + (parseFloat(it.price) || 0) * (parseFloat(it.quantity) || 0), 0);
+                                        const price = parseFloat(c.combo_price) || 0;
+                                        const saving = regular - price;
+                                        return (
+                                            <button key={c.id} type="button" onClick={() => addCombo(c)}
+                                                className="flex flex-col gap-1 rounded-md border border-indigo-200 bg-indigo-50/50 p-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="font-medium text-indigo-900">{c.name}</span>
+                                                    <span className="font-bold text-indigo-700">${price.toFixed(2)}</span>
+                                                </div>
+                                                <span className="text-xs text-gray-500">
+                                                    {c.items.map((it) => `${parseFloat(it.quantity)}× ${it.name}`).join(' + ')}
+                                                </span>
+                                                {saving > 0 && (
+                                                    <span className="text-xs font-medium text-green-600">Ahorras ${saving.toFixed(2)}</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="rounded-lg border bg-white shadow-sm">
                             <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos ({data.items.length})</div>
                             {data.items.length === 0 ? (
@@ -199,7 +306,12 @@ export default function SaleCreate({ activeShift, openShifts, products }: { acti
                                     <tbody className="divide-y">
                                         {data.items.map((item: Item, i: number) => (
                                             <tr key={i}>
-                                                <td className="px-4 py-2 font-medium">{item.product_name}</td>
+                                                <td className="px-4 py-2 font-medium">
+                                                    {item.product_name}
+                                                    {item.combo_name && (
+                                                        <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">{item.combo_name}</span>
+                                                    )}
+                                                </td>
                                                 <td className="px-4 py-2"><Input className="w-24 text-right" type="number" step="0.01" min="0" value={item.price} onChange={(e) => setItem(i, 'price', e.target.value)} /></td>
                                                 <td className="px-4 py-2"><Input className="w-20 text-right" type="number" step="0.01" min="0" value={item.discount} onChange={(e) => setItem(i, 'discount', e.target.value)} /></td>
                                                 <td className="px-4 py-2"><Input className="w-20 text-right" type="number" step="0.01" min="0.01" value={item.quantity} onChange={(e) => setItem(i, 'quantity', e.target.value)} /></td>
@@ -230,12 +342,44 @@ export default function SaleCreate({ activeShift, openShifts, products }: { acti
                         </div>
 
                         <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+                            <h2 className="font-semibold text-gray-700">Cliente y promoción</h2>
+                            <div>
+                                <Label>Cliente</Label>
+                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
+                                    <option value="">— Consumidor final —</option>
+                                    {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <Label>Promoción / cupón</Label>
+                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.promotion_id} onChange={(e) => setData('promotion_id', e.target.value)}>
+                                    <option value="">— Sin promoción —</option>
+                                    {promotions.map((p) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (${p.code})` : ''}</option>)}
+                                </select>
+                                {selectedPromo && promoBelowMin && (
+                                    <p className="mt-1 text-xs text-amber-600">Compra mínima de ${parseFloat(selectedPromo.min_purchase).toFixed(2)} para aplicar esta promoción.</p>
+                                )}
+                                {selectedPromo && !promoBelowMin && promoDiscount <= 0 && (
+                                    <p className="mt-1 text-xs text-amber-600">La promoción no aplica a los productos del carrito.</p>
+                                )}
+                                {errors.promotion_id && <p className="mt-1 text-xs text-red-500">{errors.promotion_id}</p>}
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-700">Resumen</h2>
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500">Descuento global</span>
-                                <Input className="w-24 text-right" type="number" step="0.01" min="0" value={data.discount} onChange={(e) => setData('discount', e.target.value)} />
-                            </div>
+                            {selectedPromo ? (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Descuento ({selectedPromo.name})</span>
+                                    <span className="font-medium text-green-600">-${promoDiscount.toFixed(2)}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Descuento global</span>
+                                    <Input className="w-24 text-right" type="number" step="0.01" min="0" value={data.discount} onChange={(e) => setData('discount', e.target.value)} />
+                                </div>
+                            )}
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-500">IVA</span>
                                 <Input className="w-24 text-right" type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />

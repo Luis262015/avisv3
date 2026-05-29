@@ -9,31 +9,28 @@ import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 interface Supplier { id: number; name: string }
 interface Store { id: number; name: string }
 interface Product { id: number; name: string; sku: string | null; cost: string }
-interface PurchaseItem {
-    product_id: number; quantity: string; cost: string;
-    product: { id: number; name: string; sku: string | null };
-}
+interface PurchaseItem { product_id: number; quantity: string; cost: string; product: { id: number; name: string; sku: string | null } }
 interface Purchase {
     id: number; folio: string; status: string;
-    supplier_id: number | null; store_id: number | null; date: string; tax: string; notes: string | null;
-    supplier: { id: number; name: string } | null;
-    store: { id: number; name: string } | null;
+    supplier_id: number | null; store_id: number | null;
+    date: string; invoice_number: string | null; invoice_date: string | null;
+    tax: string; notes: string | null; audit_notes: string | null;
     items: PurchaseItem[];
 }
-
 interface FormItem { product_id: string; quantity: string; cost: string }
 
-export default function PurchaseEdit({
-    purchase, suppliers, stores, products,
-}: {
+export default function PurchaseEdit({ purchase, suppliers, stores, products }: {
     purchase: Purchase; suppliers: Supplier[]; stores: Store[]; products: Product[];
 }) {
     const { data, setData, patch, processing, errors } = useForm<any>({
         supplier_id: purchase.supplier_id?.toString() ?? '',
         store_id:    purchase.store_id?.toString() ?? '',
         date: purchase.date.substring(0, 10),
+        invoice_number: purchase.invoice_number ?? '',
+        invoice_date: purchase.invoice_date ? purchase.invoice_date.substring(0, 10) : '',
         tax: purchase.tax,
         notes: purchase.notes ?? '',
+        audit_notes: purchase.audit_notes ?? '',
         items: purchase.items.map((item) => ({
             product_id: item.product_id.toString(),
             quantity: item.quantity,
@@ -53,13 +50,8 @@ export default function PurchaseEdit({
         setData('items', items);
     };
 
-    const subtotal = data.items.reduce(
-        (s: number, i: FormItem) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.cost) || 0), 0,
-    );
+    const subtotal = data.items.reduce((s: number, i: FormItem) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.cost) || 0), 0);
     const total = subtotal + (parseFloat(data.tax) || 0);
-
-    const productName = (productId: string) =>
-        products.find((p) => p.id === parseInt(productId))?.name ?? '—';
 
     return (
         <AppLayout breadcrumbs={[
@@ -74,14 +66,14 @@ export default function PurchaseEdit({
                 {purchase.status === 'received' && (
                     <div className="mb-5 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                        <span>Esta compra ya fue <strong>recibida</strong>. Los cambios en los artículos ajustarán el inventario automáticamente.</span>
+                        <span>Esta compra ya fue <strong>recibida</strong>. Los cambios en artículos ajustarán el inventario automáticamente.</span>
                     </div>
                 )}
 
                 <form onSubmit={(e) => { e.preventDefault(); patch(`/admin/purchases/${purchase.id}`); }} className="space-y-6">
-                    {/* Datos generales */}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <h2 className="mb-4 font-semibold text-gray-700">Datos generales</h2>
+
+                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                        <h2 className="font-semibold text-gray-700">Datos generales</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
                                 <Label>Proveedor</Label>
@@ -99,24 +91,37 @@ export default function PurchaseEdit({
                                 {errors.store_id && <p className="mt-1 text-xs text-red-500">{errors.store_id}</p>}
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
                                 <Label>Fecha *</Label>
                                 <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                             </div>
                             <div>
+                                <Label>N° Factura</Label>
+                                <Input value={data.invoice_number} onChange={(e) => setData('invoice_number', e.target.value)} />
+                            </div>
+                            <div>
+                                <Label>Fecha factura</Label>
+                                <Input type="date" value={data.invoice_date} onChange={(e) => setData('invoice_date', e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
                                 <Label>IVA ($)</Label>
                                 <Input type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />
                             </div>
                         </div>
-                        <div className="mt-4">
+                        <div>
                             <Label>Notas</Label>
                             <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
+                        <div>
+                            <Label>Notas de auditoría</Label>
+                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.audit_notes} onChange={(e) => setData('audit_notes', e.target.value)} />
+                        </div>
                     </div>
 
-                    {/* Productos */}
                     <div className="rounded-lg border bg-white p-4 shadow-sm">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="font-semibold text-gray-700">Productos</h2>

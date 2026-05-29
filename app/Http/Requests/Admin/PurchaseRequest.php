@@ -6,16 +6,23 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class PurchaseRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
             'supplier_id'          => ['nullable', 'exists:suppliers,id'],
             'store_id'             => ['nullable', 'exists:stores,id'],
+            'purchase_order_id'    => ['nullable', 'exists:purchase_orders,id'],
             'date'                 => ['required', 'date'],
+            'invoice_number'       => ['nullable', 'string', 'max:50'],
+            'invoice_date'         => ['nullable', 'date'],
             'tax'                  => ['nullable', 'numeric', 'min:0'],
             'notes'                => ['nullable', 'string'],
+            'audit_notes'          => ['nullable', 'string'],
             'items'                => ['required', 'array', 'min:1'],
             'items.*.product_id'   => ['required', 'exists:products,id'],
             'items.*.quantity'     => ['required', 'numeric', 'min:0.01'],

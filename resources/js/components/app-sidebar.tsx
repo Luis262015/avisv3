@@ -8,22 +8,36 @@ import { Link } from '@inertiajs/react';
 import {
     ArrowDownCircle,
     ArrowUpCircle,
+    Banknote,
+    BarChart2,
     BarChart3,
     BookOpen,
     Box,
     Building2,
+    CalendarClock,
+    CalendarDays,
+    ClipboardList,
     FileText,
     Folder,
+    GraduationCap,
     LayoutGrid,
+    LockOpen,
     MinusCircle,
+    Network,
+    PackageCheck,
     PackageSearch,
+    Percent,
     ReceiptText,
     Settings2,
+    ShieldCheck,
     ShoppingCart,
     Store,
     Tag,
     Tags,
     Truck,
+    Undo2,
+    UserCog,
+    Users,
     Wallet,
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -32,8 +46,16 @@ const footerNavItems: NavItem[] = [
     { title: 'Documentación', url: 'https://laravel.com/docs/starter-kits', icon: BookOpen },
 ];
 
+interface ActiveCashShift {
+    id: number;
+    register_name: string;
+}
+
 export function AppSidebar() {
-    const { auth } = usePage<{ auth: { roles: string[] } }>().props;
+    const { auth, activeCashShift } = usePage<{
+        auth: { roles: string[] };
+        activeCashShift: ActiveCashShift | null;
+    }>().props;
     const roles = auth?.roles ?? [];
 
     const isAdmin = roles.includes('admin');
@@ -41,6 +63,7 @@ export function AppSidebar() {
     const canManageProducts = isAdmin || isOperador;
     const canManagePurchases = isAdmin || isOperador;
     const canManageFinances = isAdmin || isOperador;
+    const canManageSales = isAdmin || isOperador;
 
     const navGroups: NavGroup[] = [
         {
@@ -52,16 +75,33 @@ export function AppSidebar() {
         {
             title: 'Punto de Venta',
             items: [
+                activeCashShift
+                    ? { title: 'Caja', url: `/admin/cash-shifts/${activeCashShift.id}`, icon: Banknote }
+                    : { title: 'Abrir Caja', url: '/admin/cash-shifts/create', icon: LockOpen },
                 { title: 'Nueva Venta', url: '/admin/sales/create', icon: ShoppingCart },
                 { title: 'Ventas', url: '/admin/sales', icon: BarChart3 },
                 { title: 'Turnos de Caja', url: '/admin/cash-shifts', icon: Wallet },
             ],
         },
+        ...(canManageSales ? [{
+            title: 'Ventas',
+            items: [
+                { title: 'Clientes', url: '/admin/customers', icon: Users },
+                { title: 'Cotizaciones', url: '/admin/quotes', icon: FileText },
+                { title: 'Pedidos y envíos', url: '/admin/sales-orders', icon: PackageCheck },
+                { title: 'Promociones', url: '/admin/promotions', icon: Percent },
+                { title: 'Devoluciones', url: '/admin/returns', icon: Undo2 },
+                { title: 'Garantías', url: '/admin/warranties', icon: ShieldCheck },
+                { title: 'Reportes de ventas', url: '/admin/sales-reports', icon: BarChart2 },
+            ],
+        }] : []),
         ...(canManagePurchases ? [{
             title: 'Compras',
             items: [
+                { title: 'Órdenes de compra', url: '/admin/purchase-orders', icon: ClipboardList },
                 { title: 'Compras', url: '/admin/purchases', icon: Truck },
                 { title: 'Proveedores', url: '/admin/suppliers', icon: Building2 },
+                { title: 'Reportes de compras', url: '/admin/purchases-reports', icon: BarChart2 },
             ],
         }] : []),
         ...(canManageFinances ? [{
@@ -72,6 +112,7 @@ export function AppSidebar() {
                 { title: 'Retiros', url: '/admin/withdrawals', icon: MinusCircle },
                 { title: 'Cuentas por cobrar', url: '/admin/receivables', icon: ReceiptText },
                 { title: 'Cuentas por pagar', url: '/admin/payables', icon: ReceiptText },
+                { title: 'Reporte financiero', url: '/admin/financial-reports', icon: BarChart2 },
             ],
         }] : []),
         ...(canManageProducts ? [{
@@ -82,6 +123,18 @@ export function AppSidebar() {
                 { title: 'Marcas', url: '/admin/brands', icon: Tag },
                 { title: 'Etiquetas', url: '/admin/tags', icon: Tags },
                 { title: 'Inventario', url: '/admin/inventory', icon: PackageSearch },
+            ],
+        }] : []),
+        ...(isAdmin ? [{
+            title: 'Recursos Humanos',
+            items: [
+                { title: 'Empleados', url: '/admin/employees', icon: UserCog },
+                { title: 'Áreas', url: '/admin/departments', icon: Network },
+                { title: 'Asistencia', url: '/admin/attendances', icon: CalendarClock },
+                { title: 'Ausencias', url: '/admin/leave-requests', icon: CalendarDays },
+                { title: 'Nómina', url: '/admin/payrolls', icon: Banknote },
+                { title: 'Capacitación', url: '/admin/trainings', icon: GraduationCap },
+                { title: 'Reportes RR.HH.', url: '/admin/hr-reports', icon: BarChart2 },
             ],
         }] : []),
         ...(isAdmin ? [{

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaleRequest;
 use App\Http\Requests\Admin\SaleUpdateRequest;
 use App\Models\CashShift;
+use App\Models\Customer;
 use App\Models\Product;
+use App\Models\Promotion;
 use App\Models\Sale;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
@@ -36,7 +38,35 @@ class SaleController extends Controller
         return Inertia::render('admin/sales/create', [
             'activeShift' => $activeShift,
             'openShifts'  => CashShift::where('status', 'open')->with('cashRegister.store')->get(),
-            'products'    => Product::where('status', 'active')->with('primaryImage')->get(['id', 'name', 'sku', 'barcode', 'price', 'stock', 'track_inventory']),
+            'products'    => Product::where('status', 'active')->with('primaryImage')->get(['id', 'name', 'sku', 'barcode', 'price', 'stock', 'track_inventory', 'category_id']),
+            'customers'   => Customer::active()->get(['id', 'name']),
+            'promotions'  => Promotion::current()->discounts()->with(['products:id', 'categories:id'])->get()->map(fn($p) => [
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'code'         => $p->code,
+                'type'         => $p->type,
+                'value'        => $p->value,
+                'scope'        => $p->scope,
+                'min_purchase' => $p->min_purchase,
+                'buy_qty'      => $p->buy_qty,
+                'get_qty'      => $p->get_qty,
+                'product_ids'  => $p->products->pluck('id'),
+                'category_ids' => $p->categories->pluck('id'),
+            ]),
+            'combos'      => Promotion::current()->combos()->with('comboItems.product:id,name,sku,price')->get()->map(fn($c) => [
+                'id'          => $c->id,
+                'name'        => $c->name,
+                'combo_price' => $c->combo_price,
+                'items'       => $c->comboItems
+                    ->filter(fn($ci) => $ci->product !== null)
+                    ->map(fn($ci) => [
+                        'product_id' => $ci->product_id,
+                        'name'       => $ci->product->name,
+                        'sku'        => $ci->product->sku,
+                        'price'      => $ci->product->price,
+                        'quantity'   => $ci->quantity,
+                    ])->values(),
+            ]),
         ]);
     }
 

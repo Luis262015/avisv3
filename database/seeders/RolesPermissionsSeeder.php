@@ -32,6 +32,8 @@ class RolesPermissionsSeeder extends Seeder
             'sales.view', 'sales.create', 'sales.cancel',
             // Inventario
             'inventory.view', 'inventory.adjust',
+            // Recursos Humanos
+            'employees.manage', 'payroll.manage', 'attendance.manage', 'training.manage', 'hr.reports',
         ];
 
         foreach ($permissions as $perm) {
