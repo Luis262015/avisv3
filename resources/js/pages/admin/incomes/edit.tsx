@@ -5,9 +5,11 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { useForm } from '@inertiajs/react';
 
-interface CashShift { id: number; cash_register: { name: string } }
+interface CashShift { id: number; cash_register: { name: string; store_id: number } }
+interface Store { id: number; name: string }
 interface Income {
-    id: number; cash_shift_id: number | null; category: string; description: string;
+    id: number; cash_shift_id: number | null; store_id: number | null;
+    category: string; description: string;
     amount: string; payment_method: string; reference: string | null; date: string; notes: string | null;
 }
 
@@ -15,9 +17,10 @@ const INCOME_CATEGORIES = [
     'Inversión', 'Préstamo', 'Devolución', 'Donación', 'Venta de activo', 'Otro',
 ];
 
-export default function IncomeEdit({ income, openShifts }: { income: Income; openShifts: CashShift[] }) {
+export default function IncomeEdit({ income, openShifts, stores }: { income: Income; openShifts: CashShift[]; stores: Store[] }) {
     const { data, setData, patch, processing, errors } = useForm({
         cash_shift_id: income.cash_shift_id?.toString() ?? '',
+        store_id: income.store_id?.toString() ?? '',
         category: income.category,
         description: income.description,
         amount: income.amount,
@@ -74,6 +77,21 @@ export default function IncomeEdit({ income, openShifts }: { income: Income; ope
                                 <Label>No. de referencia</Label>
                                 <Input value={data.reference} onChange={(e) => setData('reference', e.target.value)} placeholder="Opcional" />
                             </div>
+                        </div>
+
+                        <div>
+                            <Label>Tienda *</Label>
+                            <select
+                                className="w-full rounded-md border px-3 py-2 text-sm disabled:bg-gray-100"
+                                value={data.store_id}
+                                disabled={!!data.cash_shift_id}
+                                onChange={(e) => setData('store_id', e.target.value)}
+                            >
+                                <option value="">— Seleccionar —</option>
+                                {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                            {data.cash_shift_id && <p className="mt-1 text-xs text-gray-400">Determinada por la caja del turno.</p>}
+                            {errors.store_id && <p className="mt-1 text-xs text-red-500">{errors.store_id}</p>}
                         </div>
 
                         {openShifts.length > 0 && (

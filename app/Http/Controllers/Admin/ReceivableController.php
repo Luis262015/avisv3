@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReceivablePaymentRequest;
 use App\Http\Requests\Admin\ReceivableRequest;
+use App\Models\Customer;
 use App\Models\Receivable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class ReceivableController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/receivables/index', [
-            'receivables' => Receivable::with(['user', 'sale'])
+            'receivables' => Receivable::with(['user', 'sale', 'customer:id,name'])
                 ->latest()
                 ->paginate(20),
         ]);
@@ -24,7 +25,9 @@ class ReceivableController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('admin/receivables/create');
+        return Inertia::render('admin/receivables/create', [
+            'customers' => Customer::active()->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function store(ReceivableRequest $request)
@@ -41,7 +44,7 @@ class ReceivableController extends Controller
 
     public function show(Receivable $receivable): Response
     {
-        $receivable->load(['user', 'sale', 'payments.user']);
+        $receivable->load(['user', 'sale', 'customer', 'payments.user']);
         return Inertia::render('admin/receivables/show', compact('receivable'));
     }
 
@@ -83,7 +86,16 @@ class ReceivableController extends Controller
             return back()->withErrors(['status' => 'No se puede cancelar una cuenta ya pagada.']);
         }
 
-        $receivable->update(['status' => 'cancelled']);
+        if ((float) $receivable->amount_paid > 0) {
+            return back()->withErrors([
+                'status' => 'Esta cuenta tiene cobros registrados. Resuélvalos antes de cancelarla.',
+            ]);
+        }
+
+        // El saldo se anula junto con la cuenta: si sigue en pie, los reportes de
+        // cartera lo seguirían mostrando como deuda por cobrar.
+        $receivable->update(['status' => 'cancelled', 'balance' => 0]);
+
         return redirect()->route('admin.receivables.show', $receivable)->with('success', 'Cuenta por cobrar cancelada.');
     }
 }

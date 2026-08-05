@@ -86,7 +86,15 @@ class PayableController extends Controller
             return back()->withErrors(['status' => 'No se puede cancelar una cuenta ya pagada.']);
         }
 
-        $payable->update(['status' => 'cancelled']);
+        if ((float) $payable->amount_paid > 0) {
+            return back()->withErrors([
+                'status' => 'Esta cuenta tiene pagos registrados. Resuélvalos antes de cancelarla.',
+            ]);
+        }
+
+        // El saldo se anula junto con la cuenta, igual que en cuentas por cobrar.
+        $payable->update(['status' => 'cancelled', 'balance' => 0]);
+
         return redirect()->route('admin.payables.show', $payable)->with('success', 'Cuenta por pagar cancelada.');
     }
 }

@@ -12,6 +12,9 @@ class ReceivableRequest extends FormRequest
     {
         return [
             'sale_id'        => ['nullable', 'exists:sales,id'],
+            // Enlazar con el padrón de clientes permite ver la deuda total de cada
+            // uno; el nombre libre queda para deudores ocasionales.
+            'customer_id'    => ['nullable', 'exists:customers,id'],
             'customer_name'  => ['required', 'string', 'max:150'],
             'customer_phone' => ['nullable', 'string', 'max:20'],
             'customer_email' => ['nullable', 'email', 'max:150'],

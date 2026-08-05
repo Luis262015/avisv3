@@ -65,6 +65,11 @@ class Sale extends Model
         return $this->hasMany(SaleReturn::class);
     }
 
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);

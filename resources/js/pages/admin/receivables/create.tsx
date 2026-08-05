@@ -5,8 +5,11 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { useForm } from '@inertiajs/react';
 
-export default function ReceivableCreate() {
+interface Customer { id: number; name: string }
+
+export default function ReceivableCreate({ customers }: { customers: Customer[] }) {
     const { data, setData, post, processing, errors } = useForm({
+        customer_id: '',
         customer_name: '',
         customer_phone: '',
         customer_email: '',
@@ -24,6 +27,32 @@ export default function ReceivableCreate() {
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/receivables'); }} className="space-y-5">
                     <div className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Datos del cliente</h2>
+                        <div>
+                            <Label>Cliente registrado</Label>
+                            <p className="mb-1 text-xs text-gray-400">
+                                Enlazarlo permite ver su deuda total. Déjalo vacío para un deudor ocasional.
+                            </p>
+                            <select
+                                className="w-full rounded-md border px-3 py-2 text-sm"
+                                value={data.customer_id}
+                                onChange={(e) => {
+                                    const id = e.target.value;
+                                    setData((prev) => ({
+                                        ...prev,
+                                        customer_id: id,
+                                        // Se copia el nombre para conservar el registro histórico
+                                        // aunque después se edite la ficha del cliente.
+                                        customer_name: id
+                                            ? (customers.find((c) => String(c.id) === id)?.name ?? prev.customer_name)
+                                            : prev.customer_name,
+                                    }));
+                                }}
+                            >
+                                <option value="">Sin enlazar (ocasional)</option>
+                                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            {errors.customer_id && <p className="mt-1 text-xs text-red-500">{errors.customer_id}</p>}
+                        </div>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
                                 <Label>Nombre *</Label>

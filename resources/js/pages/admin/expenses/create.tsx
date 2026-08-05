@@ -5,16 +5,18 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { useForm } from '@inertiajs/react';
 
-interface CashShift { id: number; cash_register: { name: string } }
+interface CashShift { id: number; cash_register: { name: string; store_id: number } }
+interface Store { id: number; name: string }
 
 const EXPENSE_CATEGORIES = [
     'Renta', 'Servicios', 'Sueldos', 'Insumos', 'Mantenimiento',
     'Marketing', 'Transporte', 'Impuestos', 'Comisiones', 'Otro',
 ];
 
-export default function ExpenseCreate({ openShifts }: { openShifts: CashShift[] }) {
+export default function ExpenseCreate({ openShifts, stores }: { openShifts: CashShift[]; stores: Store[] }) {
     const { data, setData, post, processing, errors } = useForm({
         cash_shift_id: '',
+        store_id: stores.length === 1 ? String(stores[0].id) : '',
         category: '',
         description: '',
         amount: '',
@@ -73,15 +75,44 @@ export default function ExpenseCreate({ openShifts }: { openShifts: CashShift[] 
                             </div>
                         </div>
 
-                        {openShifts.length > 0 && (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Turno de caja (opcional)</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.cash_shift_id} onChange={(e) => setData('cash_shift_id', e.target.value)}>
-                                    <option value="">— Sin turno —</option>
-                                    {openShifts.map((s) => <option key={s.id} value={s.id}>{s.cash_register.name}</option>)}
+                                <Label>Tienda *</Label>
+                                <select
+                                    className="w-full rounded-md border px-3 py-2 text-sm disabled:bg-gray-100"
+                                    value={data.store_id}
+                                    disabled={!!data.cash_shift_id}
+                                    onChange={(e) => setData('store_id', e.target.value)}
+                                >
+                                    <option value="">— Seleccionar —</option>
+                                    {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
+                                {data.cash_shift_id && <p className="mt-1 text-xs text-gray-400">Determinada por la caja del turno.</p>}
+                                {errors.store_id && <p className="mt-1 text-xs text-red-500">{errors.store_id}</p>}
                             </div>
-                        )}
+                            {openShifts.length > 0 && (
+                                <div>
+                                    <Label>Turno de caja{data.payment_method === 'cash' ? ' *' : ' (opcional)'}</Label>
+                                    <select
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                        value={data.cash_shift_id}
+                                        onChange={(e) => {
+                                            const id = e.target.value;
+                                            const shift = openShifts.find((s) => String(s.id) === id);
+                                            setData((prev) => ({
+                                                ...prev,
+                                                cash_shift_id: id,
+                                                store_id: shift ? String(shift.cash_register.store_id) : prev.store_id,
+                                            }));
+                                        }}
+                                    >
+                                        <option value="">— Sin turno —</option>
+                                        {openShifts.map((s) => <option key={s.id} value={s.id}>{s.cash_register.name}</option>)}
+                                    </select>
+                                    {errors.cash_shift_id && <p className="mt-1 text-xs text-red-500">{errors.cash_shift_id}</p>}
+                                </div>
+                            )}
+                        </div>
 
                         <div>
                             <Label>Notas</Label>

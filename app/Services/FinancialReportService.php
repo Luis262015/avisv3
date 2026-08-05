@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Expense;
 use App\Models\Income;
 use App\Models\Payable;
+use App\Models\PayablePayment;
 use App\Models\Purchase;
 use App\Models\Receivable;
+use App\Models\ReceivablePayment;
 use App\Models\Sale;
 use App\Models\Withdrawal;
 use Carbon\Carbon;
@@ -50,7 +52,7 @@ class FinancialReportService
         $incomes     = (float) $this->dateScoped(Income::query(), $from, $to, $filters)->sum('amount');
         $purchases   = (float) $this->purchasesQuery($from, $to, $filters)->sum('total');
         $expenses    = (float) $this->dateScoped(Expense::query(), $from, $to, $filters)->sum('amount');
-        $withdrawals = (float) $this->dateScoped(Withdrawal::query(), $from, $to, $filters)->sum('amount');
+        $withdrawals = (float) $this->withdrawalScoped($from, $to, $filters)->sum('amount');
 
         $totalIncome  = $sales + $incomes;
         $totalOutflow = $purchases + $expenses + $withdrawals;
@@ -74,11 +76,19 @@ class FinancialReportService
     {
         [$from, $to] = $this->resolveRange($filters);
 
-        $generated = Receivable::query()
+        // La tienda de una CxC se alcanza por la venta que la originó. Las cuentas
+        // sueltas (sin venta) no pertenecen a ninguna tienda y quedan fuera al
+        // filtrar, igual que ocurre con el resto del reporte.
+        $scoped = fn() => Receivable::query()->when(
+            $filters['store_id'] ?? null,
+            fn($q, $v) => $q->whereHas('sale.cashShift.cashRegister', fn($q2) => $q2->where('store_id', $v))
+        );
+
+        $generated = $scoped()
             ->whereBetween('created_at', [$from, $to])
             ->whereIn('status', ['pending', 'partial', 'paid']);
 
-        $outstanding = Receivable::query()->whereIn('status', ['pending', 'partial']);
+        $outstanding = $scoped()->outstanding();
 
         return [
             'generated_count'   => (clone $generated)->count(),
@@ -88,7 +98,7 @@ class FinancialReportService
             'overdue_balance'   => (float) (clone $outstanding)
                 ->whereDate('due_date', '<', Carbon::today())
                 ->sum('balance'),
-            'collected_in_period' => $this->paymentsInPeriod('receivable_payments', $from, $to),
+            'collected_in_period' => $this->receivablePaymentsInPeriod($from, $to, $filters),
         ];
     }
 
@@ -99,11 +109,17 @@ class FinancialReportService
     {
         [$from, $to] = $this->resolveRange($filters);
 
-        $generated = Payable::query()
+        // La tienda de una CxP se alcanza por la compra que la originó.
+        $scoped = fn() => Payable::query()->when(
+            $filters['store_id'] ?? null,
+            fn($q, $v) => $q->whereHas('purchase', fn($q2) => $q2->where('store_id', $v))
+        );
+
+        $generated = $scoped()
             ->whereBetween('created_at', [$from, $to])
             ->whereIn('status', ['pending', 'partial', 'paid']);
 
-        $outstanding = Payable::query()->whereIn('status', ['pending', 'partial']);
+        $outstanding = $scoped()->whereIn('status', ['pending', 'partial']);
 
         return [
             'generated_count'   => (clone $generated)->count(),
@@ -113,7 +129,7 @@ class FinancialReportService
             'overdue_balance'   => (float) (clone $outstanding)
                 ->whereDate('due_date', '<', Carbon::today())
                 ->sum('balance'),
-            'paid_in_period'    => $this->paymentsInPeriod('payable_payments', $from, $to),
+            'paid_in_period'    => $this->payablePaymentsInPeriod($from, $to, $filters),
         ];
     }
 
@@ -169,7 +185,7 @@ class FinancialReportService
         $merge('purchases', $this->monthlySum($this->purchasesQuery($from, $to, $filters), 'date', 'total'));
         $merge('incomes', $this->monthlySum($this->dateScoped(Income::query(), $from, $to, $filters), 'date', 'amount'));
         $merge('expenses', $this->monthlySum($this->dateScoped(Expense::query(), $from, $to, $filters), 'date', 'amount'));
-        $merge('withdrawals', $this->monthlySum($this->dateScoped(Withdrawal::query(), $from, $to, $filters), 'date', 'amount'));
+        $merge('withdrawals', $this->monthlySum($this->withdrawalScoped($from, $to, $filters), 'date', 'amount'));
 
         return collect($months)
             ->sortKeys()
@@ -202,11 +218,23 @@ class FinancialReportService
     }
 
     /**
-     * Scope a cash-shift-bound model (expense/income/withdrawal) by date + store.
+     * Gastos e ingresos tienen store_id propio: un movimiento pagado por tarjeta o
+     * transferencia, sin turno de caja, sigue siendo atribuible a su tienda.
      */
     private function dateScoped(Builder $query, Carbon $from, Carbon $to, array $filters): Builder
     {
         return $query
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->when($filters['store_id'] ?? null, fn($q, $v) => $q->where('store_id', $v));
+    }
+
+    /**
+     * Los retiros no tienen store_id propio: siempre salen del cajón, así que su
+     * tienda es inequívocamente la de la caja del turno.
+     */
+    private function withdrawalScoped(Carbon $from, Carbon $to, array $filters): Builder
+    {
+        return Withdrawal::query()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->when($filters['store_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'cashShift.cashRegister',
@@ -229,10 +257,25 @@ class FinancialReportService
             ->get();
     }
 
-    private function paymentsInPeriod(string $table, Carbon $from, Carbon $to): float
+    private function receivablePaymentsInPeriod(Carbon $from, Carbon $to, array $filters): float
     {
-        return (float) DB::table($table)
+        return (float) ReceivablePayment::query()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->when($filters['store_id'] ?? null, fn($q, $v) => $q->whereHas(
+                'receivable.sale.cashShift.cashRegister',
+                fn($q2) => $q2->where('store_id', $v)
+            ))
+            ->sum('amount');
+    }
+
+    private function payablePaymentsInPeriod(Carbon $from, Carbon $to, array $filters): float
+    {
+        return (float) PayablePayment::query()
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->when($filters['store_id'] ?? null, fn($q, $v) => $q->whereHas(
+                'payable.purchase',
+                fn($q2) => $q2->where('store_id', $v)
+            ))
             ->sum('amount');
     }
 }

@@ -43,6 +43,17 @@ class Customer extends Model
         return $this->hasMany(SaleReturn::class);
     }
 
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
+
+    /** Saldo pendiente de cobro del cliente, sumando sus cuentas vivas. */
+    public function outstandingBalance(): float
+    {
+        return (float) $this->receivables()->outstanding()->sum('balance');
+    }
+
     public function warranties(): HasMany
     {
         return $this->hasMany(Warranty::class);

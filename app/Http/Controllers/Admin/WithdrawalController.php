@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\GuardsClosedCashShifts;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\WithdrawalRequest;
 use App\Models\CashShift;
@@ -12,6 +13,8 @@ use Inertia\Response;
 
 class WithdrawalController extends Controller
 {
+    use GuardsClosedCashShifts;
+
     public function index(): Response
     {
         return Inertia::render('admin/withdrawals/index', [
@@ -36,8 +39,12 @@ class WithdrawalController extends Controller
         return redirect()->route('admin.withdrawals.index')->with('success', 'Retiro registrado.');
     }
 
-    public function edit(Withdrawal $withdrawal): Response
+    public function edit(Withdrawal $withdrawal): Response|\Illuminate\Http\RedirectResponse
     {
+        if ($error = $this->closedShiftError($withdrawal)) {
+            return redirect()->route("admin.withdrawals.index")->withErrors(["status" => $error]);
+        }
+
         return Inertia::render('admin/withdrawals/edit', [
             'withdrawal' => $withdrawal,
             'openShifts' => CashShift::where('status', 'open')
@@ -48,6 +55,10 @@ class WithdrawalController extends Controller
 
     public function update(WithdrawalRequest $request, Withdrawal $withdrawal)
     {
+        if ($error = $this->closedShiftError($withdrawal)) {
+            return back()->withErrors(['status' => $error]);
+        }
+
         $withdrawal->update($request->validated());
         return redirect()->route('admin.withdrawals.index')->with('success', 'Retiro actualizado.');
     }

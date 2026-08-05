@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\StoreStock;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class SaleService
@@ -235,6 +236,8 @@ class SaleService
                 Promotion::find($sale->promotion_id)?->decrementUsage();
             }
 
+            $this->cancelReceivables($sale);
+
             $sale->update([
                 'status'               => 'cancelled',
                 'cancellation_reason'  => $reason ?: null,
@@ -244,6 +247,33 @@ class SaleService
 
             return $sale;
         });
+    }
+
+    /**
+     * Anula las cuentas por cobrar de una venta anulada: si la venta ya no existe,
+     * la deuda que generó tampoco. Las que tienen cobros registrados se dejan
+     * intactas, porque ese dinero sí entró y debe resolverse como devolución.
+     */
+    private function cancelReceivables(Sale $sale): void
+    {
+        $sale->loadMissing('receivables');
+
+        foreach ($sale->receivables as $receivable) {
+            if (in_array($receivable->status, ['paid', 'cancelled'], true)) {
+                continue;
+            }
+
+            if ((float) $receivable->amount_paid > 0) {
+                Log::warning('Venta anulada con cobros ya registrados en su cuenta por cobrar', [
+                    'sale_id'       => $sale->id,
+                    'receivable_id' => $receivable->id,
+                    'amount_paid'   => $receivable->amount_paid,
+                ]);
+                continue;
+            }
+
+            $receivable->update(['status' => 'cancelled', 'balance' => 0]);
+        }
     }
 
     /**
