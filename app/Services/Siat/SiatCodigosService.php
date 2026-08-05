@@ -28,13 +28,13 @@ class SiatCodigosService
         $client = $this->clientFor($setting);
 
         $respuesta = $client->call(self::SERVICIO, 'cuis', [
-            'codigoAmbiente'    => $client->codigoAmbiente(),
-            'codigoModalidad'   => (int) $setting->modalidad,
-            'codigoSistema'     => $this->requireCodigoSistema($setting),
-            'codigoSucursal'    => (int) $setting->codigo_sucursal,
-            'codigoPuntoVenta'  => (int) $setting->codigo_punto_venta,
-            'nit'               => (int) $setting->nit,
-        ]);
+            'codigoAmbiente'   => $client->codigoAmbiente(),
+            'codigoModalidad'  => (int) $setting->modalidad,
+            'codigoSistema'    => $this->requireCodigoSistema($setting),
+            'codigoSucursal'   => (int) $setting->codigo_sucursal,
+            'codigoPuntoVenta' => (int) $setting->codigo_punto_venta,
+            'nit'              => (int) $setting->nit,
+        ], envoltura: 'SolicitudCuis');
 
         $this->assertTransaccion($respuesta, 'solicitud de CUIS');
 
@@ -70,7 +70,9 @@ class SiatCodigosService
 
         $client = $this->clientFor($setting);
 
-        $respuesta = $client->call(self::SERVICIO, 'solicitudCufd', [
+        // La operación se llama "cufd" en el WSDL, no "solicitudCufd" como la
+        // titula la documentación.
+        $respuesta = $client->call(self::SERVICIO, 'cufd', [
             'codigoAmbiente'   => $client->codigoAmbiente(),
             'codigoModalidad'  => (int) $setting->modalidad,
             'codigoSistema'    => $this->requireCodigoSistema($setting),
@@ -78,7 +80,7 @@ class SiatCodigosService
             'codigoPuntoVenta' => (int) $setting->codigo_punto_venta,
             'cuis'             => $setting->cuis,
             'nit'              => (int) $setting->nit,
-        ]);
+        ], envoltura: 'SolicitudCufd');
 
         $this->assertTransaccion($respuesta, 'solicitud de CUFD');
 

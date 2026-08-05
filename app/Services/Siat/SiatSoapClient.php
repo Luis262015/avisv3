@@ -49,16 +49,18 @@ class SiatSoapClient
      * Llama a una operación y devuelve la respuesta como array.
      *
      * @param  array<string, mixed>  $parametros
+     * @param  string|null  $envoltura  Nombre del objeto de solicitud que espera el
+     *                                  WSDL (p. ej. "SolicitudCuis"). Varía por
+     *                                  operación; sin él, los parámetros van sueltos.
      * @return array<string, mixed>
      */
-    public function call(string $servicio, string $operacion, array $parametros = []): array
+    public function call(string $servicio, string $operacion, array $parametros = [], ?string $envoltura = null): array
     {
         $client = $this->clientFor($servicio);
 
         try {
-            // El SIN envuelve los parámetros en un objeto de solicitud.
             $respuesta = $client->__soapCall($operacion, [
-                ['SolicitudTecnica' => $parametros],
+                $envoltura ? [$envoltura => $parametros] : $parametros,
             ]);
         } catch (\SoapFault $e) {
             Log::error('SIAT: fallo SOAP', [
@@ -111,7 +113,7 @@ class SiatSoapClient
 
         $context = stream_context_create([
             'http' => [
-                'header'  => "Authorization: Token {$token}",
+                'header'  => implode("\r\n", $this->authHeaders($token)),
                 'timeout' => (int) config('siat.timeout'),
             ],
         ]);
@@ -132,6 +134,23 @@ class SiatSoapClient
         } catch (\SoapFault $e) {
             throw new SiatException($this->describeWsdlFailure($servicio, $wsdl, $e), previous: $e);
         }
+    }
+
+    /**
+     * Cabeceras de autenticación, en la cabecera HTTP y no en la XML del SOAP.
+     *
+     * La v2 de los servicios responde "EL SERVICIO REQUIERE API KEY" si solo se
+     * envía `Authorization`: espera `apikey: TokenApi <token>`. Se mandan ambas
+     * para seguir siendo compatibles con la v1.
+     *
+     * @return list<string>
+     */
+    private function authHeaders(string $token): array
+    {
+        return [
+            "apikey: TokenApi {$token}",
+            "Authorization: Token {$token}",
+        ];
     }
 
     /**
@@ -197,10 +216,14 @@ class SiatSoapClient
     {
         $array = json_decode(json_encode($respuesta), true) ?? [];
 
-        // El SIN devuelve la carga bajo distintos nombres según la operación.
-        foreach (['RespuestaCuis', 'RespuestaCufd', 'RespuestaServicioFacturacion', 'return'] as $envoltura) {
-            if (isset($array[$envoltura]) && is_array($array[$envoltura])) {
-                return $array[$envoltura];
+        // El SIN devuelve la carga bajo un nombre distinto por operación
+        // (RespuestaCuis, RespuestaCufd, RespuestaComunicacion…); si solo hay una
+        // clave envolvente, se devuelve su contenido.
+        if (count($array) === 1) {
+            $unico = reset($array);
+
+            if (is_array($unico)) {
+                return $unico;
             }
         }
 

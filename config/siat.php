@@ -34,7 +34,7 @@ return [
     /*
     | Servicios publicados. La ruta completa se arma como {host}/{version}/{servicio}?wsdl
     */
-    'version' => env('SIAT_API_VERSION', 'v1'),
+    'version' => env('SIAT_API_VERSION', 'v2'),
 
     'servicios' => [
         'codigos'        => 'FacturacionCodigos',
