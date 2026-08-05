@@ -16,6 +16,9 @@ class SiatSettingRequest extends FormRequest
         return [
             'store_id'              => ['required', 'exists:stores,id'],
             'nit'                   => ['required', 'string', 'max:13', 'regex:/^\d+$/'],
+            // Obligatorio para operar contra el SIN: lo asigna al autorizar el
+            // Sistema Informático de Facturación.
+            'codigo_sistema'        => ['nullable', 'string', 'max:100', 'required_unless:ambiente,simulado'],
             'razon_social'          => ['required', 'string', 'max:150'],
             'municipio'             => ['required', 'string', 'max:100'],
             'telefono'              => ['nullable', 'string', 'max:30'],

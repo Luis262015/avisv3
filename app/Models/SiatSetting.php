@@ -11,6 +11,7 @@ class SiatSetting extends Model
     protected $fillable = [
         'store_id',
         'nit',
+        'codigo_sistema',
         'razon_social',
         'municipio',
         'telefono',
@@ -25,6 +26,7 @@ class SiatSetting extends Model
         'tipo_factura_default',
         'cuis',
         'cuis_fecha_solicitud',
+        'cuis_fecha_vigencia',
         'token_api',
         'is_active',
     ];
@@ -58,6 +60,7 @@ class SiatSetting extends Model
     protected $casts = [
         'is_active'            => 'boolean',
         'cuis_fecha_solicitud' => 'datetime',
+        'cuis_fecha_vigencia'  => 'datetime',
         'modalidad'            => 'integer',
         'tipo_factura_default' => 'integer',
         'codigo_sucursal'      => 'integer',

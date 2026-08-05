@@ -10,6 +10,7 @@ interface Setting {
     id?: number;
     store_id: number | string;
     nit: string;
+    codigo_sistema: string;
     razon_social: string;
     municipio: string;
     telefono: string;
@@ -31,7 +32,7 @@ interface Setting {
 }
 
 const defaults: Setting = {
-    store_id: '', nit: '', razon_social: '', municipio: '', telefono: '', direccion: '',
+    store_id: '', nit: '', codigo_sistema: '', razon_social: '', municipio: '', telefono: '', direccion: '',
     actividad_economica: '', actividad_descripcion: '', codigo_sucursal: 0, codigo_punto_venta: 0,
     nombre_punto_venta: 'Principal', modalidad: 2, ambiente: 'simulado', tipo_factura_default: 2,
     cuis: '', token_api: '', is_active: true,
@@ -117,6 +118,7 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
                         <h2 className="font-semibold text-gray-700">Datos del Emisor (SIN Bolivia)</h2>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             {field('NIT Emisor', 'nit', { hint: '13 dígitos registrados en el SIN', required: true })}
+                            {field('Código de Sistema', 'codigo_sistema', { hint: 'Asignado por el SIN al autorizar el sistema de facturación', required: false })}
                             {field('Razón Social', 'razon_social', { required: true })}
                             {field('Municipio', 'municipio', { required: true })}
                             {field('Teléfono', 'telefono', { required: false })}

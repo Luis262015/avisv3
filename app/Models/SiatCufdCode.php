@@ -12,6 +12,7 @@ class SiatCufdCode extends Model
         'store_id',
         'codigo',
         'codigo_control',
+        'direccion',
         'fecha_vigencia',
         'consecutivo',
         'estado',

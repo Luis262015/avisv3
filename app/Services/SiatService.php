@@ -6,12 +6,19 @@ use App\Models\Sale;
 use App\Models\SiatCufdCode;
 use App\Models\SiatInvoice;
 use App\Models\SiatSetting;
+use App\Services\Siat\CufGenerator;
+use App\Services\Siat\SiatCodigosService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SiatService
 {
+    public function __construct(
+        private readonly SiatCodigosService $codigos,
+        private readonly CufGenerator $cufGenerator,
+    ) {}
+
     // ─── Tipos de documento de identidad ────────────────────────────────────
     const DOC_CI         = 1;
     const DOC_PASAPORTE  = 2;
@@ -69,14 +76,9 @@ class SiatService
             return $this->createSimulatedCufd($setting);
         }
 
-        // La conexión SOAP al SIN todavía no está implementada. Antes se caía en
-        // silencio al CUFD simulado, produciendo facturas con apariencia legal
-        // pero sin ningún respaldo en Impuestos Nacionales. Es preferible fallar.
-        throw new \RuntimeException(
-            "El ambiente \"{$setting->ambiente_label}\" requiere solicitar el CUFD al SIN, "
-            . 'y esa conexión aún no está implementada. Cambie el ambiente a "Simulado" '
-            . 'para operar sin validez fiscal, o complete la integración con el webservice del SIN.'
-        );
+        // Piloto y producción piden el CUFD real al SIN. Nunca se cae a un CUFD
+        // simulado: eso produciría facturas con apariencia legal y sin respaldo.
+        return $this->codigos->solicitarCufd($setting);
     }
 
     /**
@@ -116,17 +118,19 @@ class SiatService
 
             $metodoPago = $this->mapPaymentMethod($sale->payment_method);
 
-            $cuf = $this->generateCuf(
-                $setting->nit,
-                $fechaEmision,
-                $setting->codigo_sucursal,
-                $setting->codigo_punto_venta,
-                $cufd->codigo,
-                $setting->modalidad,
-                $setting->modalidad, // tipo_emision = modalidad (1 o 2)
-                $tipoFact,
-                1, // tipo doc fiscal: 1 = factura
-                $numero
+            // El CUF se firma con el código de control del CUFD vigente, no con el
+            // CUFD mismo; y el tipo de emisión es independiente de la modalidad.
+            $cuf = $this->cufGenerator->generate(
+                nit: $setting->nit,
+                fechaEmision: $fechaEmision,
+                sucursal: (int) $setting->codigo_sucursal,
+                modalidad: (int) $setting->modalidad,
+                tipoEmision: CufGenerator::EMISION_ONLINE,
+                tipoFactura: $tipoFact,
+                tipoDocumentoSector: CufGenerator::SECTOR_COMPRA_VENTA,
+                numeroFactura: $numero,
+                puntoVenta: (int) $setting->codigo_punto_venta,
+                codigoControl: $cufd->codigo_control,
             );
 
             $qr = $this->generateQrContent($setting->ambiente, $setting->nit, $cuf, $numero);
@@ -191,66 +195,21 @@ class SiatService
     }
 
     /**
-     * ⚠️ CUF DE MARCADOR DE POSICIÓN — NO ES EL ALGORITMO OFICIAL DEL SIAT.
+     * Contenido del QR impreso en la representación gráfica.
      *
-     * Produce un identificador único y estable por factura, suficiente para operar
-     * en ambiente "simulado", pero Impuestos Nacionales rechazará estos códigos y
-     * la consulta del QR no encontrará la factura.
+     * @see https://siatinfo.impuestos.gob.bo/index.php/facturacion-en-linea/algoritmos-utilizados/codigo-respuesta-rapida-qr
      *
-     * El CUF real de la especificación SIAT v2 se construye de forma determinista:
-     * concatenación de los campos del encabezado en anchos fijos, dígito verificador
-     * por módulo 11, conversión del conjunto a base 16 y, al final, el código de
-     * control entregado por el SIN junto con el CUFD. Nada de eso es un hash.
-     *
-     * Reemplazar por la implementación oficial antes de emitir en piloto/producción.
+     * @param  int  $tamanio  1 = rollo, 2 = media hoja
      */
-    public function generateCuf(
-        string $nit,
-        Carbon $fechaEmision,
-        int    $sucursal,
-        int    $puntoVenta,
-        string $cufd,
-        int    $modalidad,
-        int    $tipoEmision,
-        int    $tipoFactura,
-        int    $tipoDocFiscal,
-        int    $numero
-    ): string {
-        $base = implode('', [
-            str_pad($nit, 13, '0', STR_PAD_LEFT),
-            $fechaEmision->format('YmdHis'),
-            str_pad((string) $sucursal,    4, '0', STR_PAD_LEFT),
-            str_pad((string) $puntoVenta,  4, '0', STR_PAD_LEFT),
-            str_pad((string) $modalidad,   2, '0', STR_PAD_LEFT),
-            str_pad((string) $tipoEmision, 2, '0', STR_PAD_LEFT),
-            str_pad((string) $tipoFactura, 2, '0', STR_PAD_LEFT),
-            str_pad((string) $tipoDocFiscal, 2, '0', STR_PAD_LEFT),
-            str_pad((string) $numero, 10, '0', STR_PAD_LEFT),
-        ]);
-
-        // HMAC-SHA256 con el CUFD como clave — único por factura
-        $hash = hash_hmac('sha256', $base, substr($cufd, 0, 32));
-
-        // Código de control: 4 hex chars del módulo CRC
-        $codigoControl = substr(strtoupper(dechex(crc32($base))), 0, 4);
-
-        return strtoupper($hash . $codigoControl);
-    }
-
-    /**
-     * Genera el contenido del QR de Bolivia SIAT v2.
-     */
-    public function generateQrContent(string $ambiente, string $nit, string $cuf, int $numero): string
+    public function generateQrContent(string $ambiente, string $nit, string $cuf, int $numero, int $tamanio = 1): string
     {
-        $baseUrl = $ambiente === 'produccion'
-            ? 'https://siat.impuestos.gob.bo/consulta/QR'
-            : 'https://piloto.siat.impuestos.gob.bo/consulta/QR';
+        $baseUrl = config("siat.qr_base.{$ambiente}") ?? config('siat.qr_base.piloto');
 
         return $baseUrl . '?' . http_build_query([
             'nit'    => $nit,
             'cuf'    => $cuf,
-            'tipDoc' => 1,
-            'fecha'  => now()->format('Y-m-d'),
+            'numero' => $numero,
+            't'      => $tamanio,
         ]);
     }
 

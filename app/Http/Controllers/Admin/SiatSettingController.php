@@ -7,6 +7,8 @@ use App\Http\Requests\Admin\SiatSettingRequest;
 use App\Models\SiatCufdCode;
 use App\Models\SiatSetting;
 use App\Models\Store;
+use App\Services\Siat\SiatCodigosService;
+use App\Services\Siat\SiatException;
 use App\Services\SiatService;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -80,12 +82,53 @@ class SiatSettingController extends Controller
     }
 
     /**
-     * Genera un nuevo CUFD (manualmente o desde SIN según ambiente).
+     * Genera un nuevo CUFD (localmente en modo simulado, o pidiéndolo al SIN).
      */
     public function generateCufd(SiatSetting $setting)
     {
-        $cufd = $this->siat->getOrCreateCufd($setting);
-        return back()->with('success', "CUFD generado: válido hasta {$cufd->fecha_vigencia->format('d/m/Y H:i')}");
+        try {
+            $cufd = $this->siat->getOrCreateCufd($setting);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        return back()->with('success', "CUFD obtenido: válido hasta {$cufd->fecha_vigencia->format('d/m/Y H:i')}");
+    }
+
+    /**
+     * Solicita el CUIS al SIN. Es el primer paso: sin CUIS no hay CUFD.
+     */
+    public function requestCuis(SiatSetting $setting, SiatCodigosService $codigos)
+    {
+        if ($setting->ambiente === 'simulado') {
+            return back()->withErrors(['siat' => 'El modo simulado no requiere CUIS.']);
+        }
+
+        try {
+            $cuis = $codigos->solicitarCuis($setting);
+        } catch (SiatException $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'CUIS obtenido correctamente: ' . substr($cuis, 0, 8) . '…');
+    }
+
+    /**
+     * Prueba de conectividad y validez del Token Delegado.
+     */
+    public function testConnection(SiatSetting $setting, SiatCodigosService $codigos)
+    {
+        if ($setting->ambiente === 'simulado') {
+            return back()->withErrors(['siat' => 'El modo simulado no se conecta al SIN.']);
+        }
+
+        try {
+            $codigos->verificarComunicacion($setting);
+        } catch (SiatException $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Comunicación con el SIN verificada correctamente.');
     }
 
     /**

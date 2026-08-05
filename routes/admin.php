@@ -59,6 +59,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 ->name('settings.generate-cufd');
             Route::get('settings/{setting}/cufd-history', [SiatSettingController::class, 'cufdHistory'])
                 ->name('settings.cufd-history');
+            // Alta ante el SIN: primero CUIS, luego CUFD.
+            Route::post('settings/{setting}/request-cuis', [SiatSettingController::class, 'requestCuis'])
+                ->name('settings.request-cuis');
+            Route::post('settings/{setting}/test-connection', [SiatSettingController::class, 'testConnection'])
+                ->name('settings.test-connection');
         });
 
         // ── Recursos Humanos ────────────────────────────────────────────────
