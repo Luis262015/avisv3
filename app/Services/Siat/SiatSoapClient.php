@@ -91,6 +91,15 @@ class SiatSoapClient
             return $this->clients[$servicio];
         }
 
+        // Sin ext-soap la clase no existe y PHP lanzaría un Error fatal, que el
+        // controlador no atrapa y acaba en un 500 sin explicación.
+        if (! class_exists(\SoapClient::class)) {
+            throw new SiatException(
+                'La extensión SOAP de PHP no está habilitada, y los servicios del SIN la requieren. '
+                . 'Habilite "extension=soap" en php.ini y reinicie el servidor web.'
+            );
+        }
+
         $token = $this->setting->token_api;
 
         if (blank($token)) {
@@ -107,8 +116,12 @@ class SiatSoapClient
             ],
         ]);
 
+        $wsdl = $this->wsdlUrl($servicio);
+
         try {
-            return $this->clients[$servicio] = new SoapClient($this->wsdlUrl($servicio), [
+            // Las advertencias de PHP al no alcanzar el WSDL solo añaden ruido:
+            // el SoapFault que viene detrás ya describe el fallo.
+            return $this->clients[$servicio] = @new SoapClient($wsdl, [
                 'stream_context'     => $context,
                 'cache_wsdl'         => WSDL_CACHE_NONE,
                 'compression'        => SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP | SOAP_COMPRESSION_DEFLATE,
@@ -117,11 +130,61 @@ class SiatSoapClient
                 'trace'              => true,
             ]);
         } catch (\SoapFault $e) {
-            throw new SiatException(
-                "No se pudo cargar el WSDL de \"{$servicio}\": {$e->getMessage()}",
-                previous: $e,
-            );
+            throw new SiatException($this->describeWsdlFailure($servicio, $wsdl, $e), previous: $e);
         }
+    }
+
+    /**
+     * "Couldn't load from ... failed to load external entity" no le dice nada a
+     * quien lo lee. Se sondea el endpoint para distinguir un servidor caído de un
+     * problema de credenciales o de red.
+     */
+    private function describeWsdlFailure(string $servicio, string $wsdl, \SoapFault $fault): string
+    {
+        $status = $this->probeStatus($wsdl);
+
+        Log::error('SIAT: no se pudo cargar el WSDL', [
+            'servicio'    => $servicio,
+            'wsdl'        => $wsdl,
+            'http_status' => $status,
+            'mensaje'     => $fault->getMessage(),
+        ]);
+
+        return match (true) {
+            $status === null => "No hay conexión con el servidor del SIN ({$wsdl}). "
+                . 'Verifique la salida a internet del servidor.',
+
+            $status >= 500 => "El servicio del SIN no está disponible en este momento (HTTP {$status}). "
+                . 'Es una caída del lado de Impuestos Nacionales; reintente más tarde.',
+
+            $status === 401 || $status === 403 => "El SIN rechazó la petición (HTTP {$status}). "
+                . 'Revise que el Token Delegado sea el del ambiente correcto y siga vigente.',
+
+            $status === 404 => "El servicio \"{$servicio}\" no existe en esa ruta (HTTP 404). "
+                . 'Revise el nombre del servicio y la versión en config/siat.php.',
+
+            default => "No se pudo cargar el WSDL de \"{$servicio}\" (HTTP {$status}): {$fault->getMessage()}",
+        };
+    }
+
+    /** Código HTTP del endpoint, o null si ni siquiera hubo respuesta. */
+    private function probeStatus(string $url): ?int
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method'        => 'GET',
+                'timeout'       => 10,
+                'ignore_errors' => true,
+            ],
+        ]);
+
+        $headers = @get_headers($url, false, $context);
+
+        if (! $headers || ! preg_match('#HTTP/\S+\s+(\d{3})#', $headers[0], $m)) {
+            return null;
+        }
+
+        return (int) $m[1];
     }
 
     /**
