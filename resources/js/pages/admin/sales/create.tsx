@@ -69,13 +69,24 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
         (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase()))
     ).slice(0, 10);
 
+    // Actualización funcional: dos escaneos seguidos dentro del mismo lote de
+    // render leerían el mismo estado previo y el segundo pisaría al primero.
     const addProduct = (p: Product) => {
-        const exists = data.items.find((i: Item) => i.product_id === p.id);
-        if (exists) {
-            setData('items', data.items.map((i: Item) => i.product_id === p.id ? { ...i, quantity: String(parseFloat(i.quantity) + 1) } : i));
-        } else {
-            setData('items', [...data.items, { product_id: p.id, product_name: p.name, quantity: '1', price: p.price, discount: '0' }]);
-        }
+        setData((prev: any) => {
+            const items: Item[] = prev.items;
+            const exists = items.some((i) => i.product_id === p.id && !i.combo_name);
+
+            return {
+                ...prev,
+                items: exists
+                    ? items.map((i) =>
+                          i.product_id === p.id && !i.combo_name
+                              ? { ...i, quantity: String(parseFloat(i.quantity) + 1) }
+                              : i,
+                      )
+                    : [...items, { product_id: p.id, product_name: p.name, quantity: '1', price: p.price, discount: '0' }],
+            };
+        });
         setSearch('');
     };
 
@@ -107,7 +118,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                 combo_name: combo.name,
             };
         });
-        setData('items', [...data.items, ...newLines]);
+        setData((prev: any) => ({ ...prev, items: [...prev.items, ...newLines] }));
     };
 
     const handleBarcodeScan = (barcode: string): boolean => {

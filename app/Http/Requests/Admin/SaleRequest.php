@@ -12,7 +12,9 @@ class SaleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cash_shift_id'        => ['required', 'exists:cash_shifts,id'],
+            // El turno debe estar abierto: vender contra un turno cerrado descuadra
+            // un arqueo ya calculado.
+            'cash_shift_id'        => ['required', Rule::exists('cash_shifts', 'id')->where('status', 'open')],
             'customer_id'          => ['nullable', 'exists:customers,id'],
             'promotion_id'         => ['nullable', 'exists:promotions,id'],
             'discount'             => ['nullable', 'numeric', 'min:0'],
@@ -25,6 +27,13 @@ class SaleRequest extends FormRequest
             'items.*.quantity'     => ['required', 'numeric', 'min:0.01'],
             'items.*.price'        => ['required', 'numeric', 'min:0'],
             'items.*.discount'     => ['nullable', 'numeric', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'cash_shift_id.exists' => 'El turno de caja seleccionado no está abierto.',
         ];
     }
 }

@@ -23,9 +23,10 @@ class SaleService
     {
         return DB::transaction(function () use ($shift, $data, $items) {
             $shift->load('cashRegister');
-            $storeId = $shift->cashRegister->store_id;
+            $storeId  = $shift->cashRegister->store_id;
+            $products = $this->loadProducts($items);
 
-            $this->validateStock($items, $storeId);
+            $this->validateStock($items, $products, $storeId);
 
             $subtotal = collect($items)->sum(fn($i) => $i['quantity'] * $i['price'] - ($i['discount'] ?? 0));
             $tax      = $data['tax'] ?? 0;
@@ -41,7 +42,7 @@ class SaleService
                 'user_id'        => Auth::id(),
                 'customer_id'    => $data['customer_id'] ?? null,
                 'promotion_id'   => $promotionId,
-                'folio'          => $this->generateFolio(),
+                'folio'          => Sale::nextFolio(),
                 'subtotal'       => $subtotal,
                 'tax'            => $tax,
                 'discount'       => $discount,
@@ -66,7 +67,7 @@ class SaleService
                     'subtotal'   => $item['quantity'] * $item['price'] - ($item['discount'] ?? 0),
                 ]);
 
-                $product = Product::find($item['product_id']);
+                $product = $products[$item['product_id']];
                 if ($product->track_inventory) {
                     $this->inventory->recordMovement(
                         $product,
@@ -85,18 +86,41 @@ class SaleService
 
     public function update(Sale $sale, array $data, array $items): Sale
     {
+        $sale->load(['items.product', 'cashShift.cashRegister', 'siatInvoice']);
+
+        if ($sale->status === 'cancelled') {
+            throw ValidationException::withMessages([
+                'status' => 'No se puede editar una venta cancelada.',
+            ]);
+        }
+
+        // Una factura electrónica emitida ya fue declarada al SIAT con estos importes;
+        // cambiarlos por detrás dejaría la venta y la factura contradiciéndose.
+        if ($sale->siatInvoice && $sale->siatInvoice->estado !== 'anulada') {
+            throw ValidationException::withMessages([
+                'status' => 'Esta venta tiene una factura electrónica emitida. Anule la factura antes de editarla.',
+            ]);
+        }
+
+        // El turno cerrado ya tiene su arqueo calculado; cambiar importes lo descuadra.
+        if (! $sale->cashShift->isOpen()) {
+            throw ValidationException::withMessages([
+                'status' => 'El turno de caja de esta venta ya está cerrado. Solo puede anularse.',
+            ]);
+        }
+
+        // Reescribir las líneas invalidaría las devoluciones que apuntan a ellas.
+        if ($sale->returns()->whereIn('status', ['pending', 'approved', 'completed'])->exists()) {
+            throw ValidationException::withMessages([
+                'status' => 'Esta venta tiene devoluciones registradas y ya no puede editarse.',
+            ]);
+        }
+
         return DB::transaction(function () use ($sale, $data, $items) {
-            $sale->load(['items.product', 'cashShift.cashRegister']);
+            $storeId  = $sale->cashShift->cashRegister->store_id;
+            $products = $this->loadProducts($items);
 
-            if ($sale->status === 'cancelled') {
-                throw ValidationException::withMessages([
-                    'status' => 'No se puede editar una venta cancelada.',
-                ]);
-            }
-
-            $storeId = $sale->cashShift->cashRegister->store_id;
-
-            $this->validateStockForUpdate($sale, $items, $storeId);
+            $this->validateStockForUpdate($sale, $items, $products, $storeId);
 
             foreach ($sale->items as $oldItem) {
                 if ($oldItem->product->track_inventory) {
@@ -127,7 +151,7 @@ class SaleService
                     'subtotal'   => $lineSubtotal,
                 ]);
 
-                $product = Product::find($item['product_id']);
+                $product = $products[$item['product_id']];
                 if ($product->track_inventory) {
                     $this->inventory->recordMovement(
                         $product,
@@ -182,17 +206,33 @@ class SaleService
 
             $storeId = $sale->cashShift->cashRegister->store_id;
 
+            // Lo ya repuesto por devoluciones completadas no se devuelve otra vez.
+            $alreadyRestocked = $sale->restockedQuantitiesByItem();
+
             foreach ($sale->items as $item) {
-                if ($item->product->track_inventory) {
-                    $this->inventory->recordMovement(
-                        $item->product,
-                        'return',
-                        $item->quantity,
-                        $sale,
-                        "Cancelación de venta #{$sale->folio}",
-                        $storeId
-                    );
+                if (! $item->product->track_inventory) {
+                    continue;
                 }
+
+                $pending = (float) $item->quantity - (float) ($alreadyRestocked[$item->id] ?? 0);
+
+                if ($pending <= 0) {
+                    continue;
+                }
+
+                $this->inventory->recordMovement(
+                    $item->product,
+                    'return',
+                    $pending,
+                    $sale,
+                    "Cancelación de venta #{$sale->folio}",
+                    $storeId
+                );
+            }
+
+            // Una venta anulada no debe seguir consumiendo el cupo de la promoción.
+            if ($sale->promotion_id) {
+                Promotion::find($sale->promotion_id)?->decrementUsage();
             }
 
             $sale->update([
@@ -206,19 +246,52 @@ class SaleService
         });
     }
 
-    private function validateStock(array $items, int $storeId): void
+    /**
+     * Carga de una sola vez los productos del carrito. Antes cada línea disparaba
+     * su propio Product::find dentro del bucle (N+1 en la ruta más caliente del POS).
+     *
+     * @return \Illuminate\Support\Collection<int, Product>
+     */
+    private function loadProducts(array $items): \Illuminate\Support\Collection
     {
+        return Product::whereIn('id', collect($items)->pluck('product_id')->unique())
+            ->get()
+            ->keyBy('id');
+    }
+
+    /**
+     * Suma las cantidades por producto antes de comparar: un mismo producto puede
+     * venir en varias líneas del carrito y validarlas por separado dejaba pasar
+     * ventas por encima del stock disponible.
+     *
+     * @return array<int, float>
+     */
+    private function quantitiesByProduct(array $items): array
+    {
+        $totals = [];
+
         foreach ($items as $item) {
-            $product = Product::find($item['product_id']);
+            $id = (int) $item['product_id'];
+            $totals[$id] = ($totals[$id] ?? 0) + (float) $item['quantity'];
+        }
+
+        return $totals;
+    }
+
+    private function validateStock(array $items, \Illuminate\Support\Collection $products, int $storeId): void
+    {
+        foreach ($this->quantitiesByProduct($items) as $productId => $quantity) {
+            $product = $products[$productId];
+
             if (! $product->track_inventory) {
                 continue;
             }
 
-            $available = StoreStock::where('store_id', $storeId)
-                ->where('product_id', $product->id)
-                ->value('stock') ?? 0;
+            $available = (float) (StoreStock::where('store_id', $storeId)
+                ->where('product_id', $productId)
+                ->value('stock') ?? 0);
 
-            if ($available < $item['quantity']) {
+            if ($available < $quantity) {
                 throw ValidationException::withMessages([
                     'items' => "Stock insuficiente para \"{$product->name}\" en esta tienda. Disponible: {$available}",
                 ]);
@@ -226,25 +299,27 @@ class SaleService
         }
     }
 
-    private function validateStockForUpdate(Sale $sale, array $items, int $storeId): void
+    private function validateStockForUpdate(Sale $sale, array $items, \Illuminate\Support\Collection $products, int $storeId): void
     {
-        $oldByProduct = $sale->items->keyBy('product_id');
+        $oldByProduct = $sale->items->groupBy('product_id');
 
-        foreach ($items as $item) {
-            $product = Product::find($item['product_id']);
-            if (! $product?->track_inventory) {
+        foreach ($this->quantitiesByProduct($items) as $productId => $quantity) {
+            $product = $products[$productId];
+
+            if (! $product->track_inventory) {
                 continue;
             }
 
-            $returning = (float) ($oldByProduct->get($item['product_id'])?->quantity ?? 0);
+            // Lo que la venta actual ya había descontado vuelve a estar disponible.
+            $returning = (float) ($oldByProduct->get($productId)?->sum('quantity') ?? 0);
 
-            $storeStock = StoreStock::where('store_id', $storeId)
-                ->where('product_id', $product->id)
-                ->value('stock') ?? 0;
+            $storeStock = (float) (StoreStock::where('store_id', $storeId)
+                ->where('product_id', $productId)
+                ->value('stock') ?? 0);
 
             $available = $storeStock + $returning;
 
-            if ($available < $item['quantity']) {
+            if ($available < $quantity) {
                 throw ValidationException::withMessages([
                     'items' => "Stock insuficiente para \"{$product->name}\" en esta tienda. Disponible: {$available}",
                 ]);
@@ -293,9 +368,4 @@ class SaleService
         ])->all();
     }
 
-    private function generateFolio(): string
-    {
-        $last = Sale::max('id') ?? 0;
-        return 'V-' . str_pad($last + 1, 6, '0', STR_PAD_LEFT);
-    }
 }

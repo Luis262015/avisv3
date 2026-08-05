@@ -29,6 +29,32 @@ class SiatSetting extends Model
         'is_active',
     ];
 
+    /**
+     * Credenciales del SIN: nunca deben viajar al navegador. Sin esto, index()
+     * y edit() las serializaban dentro de las props de Inertia, dejando el token
+     * delegado incrustado en el HTML de la página de configuración.
+     */
+    protected $hidden = [
+        'token_api',
+        'cuis',
+    ];
+
+    /** Indicadores seguros para la UI, en lugar del valor de la credencial. */
+    protected $appends = [
+        'has_token_api',
+        'has_cuis',
+    ];
+
+    public function getHasTokenApiAttribute(): bool
+    {
+        return filled($this->token_api);
+    }
+
+    public function getHasCuisAttribute(): bool
+    {
+        return filled($this->cuis);
+    }
+
     protected $casts = [
         'is_active'            => 'boolean',
         'cuis_fecha_solicitud' => 'datetime',

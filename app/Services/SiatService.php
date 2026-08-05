@@ -69,9 +69,14 @@ class SiatService
             return $this->createSimulatedCufd($setting);
         }
 
-        // TODO: conectar a SIN SOAP API para obtener CUFD real
-        // return $this->requestCufdFromSin($setting);
-        return $this->createSimulatedCufd($setting);
+        // La conexión SOAP al SIN todavía no está implementada. Antes se caía en
+        // silencio al CUFD simulado, produciendo facturas con apariencia legal
+        // pero sin ningún respaldo en Impuestos Nacionales. Es preferible fallar.
+        throw new \RuntimeException(
+            "El ambiente \"{$setting->ambiente_label}\" requiere solicitar el CUFD al SIN, "
+            . 'y esa conexión aún no está implementada. Cambie el ambiente a "Simulado" '
+            . 'para operar sin validez fiscal, o complete la integración con el webservice del SIN.'
+        );
     }
 
     /**
@@ -167,8 +172,15 @@ class SiatService
         $setting = $this->getActiveSetting($invoice->store_id);
 
         if ($setting && $setting->ambiente !== 'simulado') {
-            // TODO: llamar SIN SOAP para anular
-            // $this->requestAnulacionSin($invoice, $setting, $motivo);
+            // La anulación ante el SIN no está implementada. Se deja constancia de
+            // que la factura queda anulada solo en el sistema local, para que la
+            // regularización ante Impuestos no se dé por hecha.
+            Log::warning('SIAT: anulación local sin notificar al SIN', [
+                'invoice_id'     => $invoice->id,
+                'numero_factura' => $invoice->numero_factura,
+                'ambiente'       => $setting->ambiente,
+                'motivo'         => $motivo,
+            ]);
         }
 
         $invoice->update([
@@ -179,10 +191,18 @@ class SiatService
     }
 
     /**
-     * Genera el CUF (Código Único de Factura) según especificación Bolivia SIAT v2.
+     * ⚠️ CUF DE MARCADOR DE POSICIÓN — NO ES EL ALGORITMO OFICIAL DEL SIAT.
      *
-     * El algoritmo combina los campos del encabezado con HMAC-SHA256 usando el CUFD
-     * como clave. En producción con SIN, el CUF se valida contra la firma digital del CUFD.
+     * Produce un identificador único y estable por factura, suficiente para operar
+     * en ambiente "simulado", pero Impuestos Nacionales rechazará estos códigos y
+     * la consulta del QR no encontrará la factura.
+     *
+     * El CUF real de la especificación SIAT v2 se construye de forma determinista:
+     * concatenación de los campos del encabezado en anchos fijos, dígito verificador
+     * por módulo 11, conversión del conjunto a base 16 y, al final, el código de
+     * control entregado por el SIN junto con el CUFD. Nada de eso es un hash.
+     *
+     * Reemplazar por la implementación oficial antes de emitir en piloto/producción.
      */
     public function generateCuf(
         string $nit,

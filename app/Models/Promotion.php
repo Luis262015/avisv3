@@ -100,6 +100,14 @@ class Promotion extends Model
         return true;
     }
 
+    /** Libera el uso al anularse la venta que la consumió; nunca baja de cero. */
+    public function decrementUsage(): void
+    {
+        if ((int) $this->used_count > 0) {
+            $this->decrement('used_count');
+        }
+    }
+
     public function incrementUsage(): void
     {
         $this->increment('used_count');

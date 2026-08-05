@@ -40,6 +40,14 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
     const [lastBarcode, setLastBarcode] = useState('');
     const [cameraError, setCameraError] = useState('');
 
+    // El efecto que arranca la cámara corre una sola vez, así que capturaría el
+    // onScan del primer render — junto con el carrito vacío que tenía en ese
+    // momento. Mantenerlo en un ref hace que cada lectura use la versión actual.
+    const onScanRef = useRef(onScan);
+    useEffect(() => {
+        onScanRef.current = onScan;
+    });
+
     useEffect(() => {
         mountedRef.current = true;
 
@@ -68,7 +76,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
                         const barcode = result.getText();
                         setLastBarcode(barcode);
 
-                        const found = onScan(barcode);
+                        const found = onScanRef.current(barcode);
                         setStatus(found ? 'found' : 'not_found');
                         playBeep(found);
 

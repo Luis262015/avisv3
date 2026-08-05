@@ -157,12 +157,17 @@ class SiatInvoiceController extends Controller
         }
 
         $setting = $this->siat->getActiveSetting($siatInvoice->store_id);
+
         if (! $setting || $setting->ambiente === 'simulado') {
-            return back()->with('success', 'Factura marcada como enviada (modo simulado).');
+            $siatInvoice->update(['estado' => 'enviada', 'enviado_at' => now(), 'mensaje_error' => null]);
+            return back()->with('success', 'Factura marcada como enviada (modo simulado, sin validez fiscal).');
         }
 
-        // TODO: llamar a SIN
-        $siatInvoice->update(['estado' => 'enviada', 'enviado_at' => now(), 'mensaje_error' => null]);
-        return back()->with('success', 'Factura reenviada a SIN.');
+        // Antes se marcaba 'enviada' sin enviar nada: el listado mostraba como
+        // declaradas al SIN facturas que nunca salieron del sistema.
+        return back()->withErrors([
+            'siat' => 'El envío al webservice del SIN aún no está implementado. '
+                    . 'La factura sigue pendiente y no ha sido declarada a Impuestos Nacionales.',
+        ]);
     }
 }

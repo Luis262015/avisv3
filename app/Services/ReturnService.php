@@ -15,6 +15,12 @@ class ReturnService
 
     public function create(Sale $sale, array $data, array $items): SaleReturn
     {
+        if ($sale->status === 'cancelled') {
+            throw ValidationException::withMessages([
+                'sale' => 'No se puede devolver contra una venta anulada; su stock ya fue repuesto.',
+            ]);
+        }
+
         return DB::transaction(function () use ($sale, $data, $items) {
             $sale->load('items');
             $this->validateQuantities($sale, $items);
@@ -99,6 +105,14 @@ class ReturnService
             if ($return->restock) {
                 $storeId = $return->sale->cashShift->cashRegister->store_id ?? null;
 
+                // Sin tienda el movimiento entra por la vía global y queda pisado
+                // al recalcularse product.stock como suma de las tiendas.
+                if (! $storeId) {
+                    throw new \RuntimeException(
+                        'La venta de origen no tiene tienda asociada; no se puede reponer el stock.'
+                    );
+                }
+
                 foreach ($return->items as $item) {
                     $product = $item->product;
                     if ($product && $product->track_inventory) {
@@ -120,23 +134,57 @@ class ReturnService
         });
     }
 
+    /**
+     * Valida contra el saldo devolvible real: lo vendido menos lo ya comprometido
+     * en devoluciones anteriores. Comparar solo contra lo vendido permitía devolver
+     * la misma unidad en varias devoluciones e inflar el stock.
+     */
     private function validateQuantities(Sale $sale, array $items): void
     {
-        $soldById = $sale->items->keyBy('id');
+        $soldById       = $sale->items->keyBy('id');
+        $alreadyReturned = $sale->returnedQuantitiesByItem();
 
         foreach ($items as $item) {
-            if (($item['quantity'] ?? 0) <= 0) {
+            $quantity = (float) ($item['quantity'] ?? 0);
+
+            if ($quantity <= 0 || empty($item['sale_item_id'])) {
                 continue;
             }
-            if (! empty($item['sale_item_id'])) {
-                $saleItem = $soldById->get($item['sale_item_id']);
-                if ($saleItem && $item['quantity'] > (float) $saleItem->quantity) {
-                    $product = Product::find($saleItem->product_id);
-                    throw ValidationException::withMessages([
-                        'items' => "La cantidad a devolver de \"{$product?->name}\" supera lo vendido ({$saleItem->quantity}).",
-                    ]);
-                }
+
+            $saleItem = $soldById->get($item['sale_item_id']);
+
+            if (! $saleItem) {
+                throw ValidationException::withMessages([
+                    'items' => 'Una de las líneas a devolver no pertenece a esta venta.',
+                ]);
+            }
+
+            $returned  = (float) ($alreadyReturned[$saleItem->id] ?? 0);
+            $available = (float) $saleItem->quantity - $returned;
+
+            if ($quantity > $available) {
+                $product = Product::find($saleItem->product_id);
+                $message = $returned > 0
+                    ? sprintf(
+                        'De "%s" quedan %s por devolver: se vendieron %s y ya hay %s en devoluciones.',
+                        $product?->name,
+                        $this->trim($available),
+                        $this->trim((float) $saleItem->quantity),
+                        $this->trim($returned)
+                    )
+                    : sprintf(
+                        'La cantidad a devolver de "%s" supera lo vendido (%s).',
+                        $product?->name,
+                        $this->trim((float) $saleItem->quantity)
+                    );
+
+                throw ValidationException::withMessages(['items' => $message]);
             }
         }
+    }
+
+    private function trim(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 }

@@ -56,7 +56,19 @@ class SiatSettingController extends Controller
 
     public function update(SiatSettingRequest $request, SiatSetting $setting)
     {
-        $setting->update($request->validated());
+        $data = $request->validated();
+
+        // El formulario ya no recibe las credenciales (van ocultas), así que llegan
+        // vacías salvo que el usuario escriba una nueva. Dejarlas pasar en blanco
+        // borraría el token y el CUIS ya guardados.
+        foreach (['token_api', 'cuis'] as $secret) {
+            if (blank($data[$secret] ?? null)) {
+                unset($data[$secret]);
+            }
+        }
+
+        $setting->update($data);
+
         return redirect()->route('admin.siat.settings.index')
             ->with('success', 'Configuración SIAT actualizada.');
     }

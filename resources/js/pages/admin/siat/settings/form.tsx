@@ -25,6 +25,9 @@ interface Setting {
     cuis: string;
     token_api: string;
     is_active: boolean;
+    // El backend no devuelve las credenciales, solo si están cargadas.
+    has_cuis?: boolean;
+    has_token_api?: boolean;
 }
 
 const defaults: Setting = {
@@ -36,7 +39,31 @@ const defaults: Setting = {
 
 export default function SiatSettingForm({ setting, stores }: { setting: Setting | null; stores: Store[] }) {
     const isEdit = !!setting?.id;
-    const { data, setData, post, put, processing, errors } = useForm<Setting>(setting ?? defaults);
+    // Las credenciales llegan vacías a propósito; dejarlas en blanco al guardar
+    // conserva las que ya están almacenadas.
+    const { data, setData, post, put, processing, errors } = useForm<Setting>(
+        setting ? { ...setting, cuis: '', token_api: '' } : defaults,
+    );
+
+    const secretField = (label: string, name: 'cuis' | 'token_api', stored: boolean, hint: string) => (
+        <div>
+            <Label>{label}</Label>
+            <p className="text-xs text-gray-400 mb-1">
+                {stored
+                    ? 'Ya hay un valor guardado. Déjalo en blanco para conservarlo, o escribe uno nuevo para reemplazarlo.'
+                    : hint}
+            </p>
+            <Input
+                type="password"
+                autoComplete="new-password"
+                placeholder={stored ? '•••••••• (guardado)' : ''}
+                value={String(data[name] ?? '')}
+                onChange={(e) => setData(name, e.target.value)}
+                className={errors[name] ? 'border-red-500' : ''}
+            />
+            {errors[name] && <p className="mt-1 text-xs text-red-500">{errors[name]}</p>}
+        </div>
+    );
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -139,8 +166,8 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {field('CUIS (Código Único Inicio Sistema)', 'cuis', { required: false, hint: 'Obtenido del portal SIN' })}
-                            {field('Token API SIN', 'token_api', { required: false, hint: 'Para conexión a webservice SIN' })}
+                            {secretField('CUIS (Código Único Inicio Sistema)', 'cuis', !!setting?.has_cuis, 'Obtenido del portal SIN')}
+                            {secretField('Token API SIN', 'token_api', !!setting?.has_token_api, 'Token delegado para el webservice del SIN')}
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="is_active" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} />
