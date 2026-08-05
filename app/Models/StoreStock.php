@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StoreStock extends Model
 {
+    /**
+     * La convención de Eloquent resolvería 'store_stocks', que no existe:
+     * la migración crea 'store_product_stocks'.
+     */
+    protected $table = 'store_product_stocks';
+
     protected $fillable = ['store_id', 'product_id', 'stock'];
 
     public function store(): BelongsTo

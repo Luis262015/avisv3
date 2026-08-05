@@ -107,6 +107,14 @@ class PurchaseOrderService
             throw new \RuntimeException('Solo órdenes confirmadas o enviadas pueden convertirse en compra.');
         }
 
+        if ($order->purchases()->where('status', '!=', 'cancelled')->exists()) {
+            throw new \RuntimeException('Esta orden ya tiene una compra asociada.');
+        }
+
+        if (! $order->store_id) {
+            throw new \RuntimeException('La orden no tiene tienda asignada; asígnela antes de convertirla en compra.');
+        }
+
         return DB::transaction(function () use ($order) {
             $order->load('items');
 
@@ -134,7 +142,9 @@ class PurchaseOrderService
                 ]);
             }
 
-            $order->update(['status' => 'received']);
+            // La orden queda "en curso": pasa a 'received' recién cuando la compra
+            // se recibe de verdad (PurchaseService::syncPurchaseOrder).
+            $order->update(['status' => 'partial']);
 
             return $purchase;
         });
@@ -145,6 +155,11 @@ class PurchaseOrderService
         if ($order->status === 'cancelled') {
             throw new \RuntimeException('La orden ya está cancelada.');
         }
+
+        if ($order->purchases()->where('status', '!=', 'cancelled')->exists()) {
+            throw new \RuntimeException('No se puede cancelar: la orden tiene una compra asociada. Cancele primero la compra.');
+        }
+
         $order->update(['status' => 'cancelled']);
         return $order;
     }

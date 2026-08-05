@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\PayablePayment;
-use App\Observers\PayablePaymentObserver;
+use App\Models\Payable;
+use App\Observers\PayableObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -12,6 +12,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        PayablePayment::observe(PayablePaymentObserver::class);
+        Payable::observe(PayableObserver::class);
     }
 }

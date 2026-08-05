@@ -82,18 +82,29 @@ class PurchaseReportService
     {
         return Purchase::query()
             ->select(
-                'supplier_id',
+                'purchases.supplier_id',
                 DB::raw('COUNT(*) as total_orders'),
-                DB::raw("SUM(CASE WHEN status = 'received' THEN 1 ELSE 0 END) as completed_orders"),
-                DB::raw("SUM(CASE WHEN payment_status = 'paid' THEN 1 ELSE 0 END) as paid_orders"),
-                DB::raw('SUM(total) as total_amount'),
-                DB::raw("SUM(CASE WHEN payment_status = 'unpaid' THEN total ELSE 0 END) as unpaid_amount")
+                DB::raw("SUM(CASE WHEN purchases.status = 'received' THEN 1 ELSE 0 END) as completed_orders"),
+                DB::raw("SUM(CASE WHEN purchases.payment_status = 'paid' THEN 1 ELSE 0 END) as paid_orders"),
+                DB::raw('SUM(purchases.total) as total_amount'),
+                DB::raw("SUM(CASE WHEN purchases.payment_status = 'unpaid' THEN purchases.total ELSE 0 END) as unpaid_amount"),
+                // Entregas puntuales: recibidas en o antes de la fecha esperada de la OC.
+                DB::raw('SUM(CASE WHEN purchase_orders.expected_date IS NOT NULL
+                                   AND purchases.received_at IS NOT NULL THEN 1 ELSE 0 END) as measurable_deliveries'),
+                DB::raw('SUM(CASE WHEN purchase_orders.expected_date IS NOT NULL
+                                   AND purchases.received_at IS NOT NULL
+                                   AND purchases.received_at <= purchase_orders.expected_date
+                              THEN 1 ELSE 0 END) as on_time_deliveries')
             )
+            ->leftJoin('purchase_orders', 'purchase_orders.id', '=', 'purchases.purchase_order_id')
             ->with('supplier:id,name,avg_rating,payment_terms,lead_time_days')
-            ->when($filters['from'] ?? null, fn($q, $v) => $q->whereDate('date', '>=', $v))
-            ->when($filters['to'] ?? null, fn($q, $v) => $q->whereDate('date', '<=', $v))
-            ->whereNotNull('supplier_id')
-            ->groupBy('supplier_id')
+            // Una compra cancelada no dice nada del desempeño del proveedor.
+            ->where('purchases.status', '!=', 'cancelled')
+            ->when($filters['from'] ?? null, fn($q, $v) => $q->whereDate('purchases.date', '>=', $v))
+            ->when($filters['to'] ?? null, fn($q, $v) => $q->whereDate('purchases.date', '<=', $v))
+            ->when($filters['store_id'] ?? null, fn($q, $v) => $q->where('purchases.store_id', $v))
+            ->whereNotNull('purchases.supplier_id')
+            ->groupBy('purchases.supplier_id')
             ->orderByDesc('total_amount')
             ->get();
     }

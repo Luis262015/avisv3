@@ -9,7 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE promotions MODIFY COLUMN type ENUM('percentage','fixed','buy_x_get_y','combo') NOT NULL");
+        // Extend enum with the combo type (MySQL only; SQLite ignores enum constraints)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE promotions MODIFY COLUMN type ENUM('percentage','fixed','buy_x_get_y','combo') NOT NULL");
+        }
 
         Schema::table('promotions', function (Blueprint $table) {
             $table->decimal('combo_price', 12, 2)->nullable()->after('value');
@@ -22,6 +25,8 @@ return new class extends Migration
             $table->dropColumn('combo_price');
         });
 
-        DB::statement("ALTER TABLE promotions MODIFY COLUMN type ENUM('percentage','fixed','buy_x_get_y') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE promotions MODIFY COLUMN type ENUM('percentage','fixed','buy_x_get_y') NOT NULL");
+        }
     }
 };

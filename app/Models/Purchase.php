@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -76,6 +77,21 @@ class Purchase extends Model
     public function inventoryMovements(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(InventoryMovement::class, 'reference');
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isReceivable(): bool
+    {
+        return in_array($this->status, ['pending', 'partial'], true);
+    }
+
+    public function scopeEffective(Builder $query): Builder
+    {
+        return $query->whereIn('status', ['received', 'partial']);
     }
 
     public function syncPaymentStatus(): void

@@ -15,7 +15,7 @@ class PurchaseOrderRequest extends FormRequest
     {
         return [
             'supplier_id'              => ['nullable', 'exists:suppliers,id'],
-            'store_id'                 => ['nullable', 'exists:stores,id'],
+            'store_id'                 => ['required', 'exists:stores,id'],
             'date'                     => ['required', 'date'],
             'expected_date'            => ['nullable', 'date', 'after_or_equal:date'],
             'tax'                      => ['nullable', 'numeric', 'min:0'],
