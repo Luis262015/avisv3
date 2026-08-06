@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -12,6 +14,7 @@ class SiatInvoice extends Model
         'store_id',
         'cufd_code_id',
         'numero_factura',
+        'fecha_emision',
         'cuf',
         'cufd',
         'nit_ci',
@@ -37,6 +40,8 @@ class SiatInvoice extends Model
         'importe_total'  => 'decimal:2',
         'importe_base_cf'=> 'decimal:2',
         'descuento'      => 'decimal:2',
+        // `fecha_emision` no va aquí: necesita milisegundos y el cast datetime los
+        // pierde al escribir. Se maneja en su propio accessor más abajo.
         'enviado_at'     => 'datetime',
         'anulado_at'     => 'datetime',
         'tipo_factura'   => 'integer',
@@ -44,6 +49,23 @@ class SiatInvoice extends Model
         'tipo_doc_identidad' => 'integer',
         'metodo_pago'    => 'integer',
     ];
+
+    /**
+     * Fecha de emisión con milisegundos.
+     *
+     * El CUF codifica la fecha como `yyyyMMddHHmmssSSS` y el SIN comprueba que
+     * coincida con la del XML, así que perder los milisegundos rompe cualquier
+     * reenvío. El cast `datetime` los descarta al escribir —usa el formato de la
+     * conexión—, de ahí el mutator explícito. Se guarda en UTC como el resto de
+     * fechas; la conversión a hora de Bolivia ocurre al construir el XML.
+     */
+    protected function fechaEmision(): Attribute
+    {
+        return Attribute::make(
+            get: fn(?string $valor) => $valor ? Carbon::parse($valor, 'UTC') : null,
+            set: fn($valor) => $valor ? Carbon::parse($valor)->utc()->format('Y-m-d H:i:s.v') : null,
+        );
+    }
 
     public function sale(): BelongsTo
     {

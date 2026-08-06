@@ -7,7 +7,11 @@ use App\Models\SiatCufdCode;
 use App\Models\SiatInvoice;
 use App\Models\SiatSetting;
 use App\Services\Siat\CufGenerator;
+use App\Services\Siat\FacturaComputarizadaXml;
 use App\Services\Siat\SiatCodigosService;
+use App\Services\Siat\SiatException;
+use App\Services\Siat\SiatFacturacionService;
+use App\Services\Siat\SiatSincronizacionService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +21,9 @@ class SiatService
     public function __construct(
         private readonly SiatCodigosService $codigos,
         private readonly CufGenerator $cufGenerator,
+        private readonly FacturaComputarizadaXml $xml,
+        private readonly SiatFacturacionService $facturacion,
+        private readonly SiatSincronizacionService $sincronizacion,
     ) {}
 
     // ─── Tipos de documento de identidad ────────────────────────────────────
@@ -33,6 +40,12 @@ class SiatService
     // ─── Tipos de emisión ────────────────────────────────────────────────────
     const EMISION_ONLINE  = 1;
     const EMISION_OFFLINE = 2;
+
+    // ─── Motivos de anulación (paramétrica del SIN) ─────────────────────────
+    const ANULACION_MAL_EMITIDA      = 1;
+    const ANULACION_NOTA_MAL_EMITIDA = 2;
+    const ANULACION_DATOS_INCORRECTOS = 3;
+    const ANULACION_DEVUELTA         = 4;
 
     // ─── Métodos de pago ────────────────────────────────────────────────────
     const PAGO_EFECTIVO      = 1;
@@ -111,7 +124,9 @@ class SiatService
                 $tipoFact = self::FACTURA_CON_CF;
             }
 
-            $fechaEmision = Carbon::now();
+            // En hora de Bolivia, no UTC: esta fecha entra en el CUF y el SIN la
+            // valida contra su propio reloj.
+            $fechaEmision = Carbon::now(config('siat.timezone'));
             $total        = (float) $sale->total;
             $descuento    = (float) $sale->discount;
             $baseCf       = $total; // sin ICE, exentos, etc.
@@ -140,6 +155,9 @@ class SiatService
                 'store_id'           => $store->id,
                 'cufd_code_id'       => $cufd->id,
                 'numero_factura'     => $numero,
+                // Con milisegundos: es la fecha que va dentro del CUF y el SIN
+                // exige que coincida con la del XML al reenviar.
+                'fecha_emision'      => $fechaEmision,
                 'cuf'                => $cuf,
                 'cufd'               => $cufd->codigo,
                 'nit_ci'             => $nit,
@@ -149,15 +167,17 @@ class SiatService
                 'importe_base_cf'    => $baseCf,
                 'descuento'          => $descuento,
                 'tipo_factura'       => $tipoFact,
-                'tipo_emision'       => $setting->modalidad,
+                // El tipo de emisión no es la modalidad: aquí siempre se emite en
+                // línea. Guardar la modalidad dejaba "offline" toda factura
+                // computarizada y además impedía el envío.
+                'tipo_emision'       => self::EMISION_ONLINE,
                 'metodo_pago'        => $metodoPago,
                 'estado'             => 'pendiente',
                 'codigo_qr'          => $qr,
             ]);
 
-            // En ambiente piloto/producción, intentar envío inmediato si es online
-            if ($setting->ambiente !== 'simulado' && $setting->modalidad === self::EMISION_ONLINE) {
-                $this->sendInvoiceToSin($invoice, $setting);
+            if ($setting->ambiente !== 'simulado') {
+                $this->sendInvoiceToSin($invoice, $setting, $cufd, $sale, $fechaEmision);
             }
 
             return $invoice;
@@ -165,9 +185,13 @@ class SiatService
     }
 
     /**
-     * Anula una factura SIAT.
+     * Anula una factura, también ante el SIN.
+     *
+     * @param  int  $codigoMotivo  Del catálogo del SIN: 1 factura mal emitida,
+     *                             2 nota de crédito-débito mal emitida,
+     *                             3 datos de emisión incorrectos, 4 devuelta.
      */
-    public function cancelInvoice(SiatInvoice $invoice, string $motivo): void
+    public function cancelInvoice(SiatInvoice $invoice, string $motivo, int $codigoMotivo = self::ANULACION_MAL_EMITIDA): void
     {
         if ($invoice->estado === 'anulada') {
             throw new \RuntimeException('La factura ya está anulada.');
@@ -175,16 +199,16 @@ class SiatService
 
         $setting = $this->getActiveSetting($invoice->store_id);
 
-        if ($setting && $setting->ambiente !== 'simulado') {
-            // La anulación ante el SIN no está implementada. Se deja constancia de
-            // que la factura queda anulada solo en el sistema local, para que la
-            // regularización ante Impuestos no se dé por hecha.
-            Log::warning('SIAT: anulación local sin notificar al SIN', [
-                'invoice_id'     => $invoice->id,
-                'numero_factura' => $invoice->numero_factura,
-                'ambiente'       => $setting->ambiente,
-                'motivo'         => $motivo,
-            ]);
+        // Anular solo en local dejaría una factura viva ante Impuestos, así que si
+        // el SIN rechaza la anulación se propaga el error y no se toca nada.
+        if ($setting && $setting->ambiente !== 'simulado' && $invoice->estado === 'enviada') {
+            $this->facturacion->anulacionFactura(
+                $setting,
+                $invoice->cuf,
+                $invoice->cufd,
+                $codigoMotivo,
+                (int) $invoice->tipo_factura,
+            );
         }
 
         $invoice->update([
@@ -192,6 +216,21 @@ class SiatService
             'anulado_at'       => now(),
             'motivo_anulacion' => $motivo,
         ]);
+    }
+
+    /**
+     * Consulta al SIN en qué estado quedó una factura ya enviada.
+     *
+     * @return array<string, mixed>
+     */
+    public function checkInvoiceStatus(SiatInvoice $invoice): array
+    {
+        $setting = $this->getActiveSetting($invoice->store_id)
+            ?? throw new SiatException('No hay configuración SIAT activa para esta tienda.');
+
+        return $this->facturacion->verificacionEstadoFactura(
+            $setting, $invoice->cuf, $invoice->cufd, (int) $invoice->tipo_factura,
+        );
     }
 
     /**
@@ -232,23 +271,152 @@ class SiatService
     }
 
     /**
-     * Envía la factura al SIN mediante SOAP (stub para integración futura).
+     * Construye el XML de la factura, lo valida contra el XSD y lo envía al SIN.
+     *
+     * Un fallo aquí no tumba la venta: la factura queda "pendiente" con el motivo
+     * registrado y se puede reenviar. Anular la venta por un problema de red del
+     * SIN sería peor que emitir con retraso.
      */
-    private function sendInvoiceToSin(SiatInvoice $invoice, SiatSetting $setting): void
-    {
-        // TODO: implementar llamada WSDL al SIN
-        // $wsdlUrl = $setting->ambiente === 'produccion'
-        //     ? 'https://facturacion.impuestos.gob.bo/ServicioFacturacion?wsdl'
-        //     : 'https://piloto.facturacion.impuestos.gob.bo/ServicioFacturacion?wsdl';
-        //
-        // $client = new \SoapClient($wsdlUrl, ['trace' => true]);
-        // $xml = $this->buildXml($invoice, $setting);
-        // $response = $client->recepcionFactura(['xml' => base64_encode($xml)]);
-        // if ($response->codigoDescripcion === 'PENDIENTE') {
-        //     $invoice->update(['estado' => 'enviada', 'enviado_at' => now()]);
-        // }
+    private function sendInvoiceToSin(
+        SiatInvoice $invoice,
+        SiatSetting $setting,
+        SiatCufdCode $cufd,
+        Sale $sale,
+        Carbon $fechaEmision,
+    ): void {
+        try {
+            $xml = $this->xml->build(
+                invoice: $invoice,
+                setting: $setting,
+                cufd: $cufd,
+                fechaEmision: $fechaEmision,
+                detalles: $this->buildDetalles($sale, $setting),
+                leyenda: $this->resolveLeyenda($setting),
+                usuario: $sale->user?->name ?? 'sistema',
+            );
 
-        Log::info("SIAT: factura #{$invoice->numero_factura} pendiente de envío a SIN (ambiente: {$setting->ambiente})");
+            $resultado = $this->facturacion->recepcionFactura(
+                $setting, $xml, $cufd->codigo, now(), (int) $invoice->tipo_factura,
+            );
+
+            $invoice->update([
+                'estado'           => 'enviada',
+                'codigo_recepcion' => $resultado['codigoRecepcion'],
+                'enviado_at'       => now(),
+                'mensaje_error'    => null,
+            ]);
+        } catch (SiatException $e) {
+            Log::error('SIAT: no se pudo enviar la factura', [
+                'invoice_id'     => $invoice->id,
+                'numero_factura' => $invoice->numero_factura,
+                'error'          => $e->getMessage(),
+            ]);
+
+            $invoice->update([
+                'estado'        => 'pendiente',
+                'mensaje_error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Reenvía al SIN una factura que quedó pendiente.
+     *
+     * @return array<string, mixed>
+     */
+    public function resendInvoice(SiatInvoice $invoice): array
+    {
+        $setting = $this->getActiveSetting($invoice->store_id)
+            ?? throw new SiatException('No hay configuración SIAT activa para esta tienda.');
+
+        $invoice->loadMissing(['cufdCode', 'sale.user', 'sale.items.product']);
+
+        $xml = $this->xml->build(
+            invoice: $invoice,
+            setting: $setting,
+            cufd: $invoice->cufdCode,
+            fechaEmision: $invoice->fecha_emision ?? $invoice->created_at,
+            detalles: $this->buildDetalles($invoice->sale, $setting),
+            leyenda: $this->resolveLeyenda($setting),
+            usuario: $invoice->sale->user?->name ?? 'sistema',
+        );
+
+        $resultado = $this->facturacion->recepcionFactura(
+            $setting, $xml, $invoice->cufdCode->codigo, now(), (int) $invoice->tipo_factura,
+        );
+
+        $invoice->update([
+            'estado'           => 'enviada',
+            'codigo_recepcion' => $resultado['codigoRecepcion'],
+            'enviado_at'       => now(),
+            'mensaje_error'    => null,
+        ]);
+
+        return $resultado;
+    }
+
+    /**
+     * Una línea de XML por cada ítem de la venta.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function buildDetalles(Sale $sale, SiatSetting $setting): array
+    {
+        $sale->loadMissing('items.product');
+
+        return $sale->items->map(function ($item) use ($setting) {
+            $producto = $item->product;
+
+            $codigoSin = $producto?->codigo_producto_sin
+                ?? config('siat.factura.codigo_producto_sin_default');
+
+            if (blank($codigoSin)) {
+                throw new SiatException(
+                    "El producto \"{$producto?->name}\" no tiene código de producto del SIN. "
+                    . 'Homológuelo con la paramétrica de Productos y Servicios antes de facturar.'
+                );
+            }
+
+            $descuento = (float) $item->discount;
+
+            return [
+                'actividadEconomica' => (string) $setting->actividad_economica,
+                'codigoProductoSin'  => (int) $codigoSin,
+                'codigoProducto'     => (string) ($producto?->sku ?: $producto?->id ?: 'SIN-SKU'),
+                'descripcion'        => (string) ($producto?->name ?? 'Producto'),
+                'cantidad'           => (float) $item->quantity,
+                'unidadMedida'       => (int) ($producto?->unidad_medida_sin
+                    ?? config('siat.factura.unidad_medida_default')),
+                'precioUnitario'     => (float) $item->price,
+                'montoDescuento'     => $descuento,
+                // El SIN recalcula el subtotal y rechaza la factura si no cuadra.
+                'subTotal'           => round((float) $item->quantity * (float) $item->price - $descuento, 2),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * La leyenda es obligatoria y depende de la actividad económica. Se usa la
+     * guardada en la configuración; si no hay, se pide al SIN y se conserva.
+     */
+    private function resolveLeyenda(SiatSetting $setting): string
+    {
+        if (filled($setting->leyenda)) {
+            return $setting->leyenda;
+        }
+
+        $leyenda = $this->sincronizacion->leyendaPara($setting, (string) $setting->actividad_economica);
+
+        if (blank($leyenda)) {
+            throw new SiatException(
+                "La actividad económica \"{$setting->actividad_economica}\" no tiene leyendas registradas en el SIN. "
+                . 'Suele significar que esa actividad no corresponde a este NIT: revísela en la configuración.'
+            );
+        }
+
+        $setting->update(['leyenda' => $leyenda]);
+
+        return $leyenda;
     }
 
     /**

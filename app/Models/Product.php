@@ -20,6 +20,8 @@ class Product extends Model
         'slug',
         'sku',
         'barcode',
+        'codigo_producto_sin',
+        'unidad_medida_sin',
         'description',
         'price',
         'cost',
@@ -31,9 +33,11 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'price'           => 'decimal:2',
-        'cost'            => 'decimal:2',
-        'track_inventory' => 'boolean',
+        'price'               => 'decimal:2',
+        'cost'                => 'decimal:2',
+        'track_inventory'     => 'boolean',
+        'codigo_producto_sin' => 'integer',
+        'unidad_medida_sin'   => 'integer',
     ];
 
     protected static function booted(): void

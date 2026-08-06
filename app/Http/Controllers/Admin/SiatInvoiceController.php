@@ -163,11 +163,30 @@ class SiatInvoiceController extends Controller
             return back()->with('success', 'Factura marcada como enviada (modo simulado, sin validez fiscal).');
         }
 
-        // Antes se marcaba 'enviada' sin enviar nada: el listado mostraba como
-        // declaradas al SIN facturas que nunca salieron del sistema.
-        return back()->withErrors([
-            'siat' => 'El envío al webservice del SIN aún no está implementado. '
-                    . 'La factura sigue pendiente y no ha sido declarada a Impuestos Nacionales.',
-        ]);
+        try {
+            $resultado = $this->siat->resendInvoice($siatInvoice);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        return back()->with(
+            'success',
+            'Factura enviada al SIN: ' . ($resultado['codigoDescripcion'] ?? 'recibida')
+            . " (recepción {$resultado['codigoRecepcion']})."
+        );
+    }
+
+    /**
+     * Consulta al SIN el estado real de una factura ya enviada.
+     */
+    public function checkStatus(SiatInvoice $siatInvoice)
+    {
+        try {
+            $resultado = $this->siat->checkInvoiceStatus($siatInvoice);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Estado en el SIN: ' . ($resultado['codigoDescripcion'] ?? 'desconocido'));
     }
 }

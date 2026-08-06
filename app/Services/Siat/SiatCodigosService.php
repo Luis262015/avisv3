@@ -36,6 +36,18 @@ class SiatCodigosService
             'nit'              => (int) $setting->nit,
         ], envoltura: 'SolicitudCuis');
 
+        // El 980 no es un fallo: significa que el SIN ya emitió un CUIS para esta
+        // sucursal y punto de venta. No hay operación para recuperarlo, así que si
+        // no está guardado hay que recuperarlo de los registros propios.
+        if ($this->tieneCodigo($respuesta, 980)) {
+            throw new SiatException(
+                'El SIN ya tiene un CUIS vigente para la sucursal ' . (int) $setting->codigo_sucursal
+                . ' y el punto de venta ' . (int) $setting->codigo_punto_venta . ', y no entrega uno nuevo. '
+                . 'Los servicios no permiten volver a consultarlo: recupérelo de sus registros y cárguelo '
+                . 'en la configuración, o dé de baja el punto de venta en el Portal SIAT para empezar de cero.'
+            );
+        }
+
         $this->assertTransaccion($respuesta, 'solicitud de CUIS');
 
         $codigo = $respuesta['codigoCuis'] ?? $respuesta['codigoCUIS'] ?? null;
@@ -113,6 +125,78 @@ class SiatCodigosService
         return $this->clientFor($setting)->verificarComunicacion(self::SERVICIO);
     }
 
+    /**
+     * Revisa credenciales, coherencia y conectividad sin registrar nada en el SIN.
+     *
+     * @return list<string> Problemas encontrados; vacío si la configuración sirve
+     *                      para operar.
+     */
+    public function diagnosticar(SiatSetting $setting): array
+    {
+        if (blank($setting->token_api)) {
+            return ['La configuración no tiene Token Delegado. Obténgalo en el Portal SIAT y cárguelo aquí.'];
+        }
+
+        $token = SiatToken::parse($setting->token_api);
+
+        if ($token === null) {
+            return ['El Token Delegado no tiene el formato JWT que emite el Portal SIAT; puede estar truncado.'];
+        }
+
+        // Una incoherencia entre el token y la configuración hace fallar toda
+        // operación, así que no vale la pena seguir hasta resolverla.
+        if ($problemas = $token->incoherenciasCon($setting)) {
+            return $problemas;
+        }
+
+        try {
+            $this->verificarComunicacion($setting);
+        } catch (SiatException $e) {
+            return [$e->getMessage()];
+        }
+
+        return $this->problemasDeAutenticacion($setting);
+    }
+
+    /**
+     * `verificarComunicacion` solo valida la firma del token: la aprueban tanto el
+     * piloto como producción, aunque el sistema no esté habilitado en ninguno de
+     * los dos. Se sondea además con `verificarNit`, que es de solo lectura y sí
+     * exige un token del ambiente al que se apunta.
+     *
+     * @return list<string>
+     */
+    private function problemasDeAutenticacion(SiatSetting $setting): array
+    {
+        $client = $this->clientFor($setting);
+
+        try {
+            $client->call(self::SERVICIO, 'verificarNit', [
+                'codigoAmbiente'      => $client->codigoAmbiente(),
+                'codigoModalidad'     => (int) $setting->modalidad,
+                'codigoSistema'       => (string) $setting->codigo_sistema,
+                'codigoSucursal'      => (int) $setting->codigo_sucursal,
+                'cuis'                => $setting->cuis ?: 'SINCUIS',
+                'nit'                 => (int) $setting->nit,
+                'nitParaVerificacion' => (int) $setting->nit,
+            ], envoltura: 'SolicitudVerificarNit');
+        } catch (SiatException $e) {
+            if (str_contains($e->getMessage(), 'API KEY NO VALIDO')) {
+                return [sprintf(
+                    'El SIN no acepta el Token Delegado en el ambiente "%s". Lo habitual es que el token '
+                    . 'sea del otro ambiente: piloto y producción se autorizan por separado en el Portal SIAT.',
+                    $setting->ambiente
+                )];
+            }
+
+            return [$e->getMessage()];
+        }
+
+        // Cualquier respuesta de negocio (p. ej. "CUIS no asociado") significa que
+        // la autenticación pasó, que es lo único que se estaba comprobando.
+        return [];
+    }
+
     private function clientFor(SiatSetting $setting): SiatSoapClient
     {
         return new SiatSoapClient($setting);
@@ -147,6 +231,29 @@ class SiatCodigosService
         throw new SiatException(
             "El SIN rechazó la {$operacion}: " . $this->describirRespuestas($respuesta)
         );
+    }
+
+    /**
+     * ¿La respuesta trae este código del SIN entre sus mensajes?
+     *
+     * @param  array<string, mixed>  $respuesta
+     */
+    private function tieneCodigo(array $respuesta, int $codigo): bool
+    {
+        $mensajes = $respuesta['codigosRespuestas'] ?? $respuesta['mensajesList'] ?? [];
+
+        // Un solo mensaje llega como objeto; varios, como lista.
+        if (isset($mensajes['codigo'])) {
+            $mensajes = [$mensajes];
+        }
+
+        foreach ($mensajes as $mensaje) {
+            if ((int) ($mensaje['codigo'] ?? 0) === $codigo) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param  array<string, mixed>  $respuesta */

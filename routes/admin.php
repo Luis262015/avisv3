@@ -263,6 +263,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('invoices/{siatInvoice}/print', [SiatInvoiceController::class, 'print'])->name('invoices.print');
             Route::post('invoices/{siatInvoice}/cancel', [SiatInvoiceController::class, 'cancel'])->name('invoices.cancel');
             Route::post('invoices/{siatInvoice}/resend', [SiatInvoiceController::class, 'resend'])->name('invoices.resend');
+            Route::post('invoices/{siatInvoice}/check-status', [SiatInvoiceController::class, 'checkStatus'])
+                ->name('invoices.check-status');
             Route::post('sales/{sale}/emit-invoice', [SiatInvoiceController::class, 'emit'])->name('sales.emit-invoice');
         });
 

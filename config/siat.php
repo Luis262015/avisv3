@@ -57,4 +57,39 @@ return [
     */
     'timeout' => env('SIAT_TIMEOUT', 30),
 
+    /*
+    | Horas que se conservan en caché las paramétricas del SIN (leyendas,
+    | actividades, unidades de medida...). Son estables dentro de una jornada.
+    */
+    'cache_catalogos_horas' => env('SIAT_CACHE_CATALOGOS_HORAS', 12),
+
+    /*
+    | Valores de la Factura Compra Venta.
+    |
+    | El tipo de emisión es independiente de la modalidad: una factura
+    | Computarizada (modalidad 2) se emite igualmente en línea (emisión 1).
+    */
+    /*
+    | Zona horaria del SIN.
+    |
+    | La aplicación trabaja en UTC, pero el SIN espera hora de Bolivia y solo
+    | tolera 5 minutos de desfase en `fechaEnvio`. Además la fecha de emisión
+    | entra en el cálculo del CUF, así que enviarla en UTC lo invalida.
+    */
+    'timezone' => env('SIAT_TIMEZONE', 'America/La_Paz'),
+
+    'factura' => [
+        'documento_sector' => 1,   // Factura Compra Venta
+        'emision_online'   => 1,
+        'codigo_moneda'    => 1,   // Boliviano
+        'tipo_cambio'      => 1.00,
+
+        /*
+        | Códigos del SIN para productos sin homologar. `unidad_medida` 57 es
+        | "UNIDAD (BIENES)"; ambos se pueden sobrescribir por producto.
+        */
+        'unidad_medida_default'      => env('SIAT_UNIDAD_MEDIDA_DEFAULT', 57),
+        'codigo_producto_sin_default' => env('SIAT_PRODUCTO_SIN_DEFAULT'),
+    ],
+
 ];

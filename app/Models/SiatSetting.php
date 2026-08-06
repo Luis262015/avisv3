@@ -18,6 +18,7 @@ class SiatSetting extends Model
         'direccion',
         'actividad_economica',
         'actividad_descripcion',
+        'leyenda',
         'codigo_sucursal',
         'codigo_punto_venta',
         'nombre_punto_venta',
@@ -77,11 +78,16 @@ class SiatSetting extends Model
         return $this->hasMany(SiatCufdCode::class, 'store_id', 'store_id');
     }
 
+    /**
+     * La modalidad dice bajo qué régimen está autorizado el sistema, no si emite
+     * conectado: eso es el tipoEmision (1 online, 2 offline, 3 masiva), que es un
+     * campo aparte. Etiquetarla como "En línea / Fuera de línea" las confundía.
+     */
     public function getModalidadLabelAttribute(): string
     {
         return match ($this->modalidad) {
-            1 => 'En línea',
-            2 => 'Fuera de línea',
+            1 => 'Electrónica en línea',
+            2 => 'Computarizada en línea',
             default => 'Desconocido',
         };
     }

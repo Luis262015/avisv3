@@ -114,7 +114,12 @@ class SiatSettingController extends Controller
     }
 
     /**
-     * Prueba de conectividad y validez del Token Delegado.
+     * Prueba de conectividad y de que las credenciales sirven para operar.
+     *
+     * No basta con `verificarComunicacion`: esa operación aprueba un token del
+     * ambiente equivocado y una configuración que no puede emitir nada, así que
+     * daba un "correcto" engañoso. `diagnosticar()` contrasta además el token con
+     * la configuración y sondea la autenticación real, todo sin registrar nada.
      */
     public function testConnection(SiatSetting $setting, SiatCodigosService $codigos)
     {
@@ -122,13 +127,13 @@ class SiatSettingController extends Controller
             return back()->withErrors(['siat' => 'El modo simulado no se conecta al SIN.']);
         }
 
-        try {
-            $codigos->verificarComunicacion($setting);
-        } catch (SiatException $e) {
-            return back()->withErrors(['siat' => $e->getMessage()]);
+        $problemas = $codigos->diagnosticar($setting);
+
+        if ($problemas !== []) {
+            return back()->withErrors(['siat' => implode(' ', $problemas)]);
         }
 
-        return back()->with('success', 'Comunicación con el SIN verificada correctamente.');
+        return back()->with('success', 'Comunicación y credenciales verificadas con el SIN.');
     }
 
     /**
