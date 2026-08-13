@@ -41,6 +41,9 @@ return [
         'sincronizacion' => 'FacturacionSincronizacion',
         'operaciones'    => 'FacturacionOperaciones',
         'compra_venta'   => 'ServicioFacturacionCompraVenta',
+        // Registro de Compras: es el contribuyente el que reporta lo que compró,
+        // no lo que factura. Servicio y formato distintos de los de venta.
+        'compras'        => 'ServicioRecepcionCompras',
     ],
 
     /*

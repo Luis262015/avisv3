@@ -17,6 +17,7 @@ import {
     CalendarClock,
     CalendarDays,
     ClipboardList,
+    CloudOff,
     FileText,
     Folder,
     GraduationCap,
@@ -141,6 +142,9 @@ export function AppSidebar() {
             title: 'Facturación SIAT',
             items: [
                 { title: 'Facturas Electrónicas', url: '/admin/siat/invoices', icon: FileText },
+                { title: 'Homologación SIN', url: '/admin/siat/homologation', icon: ClipboardList },
+                { title: 'Contingencia', url: '/admin/siat/contingency', icon: CloudOff },
+                { title: 'Registro de Compras', url: '/admin/siat/purchase-registry', icon: ReceiptText },
                 { title: 'Configuración SIAT', url: '/admin/siat/settings', icon: Settings2 },
             ],
         }] : []),

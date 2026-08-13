@@ -25,6 +25,7 @@ class SiatSetting extends Model
         'modalidad',
         'ambiente',
         'tipo_factura_default',
+        'emision_masiva',
         'cuis',
         'cuis_fecha_solicitud',
         'cuis_fecha_vigencia',
@@ -60,6 +61,7 @@ class SiatSetting extends Model
 
     protected $casts = [
         'is_active'            => 'boolean',
+        'emision_masiva'       => 'boolean',
         'cuis_fecha_solicitud' => 'datetime',
         'cuis_fecha_vigencia'  => 'datetime',
         'modalidad'            => 'integer',

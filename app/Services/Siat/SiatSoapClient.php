@@ -80,6 +80,17 @@ class SiatSoapClient
     }
 
     /**
+     * El SoapClient crudo, sin pasar por `call()`.
+     *
+     * Lo necesita quien recibe binarios: `normalize()` serializa la respuesta con
+     * json_encode, y un base64Binary con bytes que no son UTF-8 se pierde ahí.
+     */
+    public function rawClient(string $servicio): SoapClient
+    {
+        return $this->clientFor($servicio);
+    }
+
+    /**
      * Prueba de conectividad y validez del token. No requiere CUIS ni CUFD.
      */
     public function verificarComunicacion(string $servicio = 'codigos'): array

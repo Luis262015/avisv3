@@ -29,7 +29,10 @@ use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SaleReturnController;
 use App\Http\Controllers\Admin\SalesOrderController;
 use App\Http\Controllers\Admin\SalesReportController;
+use App\Http\Controllers\Admin\SiatContingencyController;
+use App\Http\Controllers\Admin\SiatHomologationController;
 use App\Http\Controllers\Admin\SiatInvoiceController;
+use App\Http\Controllers\Admin\SiatPurchaseRegistryController;
 use App\Http\Controllers\Admin\SiatSettingController;
 use App\Http\Controllers\Admin\StockTransferController;
 use App\Http\Controllers\Admin\StoreController;
@@ -64,6 +67,42 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 ->name('settings.request-cuis');
             Route::post('settings/{setting}/test-connection', [SiatSettingController::class, 'testConnection'])
                 ->name('settings.test-connection');
+
+            // Homologación del catálogo propio con las paramétricas del SIN.
+            Route::get('homologation', [SiatHomologationController::class, 'index'])
+                ->name('homologation.index');
+            Route::post('homologation/bulk', [SiatHomologationController::class, 'bulk'])
+                ->name('homologation.bulk');
+            Route::post('homologation/refresh', [SiatHomologationController::class, 'refresh'])
+                ->name('homologation.refresh');
+            Route::put('homologation/{product}', [SiatHomologationController::class, 'update'])
+                ->name('homologation.update');
+
+            // Contingencia: cortes de servicio y envío por lotes.
+            Route::get('contingency', [SiatContingencyController::class, 'index'])
+                ->name('contingency.index');
+            Route::post('contingency', [SiatContingencyController::class, 'store'])
+                ->name('contingency.store');
+            Route::post('contingency/masivo', [SiatContingencyController::class, 'sendMasivo'])
+                ->name('contingency.masivo');
+            Route::post('contingency/{evento}/close', [SiatContingencyController::class, 'close'])
+                ->name('contingency.close');
+            Route::post('contingency/{evento}/send', [SiatContingencyController::class, 'send'])
+                ->name('contingency.send');
+            Route::post('contingency/packages/{paquete}/validate', [SiatContingencyController::class, 'validatePackage'])
+                ->name('contingency.validate');
+
+            // Registro de Compras: lo que el contribuyente declara haber comprado.
+            Route::get('purchase-registry', [SiatPurchaseRegistryController::class, 'index'])
+                ->name('purchase-registry.index');
+            Route::post('purchase-registry/send', [SiatPurchaseRegistryController::class, 'send'])
+                ->name('purchase-registry.send');
+            Route::post('purchase-registry/confirm', [SiatPurchaseRegistryController::class, 'confirm'])
+                ->name('purchase-registry.confirm');
+            Route::post('purchase-registry/packages/{paquete}/validate', [SiatPurchaseRegistryController::class, 'validatePackage'])
+                ->name('purchase-registry.validate');
+            Route::put('purchase-registry/{purchase}', [SiatPurchaseRegistryController::class, 'update'])
+                ->name('purchase-registry.update');
         });
 
         // ── Recursos Humanos ────────────────────────────────────────────────
@@ -265,6 +304,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::post('invoices/{siatInvoice}/resend', [SiatInvoiceController::class, 'resend'])->name('invoices.resend');
             Route::post('invoices/{siatInvoice}/check-status', [SiatInvoiceController::class, 'checkStatus'])
                 ->name('invoices.check-status');
+            Route::post('invoices/{siatInvoice}/revert-cancellation', [SiatInvoiceController::class, 'revertCancellation'])
+                ->name('invoices.revert-cancellation');
             Route::post('sales/{sale}/emit-invoice', [SiatInvoiceController::class, 'emit'])->name('sales.emit-invoice');
         });
 

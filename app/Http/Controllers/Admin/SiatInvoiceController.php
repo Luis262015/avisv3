@@ -58,6 +58,7 @@ class SiatInvoiceController extends Controller
                 'tipo_fact_label'       => $siatInvoice->tipo_factura_label,
                 'tipo_doc_label'        => $siatInvoice->tipo_doc_identidad_label,
                 'metodo_pago_label'     => $siatInvoice->metodo_pago_label,
+                'tipo_emision_label'    => $siatInvoice->tipo_emision_label,
             ]),
         ]);
     }
@@ -88,10 +89,14 @@ class SiatInvoiceController extends Controller
             'tipo_doc'     => ['nullable', 'integer', 'in:1,2,3,4,5'],
             'nombre'       => ['nullable', 'string', 'max:200'],
             'tipo_factura' => ['nullable', 'integer', 'in:1,2'],
+            // Para emitir a un NIT que el SIN no reconoce (rechazo 1037).
+            'codigo_excepcion' => ['nullable', 'integer', 'in:1'],
+            // El XSD lo declara entero de hasta 16 dígitos.
+            'numero_tarjeta'   => ['nullable', 'digits_between:1,16'],
         ]);
 
         try {
-            $invoice = $this->siat->createInvoice($sale, $request->only('nit_ci', 'tipo_doc', 'nombre', 'tipo_factura'));
+            $invoice = $this->siat->createInvoice($sale, $request->only('nit_ci', 'tipo_doc', 'nombre', 'tipo_factura', 'codigo_excepcion', 'numero_tarjeta'));
         } catch (\Throwable $e) {
             return back()->withErrors(['siat' => $e->getMessage()]);
         }
@@ -173,6 +178,23 @@ class SiatInvoiceController extends Controller
             'success',
             'Factura enviada al SIN: ' . ($resultado['codigoDescripcion'] ?? 'recibida')
             . " (recepción {$resultado['codigoRecepcion']})."
+        );
+    }
+
+    /**
+     * Deshace la anulación de una factura ante el SIN.
+     */
+    public function revertCancellation(SiatInvoice $siatInvoice)
+    {
+        try {
+            $resultado = $this->siat->revertCancellation($siatInvoice);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        return back()->with(
+            'success',
+            'Anulación revertida: ' . ($resultado['codigoDescripcion'] ?? 'la factura vuelve a estar vigente') . '.'
         );
     }
 

@@ -2,7 +2,7 @@ import { FlashMessage } from '@/components/flash-message';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { Link, router, useForm } from '@inertiajs/react';
-import { Ban, ExternalLink, Printer, RefreshCw, ShoppingCart } from 'lucide-react';
+import { Ban, ExternalLink, Printer, RefreshCw, RotateCcw, SearchCheck, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 
 interface SiatInvoice {
@@ -20,6 +20,7 @@ interface SiatInvoice {
     tipo_factura: number;
     tipo_fact_label: string;
     tipo_emision: number;
+    tipo_emision_label: string;
     metodo_pago_label: string;
     estado: string;
     estado_label: string;
@@ -100,12 +101,18 @@ function CancelModal({ invoiceId, saleStatus, onClose }: {
 
 export default function SiatInvoiceShow({ invoice }: { invoice: SiatInvoice }) {
     const [showCancelModal, setShowCancelModal] = useState(false);
+    // Ambas operaciones hacen una llamada SOAP que puede tardar segundos.
+    const [busy, setBusy] = useState<'resend' | 'check' | 'revert' | null>(null);
 
     const fmt = (v: string) => `Bs ${parseFloat(v).toFixed(2)}`;
     const fmtDate = (d: string) => new Date(d).toLocaleString('es-BO');
 
-    const resend = () => {
-        router.post(`/admin/siat/invoices/${invoice.id}/resend`);
+    const call = (accion: 'resend' | 'check' | 'revert', ruta: string) => {
+        setBusy(accion);
+        router.post(`/admin/siat/invoices/${invoice.id}/${ruta}`, {}, {
+            preserveScroll: true,
+            onFinish: () => setBusy(null),
+        });
     };
 
     return (
@@ -142,14 +149,33 @@ export default function SiatInvoiceShow({ invoice }: { invoice: SiatInvoice }) {
                         <a href={`/admin/siat/invoices/${invoice.id}/print`} target="_blank" rel="noreferrer">
                             <Button variant="outline" className="gap-2"><Printer className="h-4 w-4" /> Imprimir Factura</Button>
                         </a>
-                        {(invoice.estado === 'pendiente' || invoice.estado === 'contingencia') && (
-                            <Button variant="outline" className="gap-2" onClick={resend}>
-                                <RefreshCw className="h-4 w-4" /> Reenviar a SIN
+                        {(invoice.estado === 'pendiente' || invoice.estado === 'contingencia') && invoice.tipo_emision !== 3 && (
+                            <Button variant="outline" className="gap-2" disabled={busy !== null}
+                                onClick={() => call('resend', 'resend')}>
+                                <RefreshCw className={`h-4 w-4 ${busy === 'resend' ? 'animate-spin' : ''}`} />
+                                {busy === 'resend' ? 'Enviando…' : 'Reenviar a SIN'}
+                            </Button>
+                        )}
+                        {/* Solo tiene sentido preguntar por lo que el SIN ya recibió. */}
+                        {invoice.estado === 'enviada' && (
+                            <Button variant="outline" className="gap-2" disabled={busy !== null}
+                                onClick={() => call('check', 'check-status')}>
+                                <SearchCheck className="h-4 w-4" />
+                                {busy === 'check' ? 'Consultando…' : 'Consultar estado en SIN'}
                             </Button>
                         )}
                         {invoice.estado !== 'anulada' && (
                             <Button variant="destructive" className="gap-2" onClick={() => setShowCancelModal(true)}>
                                 <Ban className="h-4 w-4" /> Anular
+                            </Button>
+                        )}
+                        {/* El SIN solo admite la reversión dentro del plazo normativo;
+                            si ya pasó, responde con el motivo del rechazo. */}
+                        {invoice.estado === 'anulada' && (
+                            <Button variant="outline" className="gap-2" disabled={busy !== null}
+                                onClick={() => call('revert', 'revert-cancellation')}>
+                                <RotateCcw className="h-4 w-4" />
+                                {busy === 'revert' ? 'Revirtiendo…' : 'Revertir anulación'}
                             </Button>
                         )}
                     </div>
@@ -185,7 +211,7 @@ export default function SiatInvoiceShow({ invoice }: { invoice: SiatInvoice }) {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">Tipo de Emisión</span>
-                                    <span>{invoice.tipo_emision === 1 ? 'En línea' : 'Fuera de línea'}</span>
+                                    <span>{invoice.tipo_emision_label}</span>
                                 </div>
                                 {invoice.enviado_at && (
                                     <div className="flex justify-between">

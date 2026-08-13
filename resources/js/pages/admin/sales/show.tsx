@@ -80,9 +80,16 @@ function CancelSaleModal({ sale, siatInvoice, onClose }: {
     );
 }
 
-function EmitirFacturaModal({ saleId, onClose }: { saleId: number; onClose: () => void }) {
+function EmitirFacturaModal({ saleId, pagoConTarjeta, onClose }: {
+    saleId: number;
+    pagoConTarjeta: boolean;
+    onClose: () => void;
+}) {
     const { data, setData, post, processing, errors } = useForm({
-        nit_ci: '', tipo_doc: '5', nombre: 'Sin Nombre', tipo_factura: '2',
+        // Tipo 1 por defecto: el SIN rechaza el 2 con `915` salvo que la
+        // autorización lo contemple.
+        nit_ci: '', tipo_doc: '5', nombre: '', tipo_factura: '1',
+        numero_tarjeta: '', codigo_excepcion: '' as string,
     });
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -91,8 +98,8 @@ function EmitirFacturaModal({ saleId, onClose }: { saleId: number; onClose: () =
                 <div>
                     <Label>Tipo de Factura</Label>
                     <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.tipo_factura} onChange={(e) => setData('tipo_factura', e.target.value)}>
-                        <option value="2">Sin crédito fiscal (consumidor final)</option>
-                        <option value="1">Con crédito fiscal (empresa con NIT)</option>
+                        <option value="1">Con crédito fiscal</option>
+                        <option value="2">Sin crédito fiscal</option>
                     </select>
                 </div>
                 <div>
@@ -106,7 +113,8 @@ function EmitirFacturaModal({ saleId, onClose }: { saleId: number; onClose: () =
                 </div>
                 <div>
                     <Label>NIT / CI del Comprador</Label>
-                    <Input value={data.nit_ci} onChange={(e) => setData('nit_ci', e.target.value)} placeholder="0 = Sin nombre" />
+                    {/* El SIN rechaza el documento 0 (1048): siempre hace falta uno. */}
+                    <Input value={data.nit_ci} onChange={(e) => setData('nit_ci', e.target.value)} placeholder="Obligatorio" />
                     {errors.nit_ci && <p className="text-xs text-red-500">{errors.nit_ci}</p>}
                 </div>
                 <div>
@@ -114,6 +122,30 @@ function EmitirFacturaModal({ saleId, onClose }: { saleId: number; onClose: () =
                     <Input value={data.nombre} onChange={(e) => setData('nombre', e.target.value)} />
                     {errors.nombre && <p className="text-xs text-red-500">{errors.nombre}</p>}
                 </div>
+                {/* Obligatorio cuando el pago fue con tarjeta; sin él el SIN
+                    rechaza la factura con 1012. */}
+                {pagoConTarjeta && (
+                    <div>
+                        <Label>Número de tarjeta</Label>
+                        <Input value={data.numero_tarjeta} inputMode="numeric" maxLength={16}
+                            onChange={(e) => setData('numero_tarjeta', e.target.value.replace(/\D/g, ''))}
+                            placeholder="Lo exige el SIN al pagar con tarjeta" />
+                        {errors.numero_tarjeta && <p className="text-xs text-red-500">{errors.numero_tarjeta}</p>}
+                    </div>
+                )}
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                        checked={data.codigo_excepcion === '1'}
+                        onChange={(e) => setData('codigo_excepcion', e.target.checked ? '1' : '')} />
+                    <span className="text-xs text-gray-600">
+                        Emitir aunque el SIN no valide el NIT del comprador
+                        <span className="block text-gray-400">
+                            Márcalo solo si el SIN rechaza la factura con «el número de documento no es válido».
+                        </span>
+                    </span>
+                </label>
+
                 {errors.siat && (
                     <div className="rounded-md border border-red-200 bg-red-50 p-3">
                         <p className="text-xs text-red-700">{errors.siat}</p>
@@ -159,7 +191,13 @@ export default function SaleShow({ sale, siatInvoice }: { sale: Sale; siatInvoic
     return (
         <AppLayout breadcrumbs={[{ title: 'Ventas', href: '/admin/sales' }, { title: sale.folio, href: '' }]}>
             <FlashMessage />
-            {showEmitModal && <EmitirFacturaModal saleId={sale.id} onClose={() => setShowEmitModal(false)} />}
+            {showEmitModal && (
+                <EmitirFacturaModal
+                    saleId={sale.id}
+                    pagoConTarjeta={sale.payment_method === 'card'}
+                    onClose={() => setShowEmitModal(false)}
+                />
+            )}
             {showCancelModal && (
                 <CancelSaleModal sale={sale} siatInvoice={siatInvoice} onClose={() => setShowCancelModal(false)} />
             )}

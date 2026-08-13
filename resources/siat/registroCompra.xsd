@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="registroCompra">
+        <xs:complexType>
+            <xs:sequence>
+                        <xs:element name="nro">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:integer">
+                                        <xs:minInclusive value="1" />
+                                        <xs:maxInclusive value="9999" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="nitEmisor">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:integer">
+                                        <xs:minInclusive value="1" />
+                                        <xs:maxInclusive value="9999999999999" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="razonSocialEmisor">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:minLength value="1" />
+                                        <xs:maxLength value="240" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="codigoAutorizacion">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:minLength value="1" />
+                                        <xs:maxLength value="100" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="numeroFactura">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:integer">
+                                        <xs:minInclusive value="1" />
+                                        <xs:maxInclusive value="99999999999999999999" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="numeroDuiDim">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:minLength value="1" />
+                                        <xs:maxLength value="15" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="fechaEmision" type="xs:dateTime" />
+                             <xs:element name="montoTotalCompra">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minExclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                             <xs:element name="importeIce">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                             <xs:element name="importeIehd">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                             <xs:element name="importeIpj">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="tasas">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="otroNoSujetoCredito">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="importesExentos">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="importeTasaCero">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="subTotal">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="descuento">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                           <xs:element name="montoGiftCard">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14"/>
+                                        <xs:fractionDigits value="2"/>
+                                        <xs:minInclusive value="0"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="montoTotalSujetoIva">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                           <xs:element name="creditoFiscal">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:decimal">
+                                        <xs:totalDigits value="14" />
+                                        <xs:fractionDigits value="2" />
+                                        <xs:minInclusive value="0" />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="tipoCompra" >
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:integer">
+                                        <xs:minInclusive value="1"/>
+                                        <xs:maxInclusive value="5"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+                            <xs:element name="codigoControl" nillable="true">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:minLength value="0"/>
+                                        <xs:maxLength value="17"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:element>
+             </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

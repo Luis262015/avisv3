@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import { Link, router } from '@inertiajs/react';
-import { Eye, FileText, Search } from 'lucide-react';
+import { Eye, FileText, RefreshCw, Search } from 'lucide-react';
 import { useState } from 'react';
 
 interface Invoice {
@@ -34,9 +34,18 @@ const estadoColors: Record<string, string> = {
 export default function SiatInvoicesIndex({ invoices, filters }: { invoices: Paginated<Invoice>; filters: any }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [estado, setEstado] = useState(filters.estado ?? '');
+    const [reenviando, setReenviando] = useState<number | null>(null);
 
     const applyFilters = () => {
         router.get('/admin/siat/invoices', { search, estado }, { preserveState: true });
+    };
+
+    const resend = (id: number) => {
+        setReenviando(id);
+        router.post(`/admin/siat/invoices/${id}/resend`, {}, {
+            preserveScroll: true,
+            onFinish: () => setReenviando(null),
+        });
     };
 
     const fmt = (v: string) => `Bs ${parseFloat(v).toFixed(2)}`;
@@ -117,11 +126,27 @@ export default function SiatInvoicesIndex({ invoices, filters }: { invoices: Pag
                                     </td>
                                     <td className="px-4 py-3 text-xs text-gray-400">{fmtDate(inv.created_at)}</td>
                                     <td className="px-4 py-3">
-                                        <Link href={`/admin/siat/invoices/${inv.id}`}>
-                                            <Button size="sm" variant="ghost" className="gap-1">
-                                                <Eye className="h-3.5 w-3.5" /> Ver
-                                            </Button>
-                                        </Link>
+                                        <div className="flex items-center justify-end gap-1">
+                                            {/* Reenviar desde la lista evita entrar factura por factura
+                                                cuando una caída del SIN deja varias pendientes. */}
+                                            {(inv.estado === 'pendiente' || inv.estado === 'contingencia') && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="gap-1 text-blue-600"
+                                                    disabled={reenviando === inv.id}
+                                                    onClick={() => resend(inv.id)}
+                                                >
+                                                    <RefreshCw className={`h-3.5 w-3.5 ${reenviando === inv.id ? 'animate-spin' : ''}`} />
+                                                    Reenviar
+                                                </Button>
+                                            )}
+                                            <Link href={`/admin/siat/invoices/${inv.id}`}>
+                                                <Button size="sm" variant="ghost" className="gap-1">
+                                                    <Eye className="h-3.5 w-3.5" /> Ver
+                                                </Button>
+                                            </Link>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

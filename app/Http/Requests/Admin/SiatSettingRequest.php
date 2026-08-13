@@ -31,6 +31,7 @@ class SiatSettingRequest extends FormRequest
             'modalidad'             => ['required', 'integer', 'in:1,2'],
             'ambiente'              => ['required', 'string', 'in:piloto,produccion,simulado'],
             'tipo_factura_default'  => ['required', 'integer', 'in:1,2'],
+            'emision_masiva'        => ['boolean'],
             'cuis'                  => ['nullable', 'string', 'max:512'],
             'token_api'             => ['nullable', 'string', 'max:512'],
             'is_active'             => ['boolean'],

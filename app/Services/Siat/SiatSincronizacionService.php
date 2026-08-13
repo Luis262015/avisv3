@@ -106,6 +106,27 @@ class SiatSincronizacionService
     }
 
     /**
+     * Motivos de evento significativo: qué corte se puede declarar y con qué
+     * código. Son los que admite `registroEventoSignificativo`.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function eventosSignificativos(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaEventosSignificativos', 'eventos_significativos');
+    }
+
+    /**
+     * Tipos de emisión (en línea, fuera de línea, masiva).
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposEmision(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoEmision', 'tipos_emision');
+    }
+
+    /**
      * Hora oficial del SIN. Sirve para detectar un desfase del reloj local, que
      * invalida el CUF porque la fecha va dentro de su cálculo.
      */
@@ -118,7 +139,12 @@ class SiatSincronizacionService
 
     public function olvidarCache(SiatSetting $setting): void
     {
-        foreach (['leyendas', 'actividades', 'productos', 'unidades_medida', 'motivos_anulacion'] as $clave) {
+        $claves = [
+            'leyendas', 'actividades', 'productos', 'unidades_medida',
+            'motivos_anulacion', 'eventos_significativos', 'tipos_emision',
+        ];
+
+        foreach ($claves as $clave) {
             Cache::forget($this->clave($setting, $clave));
         }
     }

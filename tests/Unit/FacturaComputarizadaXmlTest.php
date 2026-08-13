@@ -119,6 +119,24 @@ class FacturaComputarizadaXmlTest extends TestCase
         $this->assertMatchesRegularExpression('/<cafc[^>]*xsi:nil="true"/', $xml);
     }
 
+    /**
+     * El SIN rechaza con `1037 EL NUMERO DOCUMENTO DE TIPO NIT NO ES VALIDO ...
+     * para codigo excepcion 0` cuando el NIT del comprador no está en su registro.
+     * El código de excepción 1 es la forma prevista de emitir igualmente.
+     */
+    public function test_it_declares_the_exception_code_when_the_buyer_nit_does_not_validate(): void
+    {
+        $xml = $this->build(['invoice' => $this->invoice(['codigo_excepcion' => 1])]);
+
+        $this->assertStringContainsString('<codigoExcepcion>1</codigoExcepcion>', $xml);
+    }
+
+    /** Sin excepción el campo va nulo: rellenarlo de más también se rechaza. */
+    public function test_the_exception_code_is_nil_by_default(): void
+    {
+        $this->assertMatchesRegularExpression('/<codigoExcepcion[^>]*xsi:nil="true"/', $this->build());
+    }
+
     public function test_it_prefers_the_address_the_sin_returned_with_the_cufd(): void
     {
         $xml = $this->build();

@@ -41,6 +41,7 @@ class FacturaComputarizadaXml
         array $detalles,
         string $leyenda,
         string $usuario,
+        ?string $cafc = null,
     ): string {
         if ($detalles === []) {
             throw new SiatException('La factura no tiene detalle: el SIN exige al menos una línea.');
@@ -56,7 +57,7 @@ class FacturaComputarizadaXml
         $raiz->setAttributeNS(self::XSI, 'xsi:noNamespaceSchemaLocation', 'facturaComputarizadaCompraVenta.xsd');
         $dom->appendChild($raiz);
 
-        $raiz->appendChild($this->cabecera($dom, $invoice, $setting, $cufd, $fechaEmision, $leyenda, $usuario));
+        $raiz->appendChild($this->cabecera($dom, $invoice, $setting, $cufd, $fechaEmision, $leyenda, $usuario, $cafc));
 
         foreach ($detalles as $detalle) {
             $raiz->appendChild($this->detalle($dom, $detalle));
@@ -111,6 +112,7 @@ class FacturaComputarizadaXml
         CarbonInterface $fechaEmision,
         string $leyenda,
         string $usuario,
+        ?string $cafc = null,
     ): \DOMElement {
         $cabecera = $dom->createElement('cabecera');
 
@@ -138,7 +140,8 @@ class FacturaComputarizadaXml
             'complemento'                 => $invoice->complemento,
             'codigoCliente'               => $invoice->nit_ci,
             'codigoMetodoPago'            => (int) $invoice->metodo_pago,
-            'numeroTarjeta'               => null,
+            // Obligatorio con método de pago 2; nulo en cualquier otro caso.
+            'numeroTarjeta'               => $invoice->numero_tarjeta,
             'montoTotal'                  => $this->monto($invoice->importe_total),
             'montoTotalSujetoIva'         => $this->monto($invoice->importe_base_cf),
             'codigoMoneda'                => (int) config('siat.factura.codigo_moneda'),
@@ -146,8 +149,12 @@ class FacturaComputarizadaXml
             'montoTotalMoneda'            => $this->monto($invoice->importe_total),
             'montoGiftCard'               => null,
             'descuentoAdicional'          => $this->monto($invoice->descuento),
-            'codigoExcepcion'             => null,
-            'cafc'                        => null,
+            // Con 1 el emisor declara que factura a ese NIT aunque el SIN no lo
+            // valide; sin él la factura se rechaza con 1037.
+            'codigoExcepcion'             => $invoice->codigo_excepcion,
+            // Solo lleva CAFC la factura computarizada emitida fuera de línea; en
+            // línea el campo va nulo y el SIN rechaza que se rellene.
+            'cafc'                        => $cafc,
             'leyenda'                     => $leyenda,
             'usuario'                     => $usuario,
             'codigoDocumentoSector'       => self::DOCUMENTO_SECTOR,

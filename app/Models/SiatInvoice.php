@@ -13,12 +13,16 @@ class SiatInvoice extends Model
         'sale_id',
         'store_id',
         'cufd_code_id',
+        'evento_id',
+        'paquete_id',
         'numero_factura',
         'fecha_emision',
         'cuf',
         'cufd',
+        'cafc',
         'nit_ci',
         'tipo_doc_identidad',
+        'codigo_excepcion',
         'nombre_razon_social',
         'complemento',
         'importe_total',
@@ -27,6 +31,7 @@ class SiatInvoice extends Model
         'tipo_factura',
         'tipo_emision',
         'metodo_pago',
+        'numero_tarjeta',
         'estado',
         'codigo_recepcion',
         'codigo_qr',
@@ -35,6 +40,9 @@ class SiatInvoice extends Model
         'anulado_at',
         'motivo_anulacion',
     ];
+
+    /** Dato de tarjeta: no tiene por qué llegar al navegador. */
+    protected $hidden = ['numero_tarjeta'];
 
     protected $casts = [
         'importe_total'  => 'decimal:2',
@@ -47,7 +55,10 @@ class SiatInvoice extends Model
         'tipo_factura'   => 'integer',
         'tipo_emision'   => 'integer',
         'tipo_doc_identidad' => 'integer',
+        'codigo_excepcion'   => 'integer',
         'metodo_pago'    => 'integer',
+        // Dato de tarjeta: nunca en claro en la base.
+        'numero_tarjeta' => 'encrypted',
     ];
 
     /**
@@ -82,6 +93,17 @@ class SiatInvoice extends Model
         return $this->belongsTo(SiatCufdCode::class, 'cufd_code_id');
     }
 
+    /** El corte durante el que se emitió, si fue fuera de línea. */
+    public function evento(): BelongsTo
+    {
+        return $this->belongsTo(SiatEvento::class, 'evento_id');
+    }
+
+    public function paquete(): BelongsTo
+    {
+        return $this->belongsTo(SiatPaquete::class, 'paquete_id');
+    }
+
     public function getEstadoLabelAttribute(): string
     {
         return match ($this->estado) {
@@ -101,6 +123,17 @@ class SiatInvoice extends Model
             3 => 'Carnet Extranjería',
             4 => 'Otro documento',
             5 => 'NIT',
+            default => 'Desconocido',
+        };
+    }
+
+    public function getTipoEmisionLabelAttribute(): string
+    {
+        return match ($this->tipo_emision) {
+            1 => 'En línea',
+            2 => 'Fuera de línea (contingencia)',
+            3 => 'Masiva (por lotes)',
+            4 => 'Contingencia',
             default => 'Desconocido',
         };
     }

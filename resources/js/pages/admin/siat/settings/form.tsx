@@ -25,6 +25,7 @@ interface Setting {
     tipo_factura_default: number | string;
     cuis: string;
     token_api: string;
+    emision_masiva: boolean;
     is_active: boolean;
     // El backend no devuelve las credenciales, solo si están cargadas.
     has_cuis?: boolean;
@@ -34,8 +35,8 @@ interface Setting {
 const defaults: Setting = {
     store_id: '', nit: '', codigo_sistema: '', razon_social: '', municipio: '', telefono: '', direccion: '',
     actividad_economica: '', actividad_descripcion: '', codigo_sucursal: 0, codigo_punto_venta: 0,
-    nombre_punto_venta: 'Principal', modalidad: 2, ambiente: 'simulado', tipo_factura_default: 2,
-    cuis: '', token_api: '', is_active: true,
+    nombre_punto_venta: 'Principal', modalidad: 2, ambiente: 'simulado', tipo_factura_default: 1,
+    cuis: '', token_api: '', emision_masiva: false, is_active: true,
 };
 
 export default function SiatSettingForm({ setting, stores }: { setting: Setting | null; stores: Store[] }) {
@@ -171,9 +172,24 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
                             {secretField('CUIS (Código Único Inicio Sistema)', 'cuis', !!setting?.has_cuis, 'Obtenido del portal SIN')}
                             {secretField('Token API SIN', 'token_api', !!setting?.has_token_api, 'Token delegado para el webservice del SIN')}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" id="is_active" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} />
-                            <label htmlFor="is_active" className="text-sm font-medium">Configuración activa</label>
+                        <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                                <input type="checkbox" id="emision_masiva" className="mt-1"
+                                    checked={data.emision_masiva}
+                                    onChange={(e) => setData('emision_masiva', e.target.checked)} />
+                                <label htmlFor="emision_masiva" className="text-sm">
+                                    <span className="font-medium">Emisión masiva (tipo 3)</span>
+                                    <span className="block text-xs text-gray-400">
+                                        Para puntos de venta de alto volumen: las facturas no se envían una a una,
+                                        sino en lotes desde Contingencia. El tipo de emisión va dentro del CUF, así que
+                                        cambiar esto solo afecta a las facturas nuevas.
+                                    </span>
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input type="checkbox" id="is_active" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} />
+                                <label htmlFor="is_active" className="text-sm font-medium">Configuración activa</label>
+                            </div>
                         </div>
                     </section>
 

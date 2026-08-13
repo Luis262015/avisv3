@@ -2,7 +2,8 @@ import { FlashMessage } from '@/components/flash-message';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { Link, router } from '@inertiajs/react';
-import { CheckCircle, Edit, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle, Edit, KeyRound, ListChecks, Plug, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface Setting {
     id: number;
@@ -15,20 +16,33 @@ interface Setting {
     actividad_economica: string;
     codigo_punto_venta: number;
     is_active: boolean;
+    has_token_api: boolean;
+    has_cuis: boolean;
     store: { id: number; name: string };
 }
 
 interface Store { id: number; name: string }
 
 export default function SiatSettingsIndex({ settings, stores }: { settings: Setting[]; stores: Store[] }) {
+    // Las operaciones contra el SIN tardan (SOAP + WSDL); sin este estado no hay
+    // forma de saber si el clic hizo algo.
+    const [busy, setBusy] = useState<string | null>(null);
+
+    const call = (id: number, accion: string) => {
+        const clave = `${id}:${accion}`;
+        setBusy(clave);
+        router.post(`/admin/siat/settings/${id}/${accion}`, {}, {
+            preserveScroll: true,
+            onFinish: () => setBusy((b) => (b === clave ? null : b)),
+        });
+    };
+
+    const esperando = (id: number, accion: string) => busy === `${id}:${accion}`;
+
     const destroy = (id: number) => {
         if (confirm('¿Eliminar esta configuración SIAT?')) {
             router.delete(`/admin/siat/settings/${id}`);
         }
-    };
-
-    const generateCufd = (id: number) => {
-        router.post(`/admin/siat/settings/${id}/generate-cufd`);
     };
 
     return (
@@ -72,6 +86,15 @@ export default function SiatSettingsIndex({ settings, stores }: { settings: Sett
                                                 <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">NIT: {s.nit}</span>
                                                 {' '}<span className="ml-2 text-xs text-gray-400">{s.municipio}</span>
                                             </p>
+                                            {/* El token y el CUIS nunca viajan al navegador; solo si están. */}
+                                            <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                                                <span className={`rounded-full px-2 py-0.5 ${s.has_token_api ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                                                    {s.has_token_api ? 'Token cargado' : 'Sin Token Delegado'}
+                                                </span>
+                                                <span className={`rounded-full px-2 py-0.5 ${s.has_cuis ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                                                    {s.has_cuis ? 'CUIS vigente' : 'Sin CUIS'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="text-right text-xs text-gray-500 space-y-1">
@@ -82,9 +105,47 @@ export default function SiatSettingsIndex({ settings, stores }: { settings: Sett
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
-                                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => generateCufd(s.id)}>
-                                        <RefreshCw className="h-3.5 w-3.5" /> Generar CUFD
+                                    {/* El modo simulado no habla con el SIN: el controlador rechaza
+                                        estas dos operaciones, así que ni se ofrecen. */}
+                                    {s.ambiente !== 'simulado' && (
+                                        <>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-1.5"
+                                                disabled={esperando(s.id, 'test-connection')}
+                                                onClick={() => call(s.id, 'test-connection')}
+                                            >
+                                                <Plug className="h-3.5 w-3.5" />
+                                                {esperando(s.id, 'test-connection') ? 'Probando…' : 'Probar conexión'}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-1.5"
+                                                disabled={esperando(s.id, 'request-cuis')}
+                                                onClick={() => call(s.id, 'request-cuis')}
+                                            >
+                                                <KeyRound className="h-3.5 w-3.5" />
+                                                {esperando(s.id, 'request-cuis') ? 'Solicitando…' : s.has_cuis ? 'Renovar CUIS' : 'Solicitar CUIS'}
+                                            </Button>
+                                        </>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-1.5"
+                                        disabled={esperando(s.id, 'generate-cufd')}
+                                        onClick={() => call(s.id, 'generate-cufd')}
+                                    >
+                                        <RefreshCw className="h-3.5 w-3.5" />
+                                        {esperando(s.id, 'generate-cufd') ? 'Generando…' : 'Generar CUFD'}
                                     </Button>
+                                    <Link href={`/admin/siat/homologation?setting_id=${s.id}`}>
+                                        <Button size="sm" variant="ghost" className="gap-1.5 text-gray-600">
+                                            <ListChecks className="h-3.5 w-3.5" /> Homologar productos
+                                        </Button>
+                                    </Link>
                                     <Link href={`/admin/siat/settings/${s.id}/cufd-history`}>
                                         <Button size="sm" variant="ghost" className="gap-1.5 text-gray-600">
                                             Historial CUFD
