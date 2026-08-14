@@ -211,6 +211,10 @@ class SiatService
                 // viajan en un lote. Las primeras quedan marcadas como tales
                 // porque su plazo y su tratamiento normativo son distintos.
                 'estado'             => $offline ? 'contingencia' : 'pendiente',
+                // Si se vendió algo con número de serie o IMEI, el SIN espera
+                // además el anexo. Queda marcado desde ya para que no se olvide:
+                // la factura sale igual, pero la declaración no está completa.
+                'anexos_estado'      => $this->requiereAnexos($sale) ? 'pendiente' : null,
                 'codigo_qr'          => $qr,
             ]);
 
@@ -222,6 +226,205 @@ class SiatService
 
             return $invoice;
         });
+    }
+
+    // ─── Anexos: números de serie e IMEI ─────────────────────────────────────
+
+    /** Si la venta incluye algún producto que el SIN quiere identificado. */
+    public function requiereAnexos(Sale $sale): bool
+    {
+        $sale->loadMissing('items.product');
+
+        return $sale->items->contains(fn ($item): bool => (bool) $item->product?->requiereAnexo());
+    }
+
+    /**
+     * Guarda los códigos tecleados, reemplazando los que hubiera.
+     *
+     * Se sustituye la lista entera en lugar de ir añadiendo porque el SIN recibe
+     * la factura completa de una vez: media lista guardada y media corregida no
+     * es un estado que se pueda enviar.
+     *
+     * @param  list<array{sale_item_id: int|string, codigo: string}>  $codigos
+     */
+    public function guardarAnexos(SiatInvoice $invoice, array $codigos): void
+    {
+        if ($invoice->anexos_estado === 'enviado') {
+            throw new SiatException(
+                'Los anexos de esta factura ya fueron aceptados por el SIN y no se pueden cambiar.'
+            );
+        }
+
+        $invoice->loadMissing('sale.items.product');
+
+        $items = $invoice->sale?->items->keyBy('id') ?? collect();
+
+        $filas = [];
+
+        foreach ($codigos as $entrada) {
+            $item = $items->get((int) $entrada['sale_item_id']);
+
+            if (! $item) {
+                throw new SiatException('Uno de los códigos no corresponde a ninguna línea de esta factura.');
+            }
+
+            $tipo = $item->product?->tipo_codigo_anexo;
+
+            if ($tipo === null) {
+                throw new SiatException(
+                    "El producto \"{$item->product?->name}\" no está marcado como producto con número de serie o IMEI. "
+                    . 'Márquelo en Facturación SIAT → Homologación SIN si debe llevar anexo.'
+                );
+            }
+
+            $filas[] = [
+                'sale_item_id' => $item->id,
+                'codigo'       => trim((string) $entrada['codigo']),
+                'tipo_codigo'  => (int) $tipo,
+            ];
+        }
+
+        // Más códigos que unidades vendidas significa que alguien tecleó de más:
+        // el SIN espera exactamente uno por unidad.
+        foreach (collect($filas)->groupBy('sale_item_id') as $itemId => $delItem) {
+            $item     = $items->get((int) $itemId);
+            $unidades = (int) (float) $item->quantity;
+
+            if ($delItem->count() > $unidades) {
+                throw new SiatException(
+                    "Se registraron {$delItem->count()} códigos para \"{$item->product?->name}\", "
+                    . "pero solo se vendieron {$unidades} unidad(es)."
+                );
+            }
+        }
+
+        DB::transaction(function () use ($invoice, $filas): void {
+            $invoice->anexos()->delete();
+
+            $invoice->anexos()->createMany($filas);
+
+            $invoice->update([
+                'anexos_estado'        => $filas === [] ? null : 'pendiente',
+                'anexos_mensaje_error' => null,
+            ]);
+        });
+    }
+
+    /**
+     * Declara al SIN los números de serie e IMEI de una factura.
+     *
+     * Es una llamada aparte y posterior a la factura: el SIN los ata por el CUF,
+     * y solo los acepta si esa factura ya está recibida.
+     *
+     * @return array<string, mixed>
+     */
+    public function enviarAnexos(SiatInvoice $invoice): array
+    {
+        $setting = $this->getActiveSetting($invoice->store_id)
+            ?? throw new SiatException('No hay configuración SIAT activa para esta tienda.');
+
+        if ($invoice->estado === 'anulada') {
+            throw new SiatException('No se declaran anexos de una factura anulada.');
+        }
+
+        if ($invoice->estado !== 'enviada' && $setting->ambiente !== 'simulado') {
+            throw new SiatException(
+                'El SIN solo acepta los anexos de una factura que ya recibió. '
+                . 'Envíe primero la factura y vuelva a intentarlo.'
+            );
+        }
+
+        $invoice->loadMissing(['anexos', 'sale.items.product']);
+
+        $requeridos = $invoice->anexosRequeridos();
+        $cargados   = $invoice->anexos->count();
+
+        if ($requeridos === 0) {
+            throw new SiatException('Esta factura no lleva productos con número de serie ni IMEI.');
+        }
+
+        // Enviar una lista incompleta la deja declarada como completa ante el SIN,
+        // y no hay forma de añadirle códigos después.
+        if ($cargados < $requeridos) {
+            throw new SiatException(
+                "Faltan códigos: el SIN espera {$requeridos} y hay {$cargados} registrado(s). "
+                . 'Complete la lista antes de enviarla.'
+            );
+        }
+
+        if ($setting->ambiente === 'simulado') {
+            $invoice->update([
+                'anexos_estado'        => 'enviado',
+                'anexos_enviado_at'    => now(),
+                'anexos_mensaje_error' => null,
+            ]);
+
+            return ['codigoDescripcion' => 'anexos registrados en local (modo simulado)'];
+        }
+
+        try {
+            $resultado = $this->facturacion->recepcionAnexos(
+                $setting,
+                $invoice->cuf,
+                $this->anexosDe($invoice),
+                // La cabecera pide el CUFD del día, no el de la factura: esta puede
+                // ser de hace días y su CUFD ya estar vencido. Al SIN le identifica
+                // la factura el CUF que va en el cuerpo.
+                $this->getOrCreateCufd($setting)->codigo,
+                (int) $invoice->tipo_factura,
+            );
+        } catch (SiatException $e) {
+            $invoice->update([
+                'anexos_estado'        => 'error',
+                'anexos_mensaje_error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+
+        $invoice->update([
+            'anexos_estado'           => 'enviado',
+            'anexos_codigo_recepcion' => $resultado['codigoRecepcion'],
+            'anexos_enviado_at'       => now(),
+            'anexos_mensaje_error'    => null,
+        ]);
+
+        return $resultado;
+    }
+
+    /**
+     * Traduce los códigos guardados a las líneas `ventaAnexo` del SIN.
+     *
+     * `codigoProducto` y `codigoProductoSin` tienen que ser los mismos que
+     * declaró el XML de la factura, o el SIN no puede casar el anexo con su línea.
+     *
+     * @return list<array{codigo: string, codigoProducto: string, codigoProductoSin: int, tipoCodigo: int}>
+     */
+    private function anexosDe(SiatInvoice $invoice): array
+    {
+        $invoice->loadMissing(['anexos.saleItem.product']);
+
+        return $invoice->anexos->map(function ($anexo): array {
+            $producto = $anexo->saleItem?->product;
+
+            $codigoSin = $producto?->codigo_producto_sin
+                ?? config('siat.factura.codigo_producto_sin_default');
+
+            if (blank($codigoSin)) {
+                throw new SiatException(
+                    "El producto \"{$producto?->name}\" no tiene código de producto del SIN. "
+                    . 'Homológuelo en Facturación SIAT → Homologación SIN.'
+                );
+            }
+
+            return [
+                'codigo'            => (string) $anexo->codigo,
+                // El mismo criterio que usa el XML de la factura.
+                'codigoProducto'    => (string) ($producto?->sku ?: $producto?->id ?: 'SIN-SKU'),
+                'codigoProductoSin' => (int) $codigoSin,
+                'tipoCodigo'        => (int) $anexo->tipo_codigo,
+            ];
+        })->values()->all();
     }
 
     /**

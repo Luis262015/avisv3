@@ -22,6 +22,7 @@ class Product extends Model
         'barcode',
         'codigo_producto_sin',
         'unidad_medida_sin',
+        'tipo_codigo_anexo',
         'description',
         'price',
         'cost',
@@ -38,7 +39,19 @@ class Product extends Model
         'track_inventory'     => 'boolean',
         'codigo_producto_sin' => 'integer',
         'unidad_medida_sin'   => 'integer',
+        // 1 = Nro. de serie, 2 = IMEI; null = este producto no lleva anexo.
+        'tipo_codigo_anexo'   => 'integer',
     ];
+
+    /**
+     * Si el SIN espera un número de serie o IMEI por cada unidad vendida.
+     *
+     * @see \App\Models\SiatAnexo
+     */
+    public function requiereAnexo(): bool
+    {
+        return $this->tipo_codigo_anexo !== null;
+    }
 
     protected static function booted(): void
     {

@@ -307,6 +307,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 ->name('invoices.check-status');
             Route::post('invoices/{siatInvoice}/revert-cancellation', [SiatInvoiceController::class, 'revertCancellation'])
                 ->name('invoices.revert-cancellation');
+            // Anexos: números de serie e IMEI. Se guardan y se declaran por
+            // separado porque el envío al SIN no tiene vuelta atrás.
+            Route::put('invoices/{siatInvoice}/anexos', [SiatInvoiceController::class, 'storeAnexos'])
+                ->name('invoices.anexos.store');
+            Route::post('invoices/{siatInvoice}/anexos/send', [SiatInvoiceController::class, 'sendAnexos'])
+                ->name('invoices.anexos.send');
             Route::post('sales/{sale}/emit-invoice', [SiatInvoiceController::class, 'emit'])->name('sales.emit-invoice');
         });
 

@@ -2,7 +2,7 @@ import { FlashMessage } from '@/components/flash-message';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { Link, router, useForm } from '@inertiajs/react';
-import { Ban, ExternalLink, Printer, RefreshCw, RotateCcw, SearchCheck, ShoppingCart } from 'lucide-react';
+import { Ban, ExternalLink, Printer, RefreshCw, RotateCcw, SearchCheck, Send, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 
 interface SiatInvoice {
@@ -28,6 +28,11 @@ interface SiatInvoice {
     codigo_qr: string | null;
     mensaje_error: string | null;
     enviado_at: string | null;
+    anexos_estado: string | null;
+    anexos_estado_label: string;
+    anexos_codigo_recepcion: string | null;
+    anexos_mensaje_error: string | null;
+    anexos_enviado_at: string | null;
     anulado_at: string | null;
     motivo_anulacion: string | null;
     created_at: string;
@@ -39,6 +44,23 @@ interface SiatInvoice {
         user: { name: string };
     };
     store: { id: number; name: string };
+}
+
+/** Una línea de la factura que el SIN quiere identificada unidad por unidad. */
+interface AnexoLinea {
+    sale_item_id: number;
+    producto: string;
+    sku: string | null;
+    unidades: number;
+    tipo_codigo: number;
+    tipo_label: string;
+    codigos: string[];
+}
+
+interface AnexosPanelData {
+    requeridos: number;
+    cargados: number;
+    lineas: AnexoLinea[];
 }
 
 const estadoColors: Record<string, string> = {
@@ -99,7 +121,159 @@ function CancelModal({ invoiceId, saleStatus, onClose }: {
     );
 }
 
-export default function SiatInvoiceShow({ invoice }: { invoice: SiatInvoice }) {
+/**
+ * Anexos: los números de serie e IMEI que el SIN pide aparte de la factura.
+ *
+ * Guardar y declarar son dos botones distintos a propósito. La lista se completa
+ * a ratos —hay que mirar cada aparato— y en cambio la declaración al SIN se hace
+ * una vez y no admite añadidos después, así que no debe salir sola por haber
+ * tecleado el último código.
+ */
+function AnexosPanel({ invoice, anexos }: { invoice: SiatInvoice; anexos: AnexosPanelData }) {
+    // Una casilla por unidad vendida: las que ya tienen código vienen rellenas.
+    const [codigos, setCodigos] = useState<Record<number, string[]>>(() =>
+        Object.fromEntries(
+            anexos.lineas.map((linea) => [
+                linea.sale_item_id,
+                Array.from({ length: linea.unidades }, (_, i) => linea.codigos[i] ?? ''),
+            ]),
+        ),
+    );
+    const [busy, setBusy] = useState<'save' | 'send' | null>(null);
+
+    const yaEnviados = invoice.anexos_estado === 'enviado';
+
+    const rellenados = Object.values(codigos).flat().filter((c) => c.trim() !== '').length;
+    const completo = rellenados === anexos.requeridos;
+
+    const setCodigo = (itemId: number, indice: number, valor: string) =>
+        setCodigos((previo) => ({
+            ...previo,
+            [itemId]: previo[itemId].map((c, i) => (i === indice ? valor : c)),
+        }));
+
+    const guardar = () => {
+        setBusy('save');
+        router.put(
+            `/admin/siat/invoices/${invoice.id}/anexos`,
+            {
+                anexos: Object.entries(codigos).flatMap(([itemId, lista]) =>
+                    lista.map((codigo) => ({ sale_item_id: Number(itemId), codigo })),
+                ),
+            },
+            { preserveScroll: true, onFinish: () => setBusy(null) },
+        );
+    };
+
+    const declarar = () => {
+        setBusy('send');
+        router.post(`/admin/siat/invoices/${invoice.id}/anexos/send`, {}, {
+            preserveScroll: true,
+            onFinish: () => setBusy(null),
+        });
+    };
+
+    return (
+        <div className="rounded-lg border bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
+                <div>
+                    <h2 className="font-semibold text-gray-700">Anexos: números de serie e IMEI</h2>
+                    <p className="text-xs text-gray-400">
+                        El SIN los pide aparte de la factura, uno por unidad vendida.
+                    </p>
+                </div>
+                <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        yaEnviados
+                            ? 'bg-green-100 text-green-700'
+                            : invoice.anexos_estado === 'error'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-100 text-amber-700'
+                    }`}
+                >
+                    {invoice.anexos_estado_label}
+                </span>
+            </div>
+
+            <div className="space-y-4 p-5">
+                {invoice.anexos_mensaje_error && (
+                    <div className="rounded-md bg-red-50 p-3">
+                        <p className="text-xs font-semibold text-red-700">El SIN rechazó los anexos:</p>
+                        <p className="text-xs text-red-600">{invoice.anexos_mensaje_error}</p>
+                    </div>
+                )}
+
+                {anexos.lineas.map((linea) => (
+                    <div key={linea.sale_item_id}>
+                        <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                            <p className="text-sm font-medium text-gray-700">
+                                {linea.producto}
+                                {linea.sku && <span className="ml-2 text-xs text-gray-400">{linea.sku}</span>}
+                            </p>
+                            <span className="text-xs text-gray-400">
+                                {linea.tipo_label} · {linea.unidades} unidad(es)
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {codigos[linea.sale_item_id].map((codigo, indice) => (
+                                <input
+                                    key={indice}
+                                    type="text"
+                                    value={codigo}
+                                    disabled={yaEnviados}
+                                    maxLength={100}
+                                    onChange={(e) => setCodigo(linea.sale_item_id, indice, e.target.value)}
+                                    placeholder={`${linea.tipo_label} ${indice + 1}`}
+                                    className="rounded-md border px-3 py-1.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-gray-50 disabled:text-gray-500"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+
+                {yaEnviados ? (
+                    <div className="flex items-center justify-between border-t pt-3 text-sm">
+                        <span className="text-gray-500">Declarados al SIN</span>
+                        <span className="font-mono text-xs text-green-600">
+                            {invoice.anexos_codigo_recepcion ?? 'recibidos'}
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+                        <p className="text-xs text-gray-500">
+                            {rellenados} de {anexos.requeridos} código(s)
+                            {!completo && ' — la declaración al SIN es única, así que solo sale completa.'}
+                        </p>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" disabled={busy !== null} onClick={guardar}>
+                                {busy === 'save' ? 'Guardando…' : 'Guardar códigos'}
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="gap-2"
+                                disabled={busy !== null || !completo || anexos.cargados < anexos.requeridos}
+                                onClick={declarar}
+                            >
+                                <Send className="h-3.5 w-3.5" />
+                                {busy === 'send' ? 'Declarando…' : 'Declarar al SIN'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Guardar primero no es un capricho: el envío lee lo guardado, no
+                    lo que hay en pantalla. */}
+                {!yaEnviados && completo && anexos.cargados < anexos.requeridos && (
+                    <p className="text-xs text-amber-600">
+                        Guarde los códigos antes de declararlos: el envío toma los que están guardados.
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default function SiatInvoiceShow({ invoice, anexos }: { invoice: SiatInvoice; anexos: AnexosPanelData }) {
     const [showCancelModal, setShowCancelModal] = useState(false);
     // Ambas operaciones hacen una llamada SOAP que puede tardar segundos.
     const [busy, setBusy] = useState<'resend' | 'check' | 'revert' | null>(null);
@@ -266,6 +440,9 @@ export default function SiatInvoiceShow({ invoice }: { invoice: SiatInvoice }) {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Solo aparece si la venta lleva algo con número de serie. */}
+                        {anexos.lineas.length > 0 && <AnexosPanel invoice={invoice} anexos={anexos} />}
                     </div>
 
                     {/* Panel lateral */}

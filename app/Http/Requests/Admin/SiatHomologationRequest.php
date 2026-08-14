@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\SiatAnexo;
 use App\Models\SiatSetting;
 use App\Services\Siat\SiatHomologacionCatalogo;
 use Illuminate\Foundation\Http\FormRequest;
@@ -46,6 +47,10 @@ class SiatHomologationRequest extends FormRequest
                 'required', 'integer', 'min:1',
                 $unidades !== [] ? Rule::in($unidades) : null,
             ]),
+
+            // Anexo de la factura: null = este producto no lleva número de serie
+            // ni IMEI, que es el caso de casi todo el catálogo.
+            'tipo_codigo_anexo' => ['sometimes', 'nullable', 'integer', Rule::in(array_keys(SiatAnexo::TIPOS))],
         ];
     }
 
@@ -56,6 +61,7 @@ class SiatHomologationRequest extends FormRequest
             'codigo_producto_sin.in' => 'Ese código no está en la lista de Productos y Servicios '
                 . 'de la actividad económica configurada.',
             'unidad_medida_sin.in'   => 'Esa unidad de medida no existe en la paramétrica del SIN.',
+            'tipo_codigo_anexo.in'   => 'El anexo solo puede ser número de serie (1) o IMEI (2).',
         ];
     }
 

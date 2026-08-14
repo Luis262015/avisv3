@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SiatBulkHomologationRequest;
 use App\Http\Requests\Admin\SiatHomologationRequest;
 use App\Models\Product;
+use App\Models\SiatAnexo;
 use App\Models\SiatSetting;
 use App\Services\Siat\SiatHomologacionCatalogo;
 use App\Services\Siat\SiatSincronizacionService;
@@ -50,9 +51,15 @@ class SiatHomologationController extends Controller
                 'id'    => $s->id,
                 'label' => $s->store?->name ?? $s->razon_social,
             ])->values(),
+            // Los tipos de anexo son fijos (paramétrica del SIN), pero se mandan
+            // desde aquí para no tener la lista escrita dos veces.
+            'tiposAnexo' => collect(SiatAnexo::TIPOS)
+                ->map(fn (string $label, int $value): array => ['value' => $value, 'label' => $label])
+                ->values(),
             'stats'     => [
                 'total'       => Product::count(),
                 'homologados' => Product::whereNotNull('codigo_producto_sin')->count(),
+                'con_anexo'   => Product::whereNotNull('tipo_codigo_anexo')->count(),
             ],
             'filters'   => $request->only(['search', 'estado']),
         ]);
@@ -60,14 +67,14 @@ class SiatHomologationController extends Controller
 
     public function update(SiatHomologationRequest $request, Product $product): RedirectResponse
     {
-        $product->update($request->safe()->only(['codigo_producto_sin', 'unidad_medida_sin']));
+        $product->update($request->safe()->only(['codigo_producto_sin', 'unidad_medida_sin', 'tipo_codigo_anexo']));
 
         return back()->with('success', "\"{$product->name}\" quedó homologado con el SIN.");
     }
 
     public function bulk(SiatBulkHomologationRequest $request): RedirectResponse
     {
-        $datos = $request->safe()->only(['codigo_producto_sin', 'unidad_medida_sin']);
+        $datos = $request->safe()->only(['codigo_producto_sin', 'unidad_medida_sin', 'tipo_codigo_anexo']);
 
         $afectados = Product::whereIn('id', $request->validated('product_ids'))->update($datos);
 
@@ -99,7 +106,7 @@ class SiatHomologationController extends Controller
     private function products(Request $request)
     {
         return Product::query()
-            ->select(['id', 'name', 'sku', 'barcode', 'unit', 'codigo_producto_sin', 'unidad_medida_sin'])
+            ->select(['id', 'name', 'sku', 'barcode', 'unit', 'codigo_producto_sin', 'unidad_medida_sin', 'tipo_codigo_anexo'])
             ->when($request->filled('search'), function ($q) use ($request): void {
                 $termino = $request->string('search')->toString();
 

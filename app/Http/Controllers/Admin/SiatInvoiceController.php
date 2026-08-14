@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SiatAnexoRequest;
 use App\Models\Sale;
+use App\Models\SiatAnexo;
 use App\Models\SiatInvoice;
 use App\Services\SaleService;
 use App\Services\SiatService;
@@ -50,7 +52,7 @@ class SiatInvoiceController extends Controller
 
     public function show(SiatInvoice $siatInvoice): Response
     {
-        $siatInvoice->load(['sale.items.product', 'sale.user', 'store', 'cufdCode']);
+        $siatInvoice->load(['sale.items.product', 'sale.user', 'store', 'cufdCode', 'anexos']);
 
         return Inertia::render('admin/siat/invoices/show', [
             'invoice' => array_merge($siatInvoice->toArray(), [
@@ -59,8 +61,48 @@ class SiatInvoiceController extends Controller
                 'tipo_doc_label'        => $siatInvoice->tipo_doc_identidad_label,
                 'metodo_pago_label'     => $siatInvoice->metodo_pago_label,
                 'tipo_emision_label'    => $siatInvoice->tipo_emision_label,
+                'anexos_estado_label'   => $siatInvoice->anexos_estado_label,
             ]),
+            'anexos' => $this->anexos($siatInvoice),
         ]);
+    }
+
+    /**
+     * Las líneas de la factura que el SIN quiere identificadas, con los códigos
+     * ya tecleados y los huecos que faltan por rellenar.
+     *
+     * @return array{requeridos: int, cargados: int, lineas: list<array<string, mixed>>}
+     */
+    private function anexos(SiatInvoice $siatInvoice): array
+    {
+        $porItem = $siatInvoice->anexos->groupBy('sale_item_id');
+
+        $lineas = ($siatInvoice->sale?->items ?? collect())
+            ->filter(fn ($item): bool => (bool) $item->product?->requiereAnexo())
+            ->map(function ($item) use ($porItem): array {
+                $tipo = (int) $item->product->tipo_codigo_anexo;
+
+                return [
+                    'sale_item_id' => $item->id,
+                    'producto'     => $item->product->name,
+                    'sku'          => $item->product->sku,
+                    'unidades'     => (int) (float) $item->quantity,
+                    'tipo_codigo'  => $tipo,
+                    'tipo_label'   => SiatAnexo::TIPOS[$tipo] ?? 'Desconocido',
+                    'codigos'      => $porItem->get($item->id, collect())
+                        ->pluck('codigo')
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'requeridos' => $siatInvoice->anexosRequeridos(),
+            'cargados'   => $siatInvoice->anexos->count(),
+            'lineas'     => $lineas,
+        ];
     }
 
     /**
@@ -210,5 +252,50 @@ class SiatInvoiceController extends Controller
         }
 
         return back()->with('success', 'Estado en el SIN: ' . ($resultado['codigoDescripcion'] ?? 'desconocido'));
+    }
+
+    /**
+     * Guarda los números de serie e IMEI de la factura, sin enviarlos.
+     *
+     * Guardar y enviar van por separado a propósito: la lista se completa a lo
+     * largo del día y el envío al SIN es irrepetible, así que no conviene que
+     * salga solo por haber tecleado el último código.
+     */
+    public function storeAnexos(SiatAnexoRequest $request, SiatInvoice $siatInvoice)
+    {
+        try {
+            $this->siat->guardarAnexos($siatInvoice, $request->validated('anexos'));
+        } catch (\Throwable $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        $faltan = $siatInvoice->anexosRequeridos() - $siatInvoice->anexos()->count();
+
+        return back()->with(
+            'success',
+            $faltan > 0
+                ? "Códigos guardados; faltan {$faltan} para poder declararlos al SIN."
+                : 'Códigos guardados. Ya se pueden declarar al SIN.',
+        );
+    }
+
+    /**
+     * Declara al SIN los números de serie e IMEI ya guardados.
+     */
+    public function sendAnexos(SiatInvoice $siatInvoice)
+    {
+        try {
+            $resultado = $this->siat->enviarAnexos($siatInvoice);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['siat' => $e->getMessage()]);
+        }
+
+        $recepcion = $resultado['codigoRecepcion'] ?? null;
+
+        return back()->with(
+            'success',
+            'Anexos declarados al SIN: ' . ($resultado['codigoDescripcion'] ?? 'recibidos')
+            . ($recepcion ? " (recepción {$recepcion})." : '.'),
+        );
     }
 }

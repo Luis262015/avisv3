@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SiatInvoice extends Model
 {
@@ -34,6 +35,10 @@ class SiatInvoice extends Model
         'numero_tarjeta',
         'estado',
         'codigo_recepcion',
+        'anexos_estado',
+        'anexos_codigo_recepcion',
+        'anexos_mensaje_error',
+        'anexos_enviado_at',
         'codigo_qr',
         'mensaje_error',
         'enviado_at',
@@ -52,6 +57,7 @@ class SiatInvoice extends Model
         // pierde al escribir. Se maneja en su propio accessor más abajo.
         'enviado_at'     => 'datetime',
         'anulado_at'     => 'datetime',
+        'anexos_enviado_at' => 'datetime',
         'tipo_factura'   => 'integer',
         'tipo_emision'   => 'integer',
         'tipo_doc_identidad' => 'integer',
@@ -102,6 +108,37 @@ class SiatInvoice extends Model
     public function paquete(): BelongsTo
     {
         return $this->belongsTo(SiatPaquete::class, 'paquete_id');
+    }
+
+    /** Números de serie e IMEI declarados al SIN por esta factura. */
+    public function anexos(): HasMany
+    {
+        return $this->hasMany(SiatAnexo::class, 'siat_invoice_id');
+    }
+
+    /**
+     * Cuántos códigos exige el SIN para esta factura.
+     *
+     * Uno por unidad física vendida de un producto marcado con anexo: tres
+     * portátiles en una línea son tres números de serie, no uno.
+     */
+    public function anexosRequeridos(): int
+    {
+        $this->loadMissing('sale.items.product');
+
+        return (int) ($this->sale?->items
+            ->filter(fn (SaleItem $item): bool => (bool) $item->product?->requiereAnexo())
+            ->sum(fn (SaleItem $item): float => (float) $item->quantity) ?? 0);
+    }
+
+    public function getAnexosEstadoLabelAttribute(): string
+    {
+        return match ($this->anexos_estado) {
+            'pendiente' => 'Pendiente de envío',
+            'enviado'   => 'Enviados al SIN',
+            'error'     => 'Rechazados por el SIN',
+            default     => 'No aplica',
+        };
     }
 
     public function getEstadoLabelAttribute(): string

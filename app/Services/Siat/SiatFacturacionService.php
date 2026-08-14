@@ -56,6 +56,43 @@ class SiatFacturacionService
     }
 
     /**
+     * Declara los números de serie e IMEI de lo vendido en una factura.
+     *
+     * Va aparte de la factura y después de ella: es una lista plana, sin XML ni
+     * XSD ni compresión, que se ata a la venta por el CUF. El SIN la acepta solo
+     * si esa factura ya está recibida, de ahí que no se pueda enviar junto con la
+     * emisión.
+     *
+     * @param  list<array{codigo: string, codigoProducto: string, codigoProductoSin: int, tipoCodigo: int}>  $anexos
+     * @return array{codigoRecepcion: ?string, codigoEstado: ?int, codigoDescripcion: ?string, mensajes: list<string>, respuesta: array<string, mixed>}
+     */
+    public function recepcionAnexos(
+        SiatSetting $setting,
+        string $cuf,
+        array $anexos,
+        string $cufd,
+        int $tipoFacturaDocumento,
+    ): array {
+        if ($anexos === []) {
+            throw new SiatException('No hay números de serie ni IMEI que declarar en esta factura.');
+        }
+
+        $respuesta = $this->call($setting, 'recepcionAnexos', [
+            'anexosList' => array_map(fn (array $anexo): array => [
+                'codigo'            => (string) $anexo['codigo'],
+                'codigoProducto'    => (string) $anexo['codigoProducto'],
+                'codigoProductoSin' => (int) $anexo['codigoProductoSin'],
+                // El WSDL lo declara `xs:string` aunque la documentación lo llame
+                // numérico; se manda como cadena para no depender de la coerción.
+                'tipoCodigo'        => (string) $anexo['tipoCodigo'],
+            ], array_values($anexos)),
+            'cuf'        => $cuf,
+        ], $cufd, 'SolicitudRecepcionAnexos', $tipoFacturaDocumento);
+
+        return $this->interpretar($respuesta);
+    }
+
+    /**
      * Anula una factura ya recibida por el SIN.
      *
      * @param  int  $codigoMotivo  Del catálogo `sincronizarParametricaMotivoAnulacion`.

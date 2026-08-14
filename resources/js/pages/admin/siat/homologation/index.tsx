@@ -20,6 +20,7 @@ interface Product {
     unit: string | null;
     codigo_producto_sin: number | null;
     unidad_medida_sin: number | null;
+    tipo_codigo_anexo: number | null;
 }
 
 interface Props {
@@ -27,7 +28,9 @@ interface Props {
     catalogo: { productos: CatalogEntry[]; unidades: CatalogEntry[]; error: string | null };
     setting: { id: number; actividad_economica: string; actividad_descripcion: string | null; ambiente: string } | null;
     settings: { id: number; label: string }[];
-    stats: { total: number; homologados: number };
+    /** Paramétrica del SIN: 1 = Nº de serie, 2 = IMEI. */
+    tiposAnexo: { value: number; label: string }[];
+    stats: { total: number; homologados: number; con_anexo: number };
     filters: { search?: string; estado?: string };
 }
 
@@ -176,12 +179,14 @@ function UnidadSelect({
 function ProductRow({
     product,
     catalogo,
+    tiposAnexo,
     settingId,
     selected,
     onToggle,
 }: {
     product: Product;
     catalogo: Props['catalogo'];
+    tiposAnexo: Props['tiposAnexo'];
     settingId: number | null;
     selected: boolean;
     onToggle: (id: number) => void;
@@ -190,10 +195,15 @@ function ProductRow({
         setting_id: settingId,
         codigo_producto_sin: product.codigo_producto_sin,
         unidad_medida_sin: product.unidad_medida_sin,
+        tipo_codigo_anexo: product.tipo_codigo_anexo,
     });
 
     const homologado = product.codigo_producto_sin !== null && product.unidad_medida_sin !== null;
-    const error = errors.codigo_producto_sin ?? errors.unidad_medida_sin ?? (errors as Record<string, string>).setting_id;
+    const error =
+        errors.codigo_producto_sin ??
+        errors.unidad_medida_sin ??
+        errors.tipo_codigo_anexo ??
+        (errors as Record<string, string>).setting_id;
 
     return (
         <tr className="align-top hover:bg-gray-50">
@@ -226,6 +236,20 @@ function ProductRow({
                     options={catalogo.unidades}
                     onChange={(v) => setData('unidad_medida_sin', v)}
                 />
+            </td>
+            {/* Casi todo el catálogo va sin anexo; lo llevan los aparatos que el
+                SIN quiere identificados uno a uno. */}
+            <td className="w-40 px-3 py-2">
+                <select
+                    className="w-full rounded-md border px-2 py-1.5 text-sm"
+                    value={data.tipo_codigo_anexo ?? ''}
+                    onChange={(e) => setData('tipo_codigo_anexo', e.target.value === '' ? null : Number(e.target.value))}
+                >
+                    <option value="">No lleva</option>
+                    {tiposAnexo.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                </select>
             </td>
             <td className="px-3 py-2 text-right">
                 {isDirty ? (
@@ -311,7 +335,7 @@ function BulkBar({
     );
 }
 
-export default function SiatHomologationIndex({ products, catalogo, setting, settings, stats, filters }: Props) {
+export default function SiatHomologationIndex({ products, catalogo, setting, settings, tiposAnexo, stats, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [estado, setEstado] = useState(filters.estado ?? '');
     const [selection, setSelection] = useState<number[]>([]);
@@ -374,6 +398,9 @@ export default function SiatHomologationIndex({ products, catalogo, setting, set
                     <div className="mb-2 flex items-center justify-between text-sm">
                         <span className="text-gray-600">
                             {stats.homologados} de {stats.total} productos homologados
+                            {stats.con_anexo > 0 && (
+                                <span className="text-gray-400"> · {stats.con_anexo} con anexo (serie/IMEI)</span>
+                            )}
                         </span>
                         {pendientes > 0 && (
                             <span className="text-amber-600">{pendientes} pendiente(s) — no se pueden facturar</span>
@@ -445,6 +472,9 @@ export default function SiatHomologationIndex({ products, catalogo, setting, set
                                 <th className="px-3 py-3 text-left">Producto</th>
                                 <th className="px-3 py-3 text-left">Código Producto/Servicio SIN</th>
                                 <th className="px-3 py-3 text-left">Unidad de medida</th>
+                                <th className="px-3 py-3 text-left" title="Números de serie o IMEI que se declaran al SIN aparte de la factura">
+                                    Anexo
+                                </th>
                                 <th className="px-3 py-3" />
                             </tr>
                         </thead>
@@ -454,13 +484,14 @@ export default function SiatHomologationIndex({ products, catalogo, setting, set
                                     key={p.id}
                                     product={p}
                                     catalogo={catalogo}
+                                    tiposAnexo={tiposAnexo}
                                     settingId={settingId}
                                     selected={selection.includes(p.id)}
                                     onToggle={toggle}
                                 />
                             ))}
                             {products.data.length === 0 && (
-                                <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">Sin productos.</td></tr>
+                                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">Sin productos.</td></tr>
                             )}
                         </tbody>
                     </table>
