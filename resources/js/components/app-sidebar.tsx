@@ -7,6 +7,7 @@ import { usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import {
     ArrowDownCircle,
+    ArrowLeftRight,
     ArrowUpCircle,
     Banknote,
     BarChart2,
@@ -124,6 +125,7 @@ export function AppSidebar() {
                 { title: 'Marcas', url: '/admin/brands', icon: Tag },
                 { title: 'Etiquetas', url: '/admin/tags', icon: Tags },
                 { title: 'Inventario', url: '/admin/inventory', icon: PackageSearch },
+                { title: 'Transferencias', url: '/admin/stock-transfers', icon: ArrowLeftRight },
             ],
         }] : []),
         ...(isAdmin ? [{

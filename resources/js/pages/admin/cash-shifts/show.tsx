@@ -60,8 +60,20 @@ interface Shift {
     withdrawals: Withdrawal[];
 }
 
+/** Desglose del efectivo, calculado en el servidor. */
+interface Arqueo {
+    ventas_efectivo: number;
+    ventas_otros: number;
+    ventas_mixtas: number;
+    ingresos_efectivo: number;
+    gastos_efectivo: number;
+    retiros: number;
+    esperado: number;
+}
+
 interface Props {
     shift: Shift;
+    arqueo: Arqueo;
     totalSales: number;
     salesCount: number;
     salesByMethod: Record<string, number>;
@@ -80,6 +92,7 @@ const PM_LABEL: Record<string, string> = {
 
 export default function CashShiftShow({
     shift,
+    arqueo,
     totalSales,
     salesCount,
     salesByMethod,
@@ -98,8 +111,9 @@ export default function CashShiftShow({
     const fmt = (v: string | number | null) =>
         v != null ? `$${parseFloat(String(v)).toFixed(2)}` : '—';
 
-    const expectedAmount =
-        parseFloat(shift.opening_amount) + totalSales + totalIncomes - totalExpenses - withdrawalsTotal;
+    // Lo calcula el servidor: solo cuenta lo que pasó por el cajón. Recalcularlo
+    // aquí es como se coló el fallo de contar las ventas con tarjeta como efectivo.
+    const expectedAmount = arqueo.esperado;
 
     const closingNum = data.closing_amount !== '' ? parseFloat(data.closing_amount) : null;
     const liveDiff   = closingNum !== null ? closingNum - expectedAmount : null;
@@ -180,18 +194,31 @@ export default function CashShiftShow({
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                                 <p className="text-xs font-medium uppercase tracking-wide text-blue-500">
-                                    Monto esperado al cerrar
+                                    Efectivo esperado en el cajón
                                 </p>
                                 <p className="mt-1 text-2xl font-bold text-blue-800">
                                     {fmt(expectedAmount)}
                                 </p>
                                 <div className="mt-2 flex flex-wrap gap-x-6 gap-y-0.5 text-xs text-blue-600">
                                     <span>Fondo: {fmt(shift.opening_amount)}</span>
-                                    <span>+ Ventas: {fmt(totalSales)}</span>
-                                    {totalIncomes > 0 && <span>+ Ingresos: {fmt(totalIncomes)}</span>}
-                                    {totalExpenses > 0 && <span>- Gastos: {fmt(totalExpenses)}</span>}
-                                    {withdrawalsTotal > 0 && <span>- Retiros: {fmt(withdrawalsTotal)}</span>}
+                                    <span>+ Ventas en efectivo: {fmt(arqueo.ventas_efectivo)}</span>
+                                    {arqueo.ingresos_efectivo > 0 && <span>+ Ingresos: {fmt(arqueo.ingresos_efectivo)}</span>}
+                                    {arqueo.gastos_efectivo > 0 && <span>- Gastos: {fmt(arqueo.gastos_efectivo)}</span>}
+                                    {arqueo.retiros > 0 && <span>- Retiros: {fmt(arqueo.retiros)}</span>}
                                 </div>
+                                {arqueo.ventas_otros > 0 && (
+                                    <p className="mt-2 text-xs text-blue-500">
+                                        {fmt(arqueo.ventas_otros)} en tarjeta y transferencia no entran al cajón y
+                                        no se cuentan aquí.
+                                    </p>
+                                )}
+                                {arqueo.ventas_mixtas > 0 && (
+                                    <p className="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">
+                                        Hay {fmt(arqueo.ventas_mixtas)} en ventas con pago mixto. La venta no
+                                        guarda cuánto se cobró en efectivo, así que ese importe queda fuera del
+                                        esperado: verifíquelo a mano antes de cerrar.
+                                    </p>
+                                )}
                             </div>
                             <Button
                                 variant="destructive"
@@ -423,32 +450,44 @@ export default function CashShiftShow({
                                     {/* Fondo inicial */}
                                     <ModalRow label="Fondo inicial" value={fmt(shift.opening_amount)} />
 
-                                    {/* Ventas por método */}
+                                    {/* Solo el efectivo suma al cajón; el resto se lista
+                                        para cuadrar la jornada, pero atenuado y sin signo. */}
                                     {Object.entries(salesByMethod).map(([method, amount]) => (
                                         <ModalRow
                                             key={`sale-${method}`}
-                                            label={`+ Ventas (${PM_LABEL[method] ?? method})`}
+                                            label={
+                                                method === 'cash'
+                                                    ? '+ Ventas (Efectivo)'
+                                                    : `Ventas (${PM_LABEL[method] ?? method}) — no entra al cajón`
+                                            }
                                             value={fmt(amount)}
+                                            color={method === 'cash' ? undefined : 'text-gray-400'}
                                         />
                                     ))}
 
-                                    {/* Ingresos por método */}
                                     {Object.entries(incomesByMethod).map(([method, amount]) => (
                                         <ModalRow
                                             key={`inc-${method}`}
-                                            label={`+ Ingresos (${PM_LABEL[method] ?? method})`}
+                                            label={
+                                                method === 'cash'
+                                                    ? '+ Ingresos (Efectivo)'
+                                                    : `Ingresos (${PM_LABEL[method] ?? method}) — no entra al cajón`
+                                            }
                                             value={fmt(amount)}
-                                            color="text-green-700"
+                                            color={method === 'cash' ? 'text-green-700' : 'text-gray-400'}
                                         />
                                     ))}
 
-                                    {/* Gastos por método */}
                                     {Object.entries(expensesByMethod).map(([method, amount]) => (
                                         <ModalRow
                                             key={`exp-${method}`}
-                                            label={`- Gastos (${PM_LABEL[method] ?? method})`}
-                                            value={`-${fmt(amount)}`}
-                                            color="text-red-700"
+                                            label={
+                                                method === 'cash'
+                                                    ? '- Gastos (Efectivo)'
+                                                    : `Gastos (${PM_LABEL[method] ?? method}) — no sale del cajón`
+                                            }
+                                            value={method === 'cash' ? `-${fmt(amount)}` : fmt(amount)}
+                                            color={method === 'cash' ? 'text-red-700' : 'text-gray-400'}
                                         />
                                     ))}
 
@@ -462,9 +501,15 @@ export default function CashShiftShow({
                                     )}
                                 </div>
                                 <div className="mt-2 flex justify-between border-t pt-2 font-bold text-gray-800">
-                                    <span>Total esperado</span>
+                                    <span>Efectivo esperado</span>
                                     <span>{fmt(expectedAmount)}</span>
                                 </div>
+                                {arqueo.ventas_mixtas > 0 && (
+                                    <p className="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">
+                                        {fmt(arqueo.ventas_mixtas)} en ventas mixtas quedan fuera: la venta no
+                                        registra qué parte se cobró en efectivo.
+                                    </p>
+                                )}
                             </div>
 
                             {/* Monto contado */}

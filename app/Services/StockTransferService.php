@@ -68,21 +68,21 @@ class StockTransferService
                 $product = $item->product;
 
                 $this->inventory->recordMovement(
-                    $product,
-                    'transfer_out',
-                    $item->quantity,
-                    $transfer,
-                    "Transferencia #{$transfer->folio} → {$transfer->toStore->name}",
-                    $transfer->from_store_id
+                    product: $product,
+                    storeId: $transfer->from_store_id,
+                    type: 'transfer_out',
+                    quantity: $item->quantity,
+                    reference: $transfer,
+                    reason: "Transferencia #{$transfer->folio} → {$transfer->toStore->name}",
                 );
 
                 $this->inventory->recordMovement(
-                    $product,
-                    'transfer_in',
-                    $item->quantity,
-                    $transfer,
-                    "Transferencia #{$transfer->folio} ← {$transfer->fromStore->name}",
-                    $transfer->to_store_id
+                    product: $product,
+                    storeId: $transfer->to_store_id,
+                    type: 'transfer_in',
+                    quantity: $item->quantity,
+                    reference: $transfer,
+                    reason: "Transferencia #{$transfer->folio} ← {$transfer->fromStore->name}",
                 );
             }
 

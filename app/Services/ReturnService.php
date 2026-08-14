@@ -117,12 +117,12 @@ class ReturnService
                     $product = $item->product;
                     if ($product && $product->track_inventory) {
                         $this->inventory->recordMovement(
-                            $product,
-                            'return',
-                            (float) $item->quantity,
-                            $return,
-                            "Devolución #{$return->folio}",
-                            $storeId
+                            product: $product,
+                            storeId: $storeId,
+                            type: 'return',
+                            quantity: (float) $item->quantity,
+                            reference: $return,
+                            reason: "Devolución #{$return->folio}",
                         );
                     }
                 }

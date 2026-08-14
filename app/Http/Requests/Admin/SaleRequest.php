@@ -22,6 +22,11 @@ class SaleRequest extends FormRequest
             'amount_paid'          => ['required', 'numeric', 'min:0'],
             'payment_method'       => ['required', Rule::in(['cash', 'card', 'transfer', 'mixed'])],
             'notes'                => ['nullable', 'string'],
+            // Los combos aplicados: el POS los expande en líneas de producto, así
+            // que sin declararlos aquí la venta no dejaría rastro de haberlos usado.
+            'combos'               => ['nullable', 'array'],
+            'combos.*.promotion_id' => ['required', 'exists:promotions,id'],
+            'combos.*.quantity'    => ['nullable', 'integer', 'min:1'],
             'items'                => ['required', 'array', 'min:1'],
             'items.*.product_id'   => ['required', 'exists:products,id'],
             'items.*.quantity'     => ['required', 'numeric', 'min:0.01'],

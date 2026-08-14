@@ -61,6 +61,9 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
         customer_id: '', promotion_id: '',
         discount: '0', tax: '0', amount_paid: '', payment_method: 'cash', notes: '',
         items: [] as Item[],
+        // Combos aplicados, para que el servidor consuma su cupo: las líneas del
+        // carrito por sí solas no dicen que vinieran de un combo.
+        combos: [] as { promotion_id: number; quantity: number }[],
     });
 
     const filtered = products.filter((p) =>
@@ -118,7 +121,18 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                 combo_name: combo.name,
             };
         });
-        setData((prev: any) => ({ ...prev, items: [...prev.items, ...newLines] }));
+        setData((prev: any) => {
+            const previos = prev.combos as { promotion_id: number; quantity: number }[];
+            const yaEsta = previos.find((c) => c.promotion_id === combo.id);
+
+            return {
+                ...prev,
+                items: [...prev.items, ...newLines],
+                combos: yaEsta
+                    ? previos.map((c) => (c.promotion_id === combo.id ? { ...c, quantity: c.quantity + 1 } : c))
+                    : [...previos, { promotion_id: combo.id, quantity: 1 }],
+            };
+        });
     };
 
     const handleBarcodeScan = (barcode: string): boolean => {
@@ -153,7 +167,32 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
         if (!scannerOpen) searchRef.current?.focus();
     }, [scannerOpen]);
 
-    const removeItem = (i: number) => setData('items', data.items.filter((_: Item, j: number) => j !== i));
+    /**
+     * Quitar una línea que venía de un combo retira el combo completo: las demás
+     * líneas por sí solas ya no son el combo, y dejar el registro haría que el
+     * servidor rechazara la venta porque el carrito no coincide con lo declarado.
+     */
+    const removeItem = (i: number) =>
+        setData((prev: any) => {
+            const linea: Item = prev.items[i];
+            const items = prev.items.filter((_: Item, j: number) => j !== i);
+
+            if (!linea?.combo_name) {
+                return { ...prev, items };
+            }
+
+            const combo = combos.find((c) => c.name === linea.combo_name);
+
+            return {
+                ...prev,
+                items: items.filter((it: Item) => it.combo_name !== linea.combo_name),
+                combos: combo
+                    ? prev.combos.filter(
+                          (c: { promotion_id: number }) => c.promotion_id !== combo.id,
+                      )
+                    : prev.combos,
+            };
+        });
     const setItem = (i: number, field: keyof Item, value: string) => {
         const items = [...data.items];
         items[i] = { ...items[i], [field]: value };

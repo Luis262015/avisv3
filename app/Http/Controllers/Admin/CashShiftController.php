@@ -113,6 +113,9 @@ class CashShiftController extends Controller
 
         return Inertia::render('admin/cash-shifts/show', [
             'shift'            => $cashShift,
+            // El desglose del arqueo: sin él, el "esperado" es un número que nadie
+            // puede comprobar y cualquier diferencia parece un error de conteo.
+            'arqueo'           => $cashShift->arqueo(),
             'totalSales'       => round($completedSales->sum('total'), 2),
             'salesCount'       => $completedSales->count(),
             'salesByMethod'    => $salesByMethod,
@@ -135,12 +138,9 @@ class CashShiftController extends Controller
             return back()->withErrors(['shift' => 'Este turno ya está cerrado.']);
         }
 
-        $totalSales    = (float) $cashShift->sales()->where('status', 'completed')->sum('total');
-        $totalIncomes  = (float) $cashShift->incomes()->sum('amount');
-        $totalExpenses = (float) $cashShift->expenses()->sum('amount');
-        $withdrawals   = (float) $cashShift->withdrawals()->sum('amount');
-
-        $expected = (float) $cashShift->opening_amount + $totalSales + $totalIncomes - $totalExpenses - $withdrawals;
+        // El arqueo vive en el modelo para que esta pantalla y la del turno no
+        // puedan discrepar sobre qué debería haber en el cajón.
+        $expected = $cashShift->arqueo()['esperado'];
 
         $cashShift->update([
             'closing_amount'  => $request->closing_amount,

@@ -24,7 +24,7 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
         name: product.name, sku: product.sku ?? '', barcode: product.barcode ?? '',
         category_id: product.category_id?.toString() ?? '', brand_id: product.brand_id?.toString() ?? '',
         description: product.description ?? '', price: product.price, cost: product.cost,
-        stock: product.stock, min_stock: product.min_stock, unit: product.unit,
+        min_stock: product.min_stock, unit: product.unit,
         status: product.status, track_inventory: product.track_inventory,
         tags: product.tags.map((t) => t.id), images: [] as File[],
     });
@@ -91,12 +91,21 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
                                 <Input type="number" step="0.01" min="0" value={data.cost} onChange={(e) => setData('cost', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Stock</Label>
-                                <Input type="number" min="0" value={data.stock} onChange={(e) => setData('stock', e.target.value)} />
+                                <Label>Stock mínimo general</Label>
+                                <Input type="number" min="0" value={data.min_stock} onChange={(e) => setData('min_stock', e.target.value)} />
+                                <p className="mt-1 text-xs text-neutral-500">
+                                    Cada tienda puede fijar el suyo desde Inventario.
+                                </p>
                             </div>
                             <div>
-                                <Label>Stock mínimo</Label>
-                                <Input type="number" min="0" value={data.min_stock} onChange={(e) => setData('min_stock', e.target.value)} />
+                                <Label>Existencias</Label>
+                                <p className="mt-1 text-sm">
+                                    <span className="text-lg font-semibold">{product.stock}</span>
+                                    <span className="text-neutral-500"> en total</span>
+                                </p>
+                                <a href="/admin/inventory" className="text-xs text-indigo-600 hover:underline">
+                                    Ver y ajustar por tienda →
+                                </a>
                             </div>
                             <div>
                                 <Label>Unidad</Label>

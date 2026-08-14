@@ -22,7 +22,10 @@ class ProductRequest extends FormRequest
             'description'     => ['nullable', 'string'],
             'price'           => ['required', 'numeric', 'min:0'],
             'cost'            => ['required', 'numeric', 'min:0'],
-            'stock'           => ['required', 'integer', 'min:0'],
+            // `stock` no se acepta desde aquí: es la suma de las existencias por
+            // tienda y solo lo escribe InventoryService. Aceptarlo permitía crear
+            // un producto con 25 unidades que ninguna tienda tenía, visibles en el
+            // listado pero imposibles de vender.
             'min_stock'       => ['required', 'integer', 'min:0'],
             'unit'            => ['required', 'string', 'max:20'],
             'status'          => ['required', Rule::in(['active', 'inactive', 'out_of_stock'])],

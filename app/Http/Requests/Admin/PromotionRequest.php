@@ -16,11 +16,20 @@ class PromotionRequest extends FormRequest
     {
         $promotionId = $this->route('promotion')?->id;
 
+        // Un porcentaje por encima de 100 no es un descuento mayor: deja el total
+        // en cero y regala la venta por un error de tecleo.
+        $reglasValor = ['nullable', 'numeric', 'min:0'];
+        $reglasValor[] = Rule::requiredIf(fn () => in_array($this->type, ['percentage', 'fixed']));
+
+        if ($this->input('type') === 'percentage') {
+            $reglasValor[] = 'max:100';
+        }
+
         return [
             'name'         => ['required', 'string', 'max:255'],
             'code'         => ['nullable', 'string', 'max:50', Rule::unique('promotions', 'code')->ignore($promotionId)],
             'type'         => ['required', 'in:percentage,fixed,buy_x_get_y,combo'],
-            'value'        => ['nullable', 'numeric', 'min:0', Rule::requiredIf(fn() => in_array($this->type, ['percentage', 'fixed']))],
+            'value'        => $reglasValor,
             'combo_price'  => ['nullable', 'numeric', 'min:0', Rule::requiredIf(fn() => $this->type === 'combo')],
             'scope'        => ['required', 'in:all,product,category'],
             'min_purchase' => ['nullable', 'numeric', 'min:0'],

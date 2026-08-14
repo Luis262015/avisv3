@@ -262,6 +262,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         // Inventory
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('inventory/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
+        Route::post('inventory/min-stock', [InventoryController::class, 'setMinStock'])->name('inventory.min-stock');
 
         // Stock transfers
         Route::resource('stock-transfers', StockTransferController::class)->only(['index', 'create', 'store', 'show']);

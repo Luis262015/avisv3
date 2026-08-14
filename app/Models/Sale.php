@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,21 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Los combos aplicados en esta venta.
+     *
+     * Van aparte de `promotion()` —que es la promoción de descuento— porque una
+     * venta puede llevar varios combos y `sales.promotion_id` es una sola columna.
+     * El nombre de la tabla va explícito: la convención de Eloquent no lo
+     * adivinaría, ya que el modelo relacionado es `Promotion`, no `Combo`.
+     */
+    public function combos(): BelongsToMany
+    {
+        return $this->belongsToMany(Promotion::class, 'combo_sale')
+            ->withPivot(['quantity', 'combo_price'])
+            ->withTimestamps();
     }
 
     public function promotion(): BelongsTo

@@ -59,6 +59,8 @@ class SaleService
                 Promotion::find($promotionId)?->incrementUsage();
             }
 
+            $this->registrarCombos($sale, $data['combos'] ?? [], $items);
+
             foreach ($items as $item) {
                 $sale->items()->create([
                     'product_id' => $item['product_id'],
@@ -71,12 +73,12 @@ class SaleService
                 $product = $products[$item['product_id']];
                 if ($product->track_inventory) {
                     $this->inventory->recordMovement(
-                        $product,
-                        'out',
-                        $item['quantity'],
-                        $sale,
-                        "Venta #{$sale->folio}",
-                        $storeId
+                        product: $product,
+                        storeId: $storeId,
+                        type: 'out',
+                        quantity: $item['quantity'],
+                        reference: $sale,
+                        reason: "Venta #{$sale->folio}",
                     );
                 }
             }
@@ -126,12 +128,12 @@ class SaleService
             foreach ($sale->items as $oldItem) {
                 if ($oldItem->product->track_inventory) {
                     $this->inventory->recordMovement(
-                        $oldItem->product,
-                        'return',
-                        $oldItem->quantity,
-                        $sale,
-                        "Corrección venta #{$sale->folio}",
-                        $storeId
+                        product: $oldItem->product,
+                        storeId: $storeId,
+                        type: 'return',
+                        quantity: $oldItem->quantity,
+                        reference: $sale,
+                        reason: "Corrección venta #{$sale->folio}",
                     );
                 }
             }
@@ -155,22 +157,25 @@ class SaleService
                 $product = $products[$item['product_id']];
                 if ($product->track_inventory) {
                     $this->inventory->recordMovement(
-                        $product,
-                        'out',
-                        $item['quantity'],
-                        $sale,
-                        "Corrección venta #{$sale->folio}",
-                        $storeId
+                        product: $product,
+                        storeId: $storeId,
+                        type: 'out',
+                        quantity: $item['quantity'],
+                        reference: $sale,
+                        reason: "Corrección venta #{$sale->folio}",
                     );
                 }
             }
 
             $tax        = $data['tax'] ?? 0;
 
-            // Keep the originally applied promotion and recompute its discount;
-            // otherwise honour the manual global discount.
+            // Se conserva la promoción con la que nació la venta y se recalcula su
+            // descuento contra el carrito corregido. `recalculateForCart` vuelve a
+            // exigir las condiciones —la compra mínima— pero no la vigencia: la
+            // promoción ya se usó, y que hoy esté vencida no puede impedir corregir
+            // una venta de la semana pasada.
             if ($sale->promotion_id && ($promotion = Promotion::find($sale->promotion_id))) {
-                $discount = min($this->promotions->calculateDiscount($promotion, $this->buildCart($items)), $subtotal);
+                $discount = min($this->promotions->recalculateForCart($promotion, $this->buildCart($items)), $subtotal);
             } else {
                 $discount = $data['discount'] ?? 0;
             }
@@ -196,7 +201,7 @@ class SaleService
     public function cancel(Sale $sale, string $reason = '', ?int $cancelledBy = null): Sale
     {
         return DB::transaction(function () use ($sale, $reason, $cancelledBy) {
-            $sale->load(['items.product', 'siatInvoice', 'cashShift.cashRegister']);
+            $sale->load(['items.product', 'siatInvoice', 'cashShift.cashRegister', 'combos']);
 
             if ($sale->siatInvoice && $sale->siatInvoice->estado !== 'anulada') {
                 $this->siat->cancelInvoice(
@@ -222,18 +227,23 @@ class SaleService
                 }
 
                 $this->inventory->recordMovement(
-                    $item->product,
-                    'return',
-                    $pending,
-                    $sale,
-                    "Cancelación de venta #{$sale->folio}",
-                    $storeId
+                    product: $item->product,
+                    storeId: $storeId,
+                    type: 'return',
+                    quantity: $pending,
+                    reference: $sale,
+                    reason: "Cancelación de venta #{$sale->folio}",
                 );
             }
 
             // Una venta anulada no debe seguir consumiendo el cupo de la promoción.
             if ($sale->promotion_id) {
                 Promotion::find($sale->promotion_id)?->decrementUsage();
+            }
+
+            // Lo mismo para cada combo, tantas veces como se hubiera aplicado.
+            foreach ($sale->combos as $combo) {
+                $combo->decrementUsage((int) $combo->pivot->quantity);
             }
 
             $this->cancelReceivables($sale);
@@ -363,6 +373,56 @@ class SaleService
      *
      * @return array{0: float, 1: int|null}
      */
+    /**
+     * Deja constancia de los combos aplicados y consume su cupo.
+     *
+     * El punto de venta expande cada combo en líneas de producto, así que sin este
+     * registro la venta no dejaba rastro de que se hubiera aplicado uno: el
+     * `usage_limit` de un combo no limitaba nada porque `used_count` no subía
+     * nunca. Se valida contra el carrito antes de anotar nada, porque la lista de
+     * combos llega del navegador.
+     *
+     * @param  array<int, array{promotion_id:int|string, quantity?:int}>  $combos
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function registrarCombos(Sale $sale, array $combos, array $items): void
+    {
+        if ($combos === []) {
+            return;
+        }
+
+        $cart = $this->buildCart($items);
+
+        // Un mismo combo repetido en la petición se acumula: la tabla lo guarda
+        // una sola vez con su cantidad.
+        $veces = [];
+
+        foreach ($combos as $entrada) {
+            $id = (int) $entrada['promotion_id'];
+            $veces[$id] = ($veces[$id] ?? 0) + max(1, (int) ($entrada['quantity'] ?? 1));
+        }
+
+        $promociones = Promotion::with('comboItems')->findMany(array_keys($veces))->keyBy('id');
+
+        foreach ($veces as $id => $cantidad) {
+            $combo = $promociones->get($id);
+
+            if ($combo === null) {
+                throw ValidationException::withMessages(['combos' => 'El combo indicado ya no existe.']);
+            }
+
+            $this->promotions->validateCombo($combo, $cart, $cantidad);
+
+            $sale->combos()->attach($combo->id, [
+                'quantity'    => $cantidad,
+                // Se congela el precio: cambiarlo mañana no puede reescribir esta venta.
+                'combo_price' => $combo->combo_price ?? 0,
+            ]);
+
+            $combo->incrementUsage($cantidad);
+        }
+    }
+
     private function resolvePromotion(array $data, array $items, float $subtotal): array
     {
         $promotionId = $data['promotion_id'] ?? null;

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -36,14 +37,20 @@ class Promotion extends Model
         'is_active'    => 'boolean',
     ];
 
+    /**
+     * El nombre de la tabla va explícito: las migraciones la crearon como
+     * `promotion_product`, mientras que la convención de Eloquent es alfabética
+     * (`product_promotion`). Sin decirlo, cualquier lectura de la relación
+     * reventaba, y con ella el listado de promociones y el punto de venta.
+     */
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class);
+        return $this->belongsToMany(Product::class, 'promotion_product');
     }
 
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class);
+        return $this->belongsToMany(Category::class, 'promotion_category');
     }
 
     public function sales(): HasMany
@@ -71,10 +78,22 @@ class Promotion extends Model
         return $query->where('type', '!=', 'combo');
     }
 
+    /**
+     * El día de hoy según el negocio, no según el servidor.
+     *
+     * La aplicación corre en UTC y la tienda en hora de Bolivia (UTC-4). Con
+     * `now()` a secas, una promoción que termina hoy se apagaba a las 20:00
+     * locales —cuando en UTC ya es mañana—, en plena tarde de ventas.
+     */
+    public static function hoyDelNegocio(): string
+    {
+        return CarbonImmutable::now(config('siat.timezone', 'America/La_Paz'))->toDateString();
+    }
+
     /** Promotions currently within their date window and under the usage limit. */
     public function scopeCurrent(Builder $query): Builder
     {
-        $today = now()->toDateString();
+        $today = self::hoyDelNegocio();
 
         return $query->active()
             ->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $today))
@@ -87,11 +106,15 @@ class Promotion extends Model
         if (! $this->is_active) {
             return false;
         }
-        $today = now()->startOfDay();
-        if ($this->starts_at && $this->starts_at->gt($today)) {
+
+        // Se comparan fechas como texto: `starts_at`/`ends_at` son columnas `date`
+        // y su cast las deja a medianoche UTC, que no es la medianoche del negocio.
+        $hoy = self::hoyDelNegocio();
+
+        if ($this->starts_at && $this->starts_at->toDateString() > $hoy) {
             return false;
         }
-        if ($this->ends_at && $this->ends_at->lt($today)) {
+        if ($this->ends_at && $this->ends_at->toDateString() < $hoy) {
             return false;
         }
         if ($this->usage_limit !== null && $this->used_count >= $this->usage_limit) {
@@ -101,15 +124,32 @@ class Promotion extends Model
     }
 
     /** Libera el uso al anularse la venta que la consumió; nunca baja de cero. */
-    public function decrementUsage(): void
+    public function decrementUsage(int $veces = 1): void
     {
-        if ((int) $this->used_count > 0) {
-            $this->decrement('used_count');
+        $usados = (int) $this->used_count;
+
+        if ($usados <= 0 || $veces <= 0) {
+            return;
+        }
+
+        $this->decrement('used_count', min($veces, $usados));
+    }
+
+    /** `$veces` > 1 cuando una misma venta aplica el mismo combo varias veces. */
+    public function incrementUsage(int $veces = 1): void
+    {
+        if ($veces > 0) {
+            $this->increment('used_count', $veces);
         }
     }
 
-    public function incrementUsage(): void
+    /** Cuánto queda del cupo, o null si no tiene límite. */
+    public function usosDisponibles(): ?int
     {
-        $this->increment('used_count');
+        if ($this->usage_limit === null) {
+            return null;
+        }
+
+        return max(0, (int) $this->usage_limit - (int) $this->used_count);
     }
 }

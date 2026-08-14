@@ -125,12 +125,12 @@ class PurchaseService
                 $this->applyWeightedAverageCost($item->product, $pending, (float) $item->cost);
 
                 $this->inventory->recordMovement(
-                    $item->product,
-                    'in',
-                    $pending,
-                    $purchase,
-                    "Recepción de compra #{$purchase->folio}",
-                    $purchase->store_id
+                    product: $item->product,
+                    storeId: $purchase->store_id,
+                    type: 'in',
+                    quantity: $pending,
+                    reference: $purchase,
+                    reason: "Recepción de compra #{$purchase->folio}",
                 );
 
                 $item->update(['received_quantity' => $item->quantity]);
@@ -188,12 +188,12 @@ class PurchaseService
                 $this->applyWeightedAverageCost($item->product, $receivedQty, (float) $item->cost);
 
                 $this->inventory->recordMovement(
-                    $item->product,
-                    'in',
-                    $receivedQty,
-                    $purchase,
-                    "Recepción parcial compra #{$purchase->folio}",
-                    $purchase->store_id
+                    product: $item->product,
+                    storeId: $purchase->store_id,
+                    type: 'in',
+                    quantity: $receivedQty,
+                    reference: $purchase,
+                    reason: "Recepción parcial compra #{$purchase->folio}",
                 );
 
                 $newReceived = (float) ($item->received_quantity ?? 0) + $receivedQty;
@@ -251,12 +251,12 @@ class PurchaseService
                     }
 
                     $this->inventory->recordMovement(
-                        $item->product,
-                        'out',
-                        $qty,
-                        $purchase,
-                        "Cancelación de compra #{$purchase->folio}",
-                        $purchase->store_id
+                        product: $item->product,
+                        storeId: $purchase->store_id,
+                        type: 'out',
+                        quantity: $qty,
+                        reference: $purchase,
+                        reason: "Cancelación de compra #{$purchase->folio}",
                     );
 
                     $item->update(['received_quantity' => 0]);

@@ -13,7 +13,7 @@ export default function ProductCreate({ categories, brands, tags }: { categories
     const fileRef = useRef<HTMLInputElement>(null);
     const { data, setData, post, processing, errors, progress } = useForm<any>({
         name: '', sku: '', barcode: '', category_id: '', brand_id: '', description: '',
-        price: '', cost: '', stock: '0', min_stock: '0', unit: 'pza',
+        price: '', cost: '', min_stock: '0', unit: 'pza',
         status: 'active', track_inventory: true, tags: [] as number[], images: [] as File[],
     });
 
@@ -81,12 +81,15 @@ export default function ProductCreate({ categories, brands, tags }: { categories
                                 <Input type="number" step="0.01" min="0" value={data.cost} onChange={(e) => setData('cost', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Stock inicial *</Label>
-                                <Input type="number" min="0" value={data.stock} onChange={(e) => setData('stock', e.target.value)} />
-                            </div>
-                            <div>
-                                <Label>Stock mínimo</Label>
+                                <Label>Stock mínimo general</Label>
                                 <Input type="number" min="0" value={data.min_stock} onChange={(e) => setData('min_stock', e.target.value)} />
+                                <p className="mt-1 text-xs text-neutral-500">
+                                    Cada tienda puede fijar el suyo desde Inventario.
+                                </p>
+                            </div>
+                            <div className="rounded-md border border-dashed border-neutral-300 p-3 text-xs text-neutral-500 dark:border-neutral-700">
+                                Las existencias se cargan por tienda desde <strong>Inventario</strong>, con una
+                                compra o un ajuste. Así queda registrado de dónde salió cada unidad.
                             </div>
                             <div>
                                 <Label>Unidad</Label>

@@ -42,6 +42,15 @@ class PromotionService
      */
     public function validateForCart(Promotion $promotion, array $cart): float
     {
+        // Un combo no es un descuento sobre el carrito: se agrega expandido en sus
+        // productos. Sin este aviso el error que llegaba era «no aplica a los
+        // productos del carrito», que manda a buscar el problema donde no está.
+        if ($promotion->type === 'combo') {
+            throw ValidationException::withMessages([
+                'promotion_id' => 'Los combos se agregan al carrito como productos, no se seleccionan como promoción.',
+            ]);
+        }
+
         if (! $promotion->isCurrentlyValid()) {
             throw ValidationException::withMessages([
                 'promotion_id' => 'La promoción no está vigente o alcanzó su límite de uso.',
@@ -68,6 +77,89 @@ class PromotionService
     }
 
     /**
+     * Comprueba que un combo pueda aplicarse `$veces` a este carrito.
+     *
+     * No basta con que el punto de venta diga que se aplicó: el carrito llega del
+     * navegador y hay que verificar que **contiene de verdad** los productos del
+     * combo en las cantidades que exige. Si no, se estaría consumiendo el cupo de
+     * un combo que el cliente no se llevó.
+     *
+     * @param array<int, array{product_id:int, quantity:float, subtotal:float}> $cart
+     */
+    public function validateCombo(Promotion $promotion, array $cart, int $veces): void
+    {
+        if ($promotion->type !== 'combo') {
+            throw ValidationException::withMessages([
+                'combos' => "«{$promotion->name}» no es un combo.",
+            ]);
+        }
+
+        if ($veces < 1) {
+            throw ValidationException::withMessages([
+                'combos' => "Cantidad inválida para el combo «{$promotion->name}».",
+            ]);
+        }
+
+        if (! $promotion->isCurrentlyValid()) {
+            throw ValidationException::withMessages([
+                'combos' => "El combo «{$promotion->name}» no está vigente o alcanzó su límite de uso.",
+            ]);
+        }
+
+        $disponibles = $promotion->usosDisponibles();
+
+        if ($disponibles !== null && $veces > $disponibles) {
+            throw ValidationException::withMessages([
+                'combos' => "Del combo «{$promotion->name}» solo quedan {$disponibles} usos.",
+            ]);
+        }
+
+        $enCarrito = [];
+
+        foreach ($cart as $linea) {
+            $id = (int) $linea['product_id'];
+            $enCarrito[$id] = ($enCarrito[$id] ?? 0) + (float) $linea['quantity'];
+        }
+
+        foreach ($promotion->comboItems as $item) {
+            $necesarias = (float) $item->quantity * $veces;
+
+            if (($enCarrito[$item->product_id] ?? 0) + 1e-6 < $necesarias) {
+                throw ValidationException::withMessages([
+                    'combos' => "El carrito no contiene los productos del combo «{$promotion->name}».",
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Recalcula el descuento de una promoción **ya aplicada** a una venta que se
+     * está corrigiendo.
+     *
+     * A diferencia de {@see validateForCart()} no comprueba vigencia ni cupo: la
+     * promoción se aplicó cuando tocaba, y que hoy esté vencida no puede impedir
+     * corregir una venta antigua. Lo que sí se vuelve a exigir son las condiciones
+     * del carrito —la compra mínima—, porque dejaron de cumplirse ahora mismo: sin
+     * esto, bajar la venta de 600 a 100 conservaba el descuento de una promoción
+     * que pedía 500 de mínimo.
+     *
+     * Devuelve 0 en vez de fallar: editar la venta debe poder completarse, solo
+     * que sin el descuento.
+     *
+     * @param array<int, array{product_id:int, category_id:int|null, quantity:float, price:float, subtotal:float}> $cart
+     */
+    public function recalculateForCart(Promotion $promotion, array $cart): float
+    {
+        $cartTotal = collect($cart)->sum('subtotal');
+
+        if ($promotion->min_purchase > 0 && $cartTotal < (float) $promotion->min_purchase) {
+            return 0.0;
+        }
+
+        return round($this->calculateDiscount($promotion, $cart), 2);
+    }
+
+    /**
      * @param array<int, array{product_id:int, category_id:int|null, quantity:float, price:float, subtotal:float}> $cart
      */
     public function calculateDiscount(Promotion $promotion, array $cart): float
@@ -82,7 +174,10 @@ class PromotionService
         return match ($promotion->type) {
             'percentage'  => $base * ((float) $promotion->value / 100),
             'fixed'       => min((float) $promotion->value, $base),
-            'buy_x_get_y' => $this->buyXGetYDiscount($promotion, $applicable, $base),
+            'buy_x_get_y' => $this->buyXGetYDiscount($promotion, $applicable),
+            // Los combos no descuentan sobre el carrito: se agregan como líneas de
+            // producto al precio del combo. Ver validateForCart().
+            'combo'       => 0,
             default       => 0,
         };
     }
@@ -110,7 +205,18 @@ class PromotionService
     /**
      * @param array<int, array<string, mixed>> $applicable
      */
-    private function buyXGetYDiscount(Promotion $promotion, array $applicable, float $base): float
+    /**
+     * Descuento de un «lleve X pague Y».
+     *
+     * Lo que se regala son las unidades **más baratas** del carrito, que es como
+     * se entiende un 2x1 en la tienda y lo que el cliente espera. Antes se
+     * repartía el precio medio, de modo que en un carrito con un monitor de 900 y
+     * un ratón de 100 el 2x1 descontaba 500 en vez de 100: cuatrocientos bolivianos
+     * regalados por línea de más, y peor cuanto más dispares los precios.
+     *
+     * @param array<int, array<string, mixed>> $applicable
+     */
+    private function buyXGetYDiscount(Promotion $promotion, array $applicable): float
     {
         $buy = (int) $promotion->buy_qty;
         $get = (int) $promotion->get_qty;
@@ -119,16 +225,40 @@ class PromotionService
             return 0;
         }
 
-        $totalQty = array_sum(array_column($applicable, 'quantity'));
+        // Se despieza el carrito en unidades sueltas con su precio real, que sale
+        // del subtotal de la línea para que un descuento manual ya aplicado no se
+        // regale dos veces.
+        $unidades = [];
+
+        foreach ($applicable as $linea) {
+            $cantidad = (int) floor((float) $linea['quantity']);
+
+            if ($cantidad <= 0 || (float) $linea['quantity'] <= 0) {
+                continue;
+            }
+
+            $precioUnitario = (float) $linea['subtotal'] / (float) $linea['quantity'];
+
+            for ($i = 0; $i < $cantidad; $i++) {
+                $unidades[] = $precioUnitario;
+            }
+        }
+
+        $totalQty = count($unidades);
+
         if ($totalQty <= 0) {
             return 0;
         }
 
-        $groupSize = $buy + $get;
-        $freeUnits = floor($totalQty / $groupSize) * $get;
-        $unitPrice = $base / $totalQty;
+        $gratis = (int) (intdiv($totalQty, $buy + $get) * $get);
 
-        return $freeUnits * $unitPrice;
+        if ($gratis <= 0) {
+            return 0;
+        }
+
+        sort($unidades);
+
+        return (float) array_sum(array_slice($unidades, 0, $gratis));
     }
 
     private function attributes(array $data): array
