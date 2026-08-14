@@ -29,7 +29,16 @@ export default function PurchasesReports({
     filters: Filters; suppliers: DropdownItem[]; stores: DropdownItem[];
 }) {
     const [form, setForm] = useState({ from: filters.from ?? '', to: filters.to ?? '', supplier_id: filters.supplier_id ?? '', store_id: filters.store_id ?? '' });
-    const fmt = (v: number) => `$${v.toFixed(2)}`;
+
+    // `Number()` y no `v.toFixed()` directo: un agregado SQL puede volver como
+    // cadena, y llamar a toFixed sobre ella lanza y deja la página en blanco.
+    // El servicio ya los convierte, pero un informe no debe caerse por un dato.
+    const fmt = (v: number | string | null | undefined) => {
+        const n = Number(v ?? 0);
+
+        return `Bs ${(Number.isFinite(n) ? n : 0).toFixed(2)}`;
+    };
+
     const pct = (a: number, b: number) => b > 0 ? `${Math.round((a / b) * 100)}%` : '—';
 
     const apply = (e: React.FormEvent) => {
@@ -144,7 +153,7 @@ export default function PurchasesReports({
                                 <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-4 py-3 font-medium">{row.product?.name ?? '—'}</td>
                                     <td className="px-4 py-3 font-mono text-xs text-gray-400">{row.product?.sku ?? '—'}</td>
-                                    <td className="px-4 py-3 text-right">{parseFloat(row.total_quantity as any).toFixed(2)}</td>
+                                    <td className="px-4 py-3 text-right">{Number(row.total_quantity ?? 0).toFixed(2)}</td>
                                     <td className="px-4 py-3 text-right">{fmt(row.avg_cost)}</td>
                                     <td className="px-4 py-3 text-right font-medium">{fmt(row.total_amount)}</td>
                                 </tr>

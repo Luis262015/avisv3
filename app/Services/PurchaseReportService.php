@@ -7,6 +7,16 @@ use App\Models\PurchaseItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Informes de compras.
+ *
+ * **Todo lo que sale de aquí va convertido a número.** Un `SUM()` sobre una
+ * columna DECIMAL vuelve de la base como cadena —PDO no la convierte y Eloquent
+ * no castea los agregados, que no son columnas del modelo—, así que el JSON
+ * llevaba `"200.00"` donde la interfaz esperaba `200`. En el navegador eso
+ * reventaba al formatear (`.toFixed` no existe en una cadena) y tumbaba la
+ * página entera: el informe no se abría.
+ */
 class PurchaseReportService
 {
     public function summary(array $filters): array
@@ -14,12 +24,12 @@ class PurchaseReportService
         $query = $this->baseQuery($filters);
 
         return [
-            'total_purchases' => (clone $query)->count(),
-            'total_amount'    => (clone $query)->sum('total'),
-            'avg_amount'      => (clone $query)->avg('total') ?? 0,
-            'total_tax'       => (clone $query)->sum('tax'),
-            'unpaid_amount'   => (clone $query)->where('payment_status', 'unpaid')->sum('total'),
-            'partial_amount'  => (clone $query)->where('payment_status', 'partial')->sum('total'),
+            'total_purchases' => (int) (clone $query)->count(),
+            'total_amount'    => (float) (clone $query)->sum('total'),
+            'avg_amount'      => (float) ((clone $query)->avg('total') ?? 0),
+            'total_tax'       => (float) (clone $query)->sum('tax'),
+            'unpaid_amount'   => (float) (clone $query)->where('payment_status', 'unpaid')->sum('total'),
+            'partial_amount'  => (float) (clone $query)->where('payment_status', 'partial')->sum('total'),
         ];
     }
 
@@ -34,7 +44,17 @@ class PurchaseReportService
             ->when($filters['store_id'] ?? null, fn($q, $v) => $q->where('store_id', $v))
             ->groupBy('supplier_id')
             ->orderByDesc('total_amount')
-            ->get();
+            ->get()
+            ->map(fn (Purchase $fila): array => [
+                'supplier_id'  => $fila->supplier_id === null ? null : (int) $fila->supplier_id,
+                'count'        => (int) $fila->getAttribute('count'),
+                'total_amount' => (float) $fila->getAttribute('total_amount'),
+                'supplier'     => $fila->supplier === null ? null : [
+                    'name'       => (string) $fila->supplier->name,
+                    'avg_rating' => $fila->supplier->avg_rating,
+                ],
+            ])
+            ->values();
     }
 
     public function byProduct(array $filters): Collection
@@ -57,7 +77,18 @@ class PurchaseReportService
             ->groupBy('product_id')
             ->orderByDesc('total_amount')
             ->limit(50)
-            ->get();
+            ->get()
+            ->map(fn (PurchaseItem $fila): array => [
+                'product_id'     => (int) $fila->product_id,
+                'total_quantity' => (float) $fila->getAttribute('total_quantity'),
+                'total_amount'   => (float) $fila->getAttribute('total_amount'),
+                'avg_cost'       => (float) $fila->getAttribute('avg_cost'),
+                'product'        => $fila->product === null ? null : [
+                    'name' => (string) $fila->product->name,
+                    'sku'  => $fila->product->sku,
+                ],
+            ])
+            ->values();
     }
 
     public function costEvolution(array $filters): Collection
@@ -75,7 +106,14 @@ class PurchaseReportService
             ->when($filters['store_id'] ?? null, fn($q, $v) => $q->where('store_id', $v))
             ->groupByRaw($dateGroup)
             ->orderBy('month')
-            ->get();
+            ->get()
+            ->map(fn (Purchase $fila): array => [
+                'month'        => (string) $fila->getAttribute('month'),
+                'total_amount' => (float) $fila->getAttribute('total_amount'),
+                'count'        => (int) $fila->getAttribute('count'),
+                'total_tax'    => (float) $fila->getAttribute('total_tax'),
+            ])
+            ->values();
     }
 
     public function supplierComplianceReport(array $filters): Collection
@@ -106,7 +144,24 @@ class PurchaseReportService
             ->whereNotNull('purchases.supplier_id')
             ->groupBy('purchases.supplier_id')
             ->orderByDesc('total_amount')
-            ->get();
+            ->get()
+            ->map(fn (Purchase $fila): array => [
+                'supplier_id'           => (int) $fila->supplier_id,
+                'total_orders'          => (int) $fila->getAttribute('total_orders'),
+                'completed_orders'      => (int) $fila->getAttribute('completed_orders'),
+                'paid_orders'           => (int) $fila->getAttribute('paid_orders'),
+                'total_amount'          => (float) $fila->getAttribute('total_amount'),
+                'unpaid_amount'         => (float) $fila->getAttribute('unpaid_amount'),
+                'measurable_deliveries' => (int) $fila->getAttribute('measurable_deliveries'),
+                'on_time_deliveries'    => (int) $fila->getAttribute('on_time_deliveries'),
+                'supplier'              => $fila->supplier === null ? null : [
+                    'name'           => (string) $fila->supplier->name,
+                    'avg_rating'     => $fila->supplier->avg_rating,
+                    'payment_terms'  => $fila->supplier->payment_terms,
+                    'lead_time_days' => $fila->supplier->lead_time_days,
+                ],
+            ])
+            ->values();
     }
 
     private function baseQuery(array $filters)
