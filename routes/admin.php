@@ -263,6 +263,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('inventory/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
         Route::post('inventory/min-stock', [InventoryController::class, 'setMinStock'])->name('inventory.min-stock');
+        // El catálogo visto desde una tienda concreta, con su stock y su mínimo.
+        Route::get('inventory/stock', [InventoryController::class, 'stock'])->name('inventory.stock');
 
         // Stock transfers
         Route::resource('stock-transfers', StockTransferController::class)->only(['index', 'create', 'store', 'show']);
