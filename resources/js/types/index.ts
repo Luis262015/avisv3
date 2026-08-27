@@ -12,6 +12,12 @@ export interface BreadcrumbItem {
 export interface NavGroup {
     title: string;
     items: NavItem[];
+    /**
+     * Si el grupo nace desplegado. Se reserva para lo que se usa a diario: con
+     * nueve grupos abiertos a la vez, llegar al último exige desplazarse.
+     * Lo que el usuario abra o cierre después manda sobre esto.
+     */
+    defaultOpen?: boolean;
 }
 
 export interface NavItem {

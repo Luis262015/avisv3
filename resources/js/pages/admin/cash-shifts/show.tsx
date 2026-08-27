@@ -90,6 +90,115 @@ const PM_LABEL: Record<string, string> = {
     transfer: 'Transferencia',
 };
 
+/** El negocio cobra en bolivianos; el formato lo pone el navegador, no una plantilla a mano. */
+const bs = (v: string | number | null) =>
+    v != null
+        ? new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(Number(v))
+        : '—';
+
+/**
+ * El arqueo, presentado como la cuenta que es.
+ *
+ * Antes el desglose era una fila de fichas que se envolvía —«Fondo: … + Ventas:
+ * … − Gastos: …»—, así que no se leía como una operación que diera ese total, y
+ * las líneas en cero se ocultaban: no había forma de saber si un concepto valía
+ * cero o simplemente no se estaba contando. Aquí van todas, con su signo,
+ * alineadas a la derecha y con la raya antes del resultado, que es como se
+ * comprueba una cuenta.
+ */
+function DesgloseEfectivo({
+    fondo,
+    arqueo,
+    total,
+}: {
+    fondo: string | number;
+    arqueo: Arqueo;
+    total: string | number | null;
+}) {
+    const lineas = [
+        { etiqueta: 'Fondo de apertura', detalle: 'con lo que abriste el turno', valor: Number(fondo) },
+        { etiqueta: 'Ventas cobradas en efectivo', detalle: null, valor: arqueo.ventas_efectivo },
+        { etiqueta: 'Otros ingresos en efectivo', detalle: null, valor: arqueo.ingresos_efectivo },
+        { etiqueta: 'Gastos pagados del cajón', detalle: null, valor: -arqueo.gastos_efectivo },
+        { etiqueta: 'Retiros de efectivo', detalle: null, valor: -arqueo.retiros },
+    ];
+
+    return (
+        <div className="text-sm">
+            <dl className="space-y-1.5">
+                {lineas.map((l) => {
+                    const cero = l.valor === 0;
+
+                    return (
+                        <div key={l.etiqueta} className={`flex items-baseline gap-3 ${cero ? 'opacity-45' : ''}`}>
+                            <dt className="min-w-0 flex-1">
+                                {/* El signo va pegado a la etiqueta: dice qué hace el
+                                    concepto, no si la cifra es negativa. */}
+                                <span className="mr-1.5 inline-block w-3 font-mono">
+                                    {l.valor < 0 ? '−' : '+'}
+                                </span>
+                                {l.etiqueta}
+                                {l.detalle && <span className="ml-1.5 text-xs opacity-70">({l.detalle})</span>}
+                            </dt>
+                            <dd className="shrink-0 font-medium tabular-nums">{bs(Math.abs(l.valor))}</dd>
+                        </div>
+                    );
+                })}
+            </dl>
+
+            <div className="mt-2.5 flex items-baseline gap-3 border-t pt-2.5 font-semibold">
+                <dt className="min-w-0 flex-1">
+                    <span className="mr-1.5 inline-block w-3 font-mono">=</span>
+                    Debe haber en el cajón
+                </dt>
+                <dd className="shrink-0 tabular-nums">{bs(total)}</dd>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Lo que se cobró pero no está en el cajón.
+ *
+ * Iba suelto en dos párrafos debajo del total, y se leía como una advertencia
+ * más que como parte del arqueo. Es justo lo que explica por qué «vendí 5.000»
+ * y «en el cajón hay 1.200» no se contradicen.
+ */
+function FueraDelCajon({ arqueo }: { arqueo: Arqueo }) {
+    if (arqueo.ventas_otros <= 0 && arqueo.ventas_mixtas <= 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-4 border-t pt-3">
+            <p className="text-xs font-semibold tracking-wide uppercase opacity-70">No entra al cajón</p>
+
+            <dl className="mt-1.5 space-y-1 text-sm">
+                {arqueo.ventas_otros > 0 && (
+                    <div className="flex items-baseline gap-3">
+                        <dt className="min-w-0 flex-1">Ventas con tarjeta o transferencia</dt>
+                        <dd className="shrink-0 tabular-nums">{bs(arqueo.ventas_otros)}</dd>
+                    </div>
+                )}
+                {arqueo.ventas_mixtas > 0 && (
+                    <div className="flex items-baseline gap-3">
+                        <dt className="min-w-0 flex-1">Ventas con pago mixto</dt>
+                        <dd className="shrink-0 tabular-nums">{bs(arqueo.ventas_mixtas)}</dd>
+                    </div>
+                )}
+            </dl>
+
+            {arqueo.ventas_mixtas > 0 && (
+                <p className="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+                    <strong>Las ventas mixtas hay que revisarlas a mano.</strong> La venta no guarda cuánto de
+                    ella se cobró en efectivo, así que esa parte no se puede sumar arriba. Compruébela antes de
+                    cerrar o la diferencia saldrá sin ser un error de conteo.
+                </p>
+            )}
+        </div>
+    );
+}
+
 export default function CashShiftShow({
     shift,
     arqueo,
@@ -108,8 +217,8 @@ export default function CashShiftShow({
         notes: shift.notes ?? '',
     });
 
-    const fmt = (v: string | number | null) =>
-        v != null ? `$${parseFloat(String(v)).toFixed(2)}` : '—';
+    // La página entera venía en dólares; el negocio cobra en bolivianos.
+    const fmt = bs;
 
     // Lo calcula el servidor: solo cuenta lo que pasó por el cajón. Recalcularlo
     // aquí es como se coló el fallo de contar las ventas con tarjeta como efectivo.
@@ -117,6 +226,35 @@ export default function CashShiftShow({
 
     const closingNum = data.closing_amount !== '' ? parseFloat(data.closing_amount) : null;
     const liveDiff   = closingNum !== null ? closingNum - expectedAmount : null;
+
+    /**
+     * Lo que se guardó al cerrar frente a lo que sale rehaciendo la cuenta hoy.
+     *
+     * Los turnos cerrados antes de corregir el arqueo llevan guardado un esperado
+     * que contaba las ventas con tarjeta como efectivo, así que arrastran un
+     * faltante que nunca existió. Sin decirlo, el desglose de abajo contradiría al
+     * número de arriba y el turno parecería descuadrado dos veces.
+     */
+    const esperadoGuardado = shift.expected_amount !== null ? parseFloat(shift.expected_amount) : null;
+
+    const desfaseAlCerrar =
+        esperadoGuardado !== null && Math.abs(esperadoGuardado - expectedAmount) >= 0.01
+            ? esperadoGuardado - expectedAmount
+            : null;
+
+    // Si el desfase es justo lo cobrado fuera del cajón, la causa es esa y se puede decir.
+    const desfaseCoincideConNoEfectivo =
+        desfaseAlCerrar !== null && Math.abs(desfaseAlCerrar - arqueo.ventas_otros) < 0.01;
+
+    /**
+     * La diferencia se recalcula, no se lee de la columna.
+     *
+     * `shift.difference` se guardó con la cuenta de entonces. Mostrarlo junto a un
+     * desglose que hoy suma otra cosa daría dos descuadres distintos en la misma
+     * pantalla; el histórico se cuenta en la nota de abajo.
+     */
+    const contado = shift.closing_amount !== null ? parseFloat(shift.closing_amount) : null;
+    const diferencia = contado !== null ? contado - expectedAmount : null;
 
     function handleClose(e: React.FormEvent) {
         e.preventDefault();
@@ -188,72 +326,98 @@ export default function CashShiftShow({
                     </div>
                 </div>
 
-                {/* Banner monto esperado (turno abierto) */}
+                {/* Arqueo del turno abierto: cuánto debe haber y de dónde sale. */}
                 {shift.status === 'open' && (
-                    <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-4">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                                <p className="text-xs font-medium uppercase tracking-wide text-blue-500">
-                                    Efectivo esperado en el cajón
+                    <div className="mb-6 overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-blue-100 bg-blue-50 p-4">
+                            <div>
+                                <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
+                                    Debe haber en el cajón
                                 </p>
-                                <p className="mt-1 text-2xl font-bold text-blue-800">
-                                    {fmt(expectedAmount)}
+                                <p className="mt-1 text-3xl font-bold text-blue-900 tabular-nums">
+                                    {bs(expectedAmount)}
                                 </p>
-                                <div className="mt-2 flex flex-wrap gap-x-6 gap-y-0.5 text-xs text-blue-600">
-                                    <span>Fondo: {fmt(shift.opening_amount)}</span>
-                                    <span>+ Ventas en efectivo: {fmt(arqueo.ventas_efectivo)}</span>
-                                    {arqueo.ingresos_efectivo > 0 && <span>+ Ingresos: {fmt(arqueo.ingresos_efectivo)}</span>}
-                                    {arqueo.gastos_efectivo > 0 && <span>- Gastos: {fmt(arqueo.gastos_efectivo)}</span>}
-                                    {arqueo.retiros > 0 && <span>- Retiros: {fmt(arqueo.retiros)}</span>}
-                                </div>
-                                {arqueo.ventas_otros > 0 && (
-                                    <p className="mt-2 text-xs text-blue-500">
-                                        {fmt(arqueo.ventas_otros)} en tarjeta y transferencia no entran al cajón y
-                                        no se cuentan aquí.
-                                    </p>
-                                )}
-                                {arqueo.ventas_mixtas > 0 && (
-                                    <p className="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">
-                                        Hay {fmt(arqueo.ventas_mixtas)} en ventas con pago mixto. La venta no
-                                        guarda cuánto se cobró en efectivo, así que ese importe queda fuera del
-                                        esperado: verifíquelo a mano antes de cerrar.
-                                    </p>
-                                )}
+                                {/* El número solo sirve si se sabe qué hacer con él. */}
+                                <p className="mt-1 text-sm text-blue-700">
+                                    Cuenta el efectivo del cajón y compáralo con este importe.
+                                </p>
                             </div>
-                            <Button
-                                variant="destructive"
-                                onClick={() => setShowClose(true)}
-                                className="flex-shrink-0"
-                            >
+                            <Button variant="destructive" onClick={() => setShowClose(true)} className="shrink-0">
                                 <Lock className="mr-2 h-4 w-4" />
                                 Cerrar Turno
                             </Button>
                         </div>
+
+                        <div className="p-4 text-gray-700">
+                            <DesgloseEfectivo
+                                fondo={shift.opening_amount}
+                                arqueo={arqueo}
+                                total={expectedAmount}
+                            />
+                            <FueraDelCajon arqueo={arqueo} />
+                        </div>
                     </div>
                 )}
 
-                {/* Tarjetas de cierre (turno cerrado) */}
+                {/* Cierre del turno (turno cerrado) */}
                 {shift.status === 'closed' && (
-                    <div className="mb-6 grid grid-cols-3 gap-4">
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
-                            <p className="text-xs text-gray-500">Cierre declarado</p>
-                            <p className="mt-1 text-xl font-bold">{fmt(shift.closing_amount)}</p>
+                    <div className="mb-6 overflow-hidden rounded-lg border bg-white shadow-sm">
+                        <div className="grid grid-cols-1 divide-y border-b sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                            <div className="p-4">
+                                <p className="text-xs text-gray-500">Contado al cerrar</p>
+                                <p className="mt-1 text-xl font-bold tabular-nums">{bs(shift.closing_amount)}</p>
+                            </div>
+                            <div className="p-4">
+                                <p className="text-xs text-gray-500">Debía haber</p>
+                                <p className="mt-1 text-xl font-bold tabular-nums">{bs(expectedAmount)}</p>
+                            </div>
+                            <div className="p-4">
+                                {/* «Diferencia» no dice de qué lado cae; sobra o falta sí. */}
+                                <p className="text-xs text-gray-500">
+                                    {diferencia === null || diferencia === 0
+                                        ? 'Diferencia'
+                                        : diferencia < 0
+                                          ? 'Faltante'
+                                          : 'Sobrante'}
+                                </p>
+                                <p
+                                    className={`mt-1 text-xl font-bold tabular-nums ${
+                                        diferencia === null || diferencia === 0
+                                            ? 'text-gray-700'
+                                            : diferencia < 0
+                                              ? 'text-red-600'
+                                              : 'text-amber-600'
+                                    }`}
+                                >
+                                    {diferencia === 0 ? 'Cuadra' : bs(Math.abs(diferencia ?? 0))}
+                                </p>
+                            </div>
                         </div>
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
-                            <p className="text-xs text-gray-500">Cierre esperado</p>
-                            <p className="mt-1 text-xl font-bold">{fmt(shift.expected_amount)}</p>
-                        </div>
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
-                            <p className="text-xs text-gray-500">Diferencia</p>
-                            <p
-                                className={`mt-1 text-xl font-bold ${
-                                    shift.difference && parseFloat(shift.difference) < 0
-                                        ? 'text-red-600'
-                                        : 'text-green-600'
-                                }`}
-                            >
-                                {fmt(shift.difference)}
-                            </p>
+
+                        {/* El desglose desaparecía al cerrar, y entonces la diferencia era
+                            un número sin nada con lo que contrastarlo. Se totaliza con el
+                            recálculo de hoy, no con lo que se guardó: si no, las líneas de
+                            arriba no sumarían el total de abajo. */}
+                        <div className="p-4 text-gray-700">
+                            <DesgloseEfectivo fondo={shift.opening_amount} arqueo={arqueo} total={expectedAmount} />
+                            <FueraDelCajon arqueo={arqueo} />
+
+                            {desfaseAlCerrar !== null && (
+                                <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                                    <p className="font-semibold">Este turno se cerró con otra cuenta.</p>
+                                    <p className="mt-1">
+                                        Al cerrarlo se guardó {bs(shift.expected_amount)} como esperado y quedó
+                                        registrado un descuadre de {bs(Math.abs(parseFloat(shift.difference ?? '0')))};
+                                        rehaciendo el cálculo hoy salen {bs(expectedAmount)}.
+                                        {desfaseCoincideConNoEfectivo
+                                            ? ` La diferencia es exactamente lo cobrado con tarjeta y transferencia
+                                               (${bs(arqueo.ventas_otros)}), que entonces se contaba como si hubiera
+                                               entrado al cajón. Con el criterio actual el arqueo cuadra: se contó
+                                               lo que debía haber.`
+                                            : ' Puede que se hayan modificado ventas o gastos del turno después de cerrarlo.'}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

@@ -76,9 +76,16 @@ class Employee extends Model
         return $this->hasMany(LeaveRequest::class);
     }
 
+    /**
+     * La tabla pivote va nombrada a mano: la convención de Eloquent la deduciría
+     * como `employee_training` (los dos modelos en orden alfabético) y la
+     * migración la creó como `training_employee`.
+     *
+     * `using()` no salva esto: fija la clase del pivote, no la tabla del JOIN.
+     */
     public function trainings(): BelongsToMany
     {
-        return $this->belongsToMany(Training::class)
+        return $this->belongsToMany(Training::class, 'training_employee')
             ->using(TrainingParticipant::class)
             ->withPivot(['status', 'score', 'completed_at', 'certificate_path', 'notes'])
             ->withTimestamps();

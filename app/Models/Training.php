@@ -27,9 +27,10 @@ class Training extends Model
         'cost'       => 'decimal:2',
     ];
 
+    /** Ver la nota en {@see Employee::trainings()}: la tabla no sigue la convención. */
     public function employees(): BelongsToMany
     {
-        return $this->belongsToMany(Employee::class)
+        return $this->belongsToMany(Employee::class, 'training_employee')
             ->using(TrainingParticipant::class)
             ->withPivot(['status', 'score', 'completed_at', 'certificate_path', 'notes'])
             ->withTimestamps();
