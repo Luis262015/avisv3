@@ -1,28 +1,36 @@
-# Reporte de incidencia — `anulacionDocumentoAjuste` devuelve un error interno en el ambiente Piloto
+# Reporte de incidencia — las operaciones de anulación devuelven un error interno en el ambiente Piloto
 
 **NIT emisor:** 6923448010
 **Código de sistema:** 2280EE3A3729A542C92F6
 **Ambiente:** Piloto (codigoAmbiente = 2)
 **Modalidad:** Computarizada en línea (codigoModalidad = 2)
 **Sucursal / Punto de venta:** 0 / 0
-**Servicio:** `ServicioFacturacionDocumentoAjuste`
+**Servicios:** `ServicioFacturacionDocumentoAjuste` · `ServicioFacturacionCompraVenta`
 **Fecha de las pruebas:** 2 de septiembre de 2026
 
 ---
 
 ## Resumen
 
-La operación **`anulacionDocumentoAjuste` responde `codigoEstado -1` con la
-descripción `"Error inesperado: null"`** al intentar anular una Nota de
-Crédito-Débito válida, tanto del documento sector 24 como del 47.
+**Las dos operaciones de anulación del ambiente Piloto devuelven un error interno
+al procesar una solicitud válida:**
 
-El resto de operaciones del mismo servicio funcionan con normalidad sobre esas
-mismas notas: `recepcionDocumentoAjuste` las recibe y
-`verificacionEstadoDocumentoAjuste` las reporta como **690 VALIDA**.
+| Servicio | Operación | Respuesta |
+|---|---|---|
+| `ServicioFacturacionDocumentoAjuste` | `anulacionDocumentoAjuste` | `codigoEstado -1` · `Error inesperado: null` |
+| `ServicioFacturacionCompraVenta` | `anulacionFactura` | `codigoEstado 906` · `ERROR EN LA EJECUCION DEL SERVICIO (RCV)` |
+
+En ambos casos el resto de operaciones de esos mismos servicios funcionan con
+normalidad sobre los mismos documentos: se reciben correctamente y
+`verificacionEstadoFactura` / `verificacionEstadoDocumentoAjuste` los reportan como
+**690 VALIDA**.
+
+`anulacionFactura` funcionaba correctamente en este mismo ambiente el 6 de agosto
+de 2026, con las mismas credenciales y el mismo código, devolviendo
+**905 ANULACION CONFIRMADA**.
 
 Esto impide completar la **Etapa VII (Anulación y Reversión)** del proceso de
-homologación Fase I, que exige 250 anulaciones sobre los documentos sector
-asociados a la actividad económica del contribuyente.
+homologación Fase I, que exige 250 anulaciones.
 
 ## Documentos afectados
 
@@ -119,6 +127,23 @@ CUF, responde con normalidad:
 no anulada devuelve **909 REVERSION DE ANULACION RECHAZADA**, que es el
 comportamiento esperado.
 
+### D) El mismo patrón en `anulacionFactura`
+
+Sobre una factura del documento sector 1 en estado **690 VALIDA**, las peticiones
+**incorrectas** obtienen errores de negocio precisos y solo la **correcta** falla:
+
+| Petición | Respuesta |
+|---|---|
+| correcta | `906` · `ERROR EN LA EJECUCION DEL SERVICIO (RCV)` |
+| `cuf` inexistente | `906` · `LA FACTURA O NOTA, NO EXISTE EN LA BASE DE DATOS DEL SIN` |
+| `tipoFacturaDocumento` = 3 | `906` · `EL PARAMETRO TIPO FACTURA DOCUMENTO ES INVALIDO Tipo de factura esperado 1, enviado 3.` |
+| `codigoMotivo` = 99 | `906` · `EL PARAMETRO MOTIVO DE ANULACION ES INVALIDO Codigo motivo anulacion enviado 99.` |
+| `verificacionEstadoFactura` (misma cabecera) | `690` · `VALIDA` |
+
+Se probaron los cuatro motivos de anulación, facturas emitidas el mismo día y
+facturas de agosto, y tanto el CUFD vigente como el CUFD con el que se emitió cada
+factura. El resultado es el mismo en todos los casos.
+
 ## Pruebas adicionales realizadas
 
 - **Los cuatro motivos de anulación** de la paramétrica
@@ -132,15 +157,12 @@ comportamiento esperado.
   temporalmente a **HTTP 503**, mientras `ServicioFacturacionCompraVenta` seguía
   disponible. Al restablecerse el servicio, **el error se reprodujo de forma
   idéntica**, por lo que no se trata de una indisponibilidad puntual.
-- La operación equivalente para facturas, `anulacionFactura` del servicio
-  `ServicioFacturacionCompraVenta`, funciona correctamente en este mismo ambiente
-  y con estas mismas credenciales (respuesta 905 ANULACION CONFIRMADA).
 
 ## Solicitud
 
-Se solicita la revisión de la operación `anulacionDocumentoAjuste` del servicio
-`ServicioFacturacionDocumentoAjuste` en el ambiente Piloto, dado que su
-indisponibilidad impide avanzar en la Etapa VII del proceso de homologación.
+Se solicita la revisión de las operaciones `anulacionFactura` y
+`anulacionDocumentoAjuste` en el ambiente Piloto, dado que su indisponibilidad
+impide avanzar en la Etapa VII del proceso de homologación.
 
 En caso de que la operación requiera alguna condición adicional no recogida en la
 documentación publicada, agradeceríamos que se nos indique para ajustar la

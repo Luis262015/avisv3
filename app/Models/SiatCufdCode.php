@@ -31,6 +31,12 @@ class SiatCufdCode extends Model
         return $this->belongsTo(Store::class);
     }
 
+    /** El punto de venta cuya serie sigue este CUFD. */
+    public function puntoVenta(): BelongsTo
+    {
+        return $this->belongsTo(SiatPuntoVenta::class, 'punto_venta_id');
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(SiatInvoice::class, 'cufd_code_id');
