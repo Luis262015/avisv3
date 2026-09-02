@@ -21,24 +21,33 @@ use App\Models\SiatSetting;
 final class HomologacionMatriz
 {
     /**
-     * Volumen que pide cada etapa, según la página oficial.
+     * Volumen que pide cada etapa, y en qué unidad lo pide.
      *
-     * Es el total de la etapa, no el de cada caso: se reparte entre los casos que
-     * salgan de la matriz. La página es ambigua —en la etapa I cuadra como total
-     * (2 pruebas, 2 casos) pero en la V no (5 pruebas, 14 casos)—, así que el
-     * número que manda es el del panel de Seguimiento del Portal SIAT y por eso
-     * se puede sobrescribir al ejecutar.
+     * La página oficial usa dos redacciones distintas y significan cosas
+     * distintas, cosa que costó una etapa mal dimensionada:
+     *
+     * - «son N pruebas **por cada caso**» → el número se multiplica por los casos
+     *   de la matriz (etapas I, II, III, V, VI y IX).
+     * - «debe realizar N emisiones / N anulaciones» → es el **total de la etapa**
+     *   y se reparte entre los casos (etapas IV, VII y VIII).
+     *
+     * Confirmado con el panel de Seguimiento del Portal: la etapa II son 18
+     * catálogos × 2 puntos de venta × 50 pruebas = **1800**.
      */
-    public const VOLUMEN = [
+    public const POR_CASO = [
         1 => 2,    // CUIS
         2 => 50,   // Sincronización de catálogos
         3 => 100,  // CUFD
-        4 => 500,  // Emisión individual
         5 => 5,    // Eventos significativos
         6 => 10,   // Paquetes
+        9 => 10,   // Emisión masiva
+    ];
+
+    /** Etapas cuyo número es el total, no el de cada caso. */
+    public const TOTAL_ETAPA = [
+        4 => 500,  // Emisión individual
         7 => 250,  // Anulación y reversión
         8 => 250,  // Firma digital — N/A en modalidad computarizada
-        9 => 10,   // Emisión masiva
     ];
 
     /** Las etapas que este generador sabe ejecutar. */
@@ -60,8 +69,12 @@ final class HomologacionMatriz
             return [];
         }
 
-        $total = $volumen ?? self::VOLUMEN[$etapa] ?? count($definiciones);
-        $porCaso = (int) max(1, ceil($total / count($definiciones)));
+        // Las etapas «por caso» no reparten: cada caso pide el número entero.
+        $porCaso = isset(self::POR_CASO[$etapa])
+            ? ($volumen ?? self::POR_CASO[$etapa])
+            : (int) max(1, ceil(
+                ($volumen ?? self::TOTAL_ETAPA[$etapa] ?? count($definiciones)) / count($definiciones)
+            ));
 
         $casos = [];
 
@@ -74,10 +87,8 @@ final class HomologacionMatriz
 
             $caso->fill($definicion);
 
-            // La cantidad de un lote la fija el Excel (500 o 1000 facturas), no el
-            // reparto del total de la etapa.
-            $caso->cantidad ??= $porCaso;
-
+            // El tamaño del lote lo fija el Excel (500 o 1000 facturas) y no tiene
+            // que ver con cuántas pruebas pide el caso.
             if (! isset($definicion['cantidad'])) {
                 $caso->cantidad = $porCaso;
             }
@@ -109,14 +120,40 @@ final class HomologacionMatriz
         };
     }
 
-    /** Un caso por punto de venta: la etapa consume los 17 catálogos de golpe. */
+    /**
+     * Un caso por **cada catálogo y cada punto de venta**, que es como los cuenta
+     * el Portal: 18 operaciones × 2 puntos = 36 casos, y 50 pruebas cada uno.
+     */
     private function sincronizacion(SiatSetting $setting): array
     {
-        return array_map(fn (int $pv): array => [
-            'caso'        => "e2-pv{$pv}",
-            'punto_venta' => $pv,
-        ], $this->puntosVenta($setting));
+        $definiciones = [];
+
+        foreach (self::CATALOGOS_ETAPA_II as $catalogo) {
+            foreach ($this->puntosVenta($setting) as $pv) {
+                $definiciones[] = [
+                    'caso'        => "e2-{$catalogo}-pv{$pv}",
+                    'catalogo'    => $catalogo,
+                    'punto_venta' => $pv,
+                ];
+            }
+        }
+
+        return $definiciones;
     }
+
+    /**
+     * Las 18 operaciones del servicio de sincronización: los 17 catálogos más
+     * `sincronizarFechaHora`, que no devuelve lista pero cuenta igual.
+     *
+     * @return list<string>
+     */
+    private const CATALOGOS_ETAPA_II = [
+        'leyendas', 'actividades', 'documentos_sector', 'productos', 'unidades_medida',
+        'motivos_anulacion', 'eventos_significativos', 'tipos_emision', 'tipos_factura',
+        'tipos_documento_sector', 'tipos_doc_identidad', 'tipos_metodo_pago', 'tipos_moneda',
+        'tipos_punto_venta', 'paises_origen', 'tipos_habitacion', 'mensajes_servicios',
+        'fecha_hora',
+    ];
 
     /**
      * Emisión individual y anulación: cada documento sector de la actividad, por
@@ -151,7 +188,6 @@ final class HomologacionMatriz
                     'caso'          => "e5-m{$motivo}-pv{$pv}",
                     'punto_venta'   => $pv,
                     'motivo_evento' => (int) $motivo,
-                    'cantidad'      => 1,
                 ];
             }
         }
@@ -180,7 +216,7 @@ final class HomologacionMatriz
                     'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
                     'tipo_factura'     => 1,
                     'motivo_evento'    => (int) $motivo,
-                    'cantidad'         => $cantidad,
+                    'tamano_lote'      => $cantidad,
                 ];
             }
         }
@@ -203,7 +239,7 @@ final class HomologacionMatriz
                     'punto_venta'      => $pv,
                     'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
                     'tipo_factura'     => 1,
-                    'cantidad'         => $cantidad,
+                    'tamano_lote'      => $cantidad,
                 ];
             }
         }

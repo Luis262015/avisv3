@@ -26,7 +26,9 @@ class SiatHomologacionCaso extends Model
         'documento_sector',
         'tipo_factura',
         'motivo_evento',
+        'catalogo',
         'cantidad',
+        'tamano_lote',
         'completados',
         'estado',
         'codigo_resultado',
@@ -42,6 +44,7 @@ class SiatHomologacionCaso extends Model
         'tipo_factura'     => 'integer',
         'motivo_evento'    => 'integer',
         'cantidad'         => 'integer',
+        'tamano_lote'      => 'integer',
         'completados'      => 'integer',
         'ejecutado_at'     => 'datetime',
     ];

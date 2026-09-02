@@ -63,7 +63,7 @@ final class HomologacionRunner
             $hechos = match ($caso->etapa) {
                 2 => $this->etapaSincronizacion($caso, $setting, $limite),
                 4 => $this->etapaEmision($caso, $setting, $limite),
-                5 => $this->etapaEvento($caso, $setting),
+                5 => $this->etapaEvento($caso, $setting, $limite),
                 6 => $this->etapaPaquete($caso, $setting),
                 7 => $this->etapaAnulacion($caso, $setting, $limite),
                 9 => $this->etapaMasiva($caso, $setting),
@@ -95,19 +95,30 @@ final class HomologacionRunner
 
     // ─── Etapas ─────────────────────────────────────────────────────────────
 
-    /** Consume los 17 catálogos. Es de solo lectura: no registra nada en el SIN. */
+    /**
+     * Consume **un** catálogo, tantas veces como pruebas pida el caso.
+     *
+     * El Portal cuenta una prueba por operación y punto de venta, no una por
+     * barrido completo: son 18 operaciones × 2 puntos × 50 pruebas = 1800. Es de
+     * solo lectura y no registra nada en el SIN.
+     */
     private function etapaSincronizacion(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
     {
         $vueltas = $this->cuantas($caso, $limite);
+        $metodo  = SiatSincronizacionService::CATALOGOS[$caso->catalogo] ?? null;
+
+        if ($metodo === null && $caso->catalogo !== 'fecha_hora') {
+            throw new SiatException("El caso apunta al catálogo «{$caso->catalogo}», que no existe.");
+        }
 
         for ($i = 0; $i < $vueltas; $i++) {
+            // Sin vaciar la caché la segunda llamada no saldría a la red y el SIN
+            // no contaría la prueba.
             $this->sincronizacion->olvidarCache($setting);
 
-            foreach (SiatSincronizacionService::CATALOGOS as $metodo) {
-                $this->sincronizacion->{$metodo}($setting);
-            }
-
-            $this->sincronizacion->fechaHora($setting);
+            $metodo === null
+                ? $this->sincronizacion->fechaHora($setting)
+                : $this->sincronizacion->{$metodo}($setting);
         }
 
         $caso->update(['codigo_resultado' => 'OK', 'mensaje' => null]);
@@ -143,7 +154,19 @@ final class HomologacionRunner
     }
 
     /** Un evento significativo por motivo: abrir, cerrar y declarar. */
-    private function etapaEvento(SiatHomologacionCaso $caso, SiatSetting $setting): int
+    private function etapaEvento(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
+    {
+        $hechos = 0;
+
+        for ($i = 0; $i < $this->cuantas($caso, $limite); $i++) {
+            $this->declararUnCorte($caso, $setting);
+            $hechos++;
+        }
+
+        return $hechos;
+    }
+
+    private function declararUnCorte(SiatHomologacionCaso $caso, SiatSetting $setting): void
     {
         $abierto = $this->contingencia->eventoAbierto($setting->store_id);
 
@@ -182,8 +205,6 @@ final class HomologacionRunner
             'referencia'       => $evento->codigo_recepcion_evento,
             'mensaje'          => $evento->mensaje_error,
         ]);
-
-        return 1;
     }
 
     /**
@@ -199,12 +220,12 @@ final class HomologacionRunner
         $evento = $this->contingencia->abrir(
             $setting,
             (int) $caso->motivo_evento,
-            'Homologación Fase I — etapa VI, lote de ' . $caso->cantidad,
+            'Homologación Fase I — etapa VI, lote de ' . $caso->tamano_lote,
             now()->subHours(2),
         );
 
         // Dentro del corte, `createInvoice` emite fuera de línea por sí solo.
-        for ($i = 0; $i < $caso->cantidad; $i++) {
+        for ($i = 0; $i < (int) $caso->tamano_lote; $i++) {
             $this->emitirFactura($setting);
         }
 
@@ -218,7 +239,8 @@ final class HomologacionRunner
             'mensaje'          => $paquete->mensaje_error,
         ]);
 
-        return (int) $caso->cantidad;
+        // Una prueba es un paquete enviado, no una factura suelta.
+        return 1;
     }
 
     /**
@@ -234,7 +256,7 @@ final class HomologacionRunner
         try {
             $facturas = new Collection();
 
-            for ($i = 0; $i < $caso->cantidad; $i++) {
+            for ($i = 0; $i < (int) $caso->tamano_lote; $i++) {
                 $facturas->push($this->emitirFactura($setting));
             }
 
@@ -249,7 +271,7 @@ final class HomologacionRunner
             'mensaje'          => $paquete->mensaje_error,
         ]);
 
-        return (int) $caso->cantidad;
+        return 1;
     }
 
     /**

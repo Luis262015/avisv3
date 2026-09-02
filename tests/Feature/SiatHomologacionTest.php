@@ -93,14 +93,58 @@ class SiatHomologacionTest extends TestCase
         $this->assertSame(3, $casos['e4-s47-pv1']->tipo_factura);
     }
 
-    /** El tamaño del lote lo fija el Excel, no el reparto del total de la etapa. */
-    public function test_los_lotes_conservan_su_tamano_exacto(): void
+    /**
+     * El tamaño del lote lo fija el Excel (500 o 1000 facturas) y no tiene que
+     * ver con cuántas pruebas pide el caso, que son 10 en las dos etapas.
+     */
+    public function test_el_tamano_del_lote_va_aparte_del_numero_de_pruebas(): void
     {
         $paquetes = collect(app(HomologacionMatriz::class)->generar($this->setting, 6));
         $masiva   = collect(app(HomologacionMatriz::class)->generar($this->setting, 9));
 
-        $this->assertSame([500, 250], $paquetes->pluck('cantidad')->unique()->sort()->reverse()->values()->all());
-        $this->assertSame([1000, 500], $masiva->pluck('cantidad')->unique()->sort()->reverse()->values()->all());
+        $this->assertSame([500, 250], $paquetes->pluck('tamano_lote')->unique()->sort()->reverse()->values()->all());
+        $this->assertSame([1000, 500], $masiva->pluck('tamano_lote')->unique()->sort()->reverse()->values()->all());
+
+        $this->assertSame([10], $paquetes->pluck('cantidad')->unique()->values()->all());
+        $this->assertSame([10], $masiva->pluck('cantidad')->unique()->values()->all());
+    }
+
+    /**
+     * La etapa II se cuenta por operación y punto de venta, no por barrido: 18
+     * operaciones × 2 puntos × 50 pruebas = 1800, que es lo que muestra el Portal.
+     */
+    public function test_la_sincronizacion_son_treinta_y_seis_casos_de_cincuenta(): void
+    {
+        $casos = app(HomologacionMatriz::class)->generar($this->setting, 2);
+
+        $this->assertCount(36, $casos);
+        $this->assertSame(50, $casos[0]->cantidad);
+        $this->assertSame(1800, array_sum(array_map(fn ($c) => $c->cantidad, $casos)));
+        $this->assertContains('fecha_hora', array_map(fn ($c) => $c->catalogo, $casos));
+    }
+
+    /** Cada caso consume solo su catálogo, no los diecisiete. */
+    public function test_cada_caso_de_sincronizacion_consume_un_unico_catalogo(): void
+    {
+        $llamadas = [];
+
+        $this->mock(SiatSincronizacionService::class, function ($mock) use (&$llamadas): void {
+            $mock->shouldReceive('documentosSectorDe')->andReturn([1 => 'FCV']);
+            $mock->shouldReceive('olvidarCache')->andReturnNull();
+            $mock->shouldReceive('tiposMoneda')->andReturnUsing(function () use (&$llamadas) {
+                $llamadas[] = 'tiposMoneda';
+
+                return [];
+            });
+            $mock->shouldNotReceive('paisesOrigen');
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 2);
+        $caso = SiatHomologacionCaso::where('caso', 'e2-tipos_moneda-pv0')->firstOrFail();
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 3);
+
+        $this->assertSame(['tiposMoneda', 'tiposMoneda', 'tiposMoneda'], $llamadas);
     }
 
     public function test_los_eventos_cubren_los_siete_motivos_por_punto_de_venta(): void
@@ -220,8 +264,8 @@ class SiatHomologacionTest extends TestCase
         $primero = SiatHomologacionCaso::where('caso', 'e5-m1-pv0')->firstOrFail();
         $segundo = SiatHomologacionCaso::where('caso', 'e5-m2-pv0')->firstOrFail();
 
-        $runner->ejecutar($primero, $this->setting);
-        $runner->ejecutar($segundo, $this->setting);
+        $runner->ejecutar($primero, $this->setting, limite: 1);
+        $runner->ejecutar($segundo, $this->setting, limite: 1);
 
         $eventos = SiatEvento::orderBy('fecha_inicio')->get();
 
@@ -241,7 +285,7 @@ class SiatHomologacionTest extends TestCase
         $caso = SiatHomologacionCaso::where('caso', 'e5-m1-pv0')->firstOrFail();
 
         try {
-            app(HomologacionRunner::class)->ejecutar($caso, $this->setting);
+            app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
             $this->fail('Tenía que propagar el rechazo.');
         } catch (SiatException) {
             // esperado
