@@ -17,6 +17,35 @@ class SiatSincronizacionService
     private const SERVICIO = 'sincronizacion';
 
     /**
+     * Los catálogos que publica el servicio, con el método que resuelve cada uno.
+     *
+     * Son 17, y con `sincronizarFechaHora` —que no devuelve lista y por eso no se
+     * cachea— completan las 18 operaciones del WSDL que exige la etapa II de la
+     * homologación.
+     *
+     * @var array<string, string> clave de caché => método
+     */
+    public const CATALOGOS = [
+        'leyendas'               => 'leyendas',
+        'actividades'            => 'actividades',
+        'documentos_sector'      => 'documentosSector',
+        'productos'              => 'productosServicios',
+        'unidades_medida'        => 'unidadesMedida',
+        'motivos_anulacion'      => 'motivosAnulacion',
+        'eventos_significativos' => 'eventosSignificativos',
+        'tipos_emision'          => 'tiposEmision',
+        'tipos_factura'          => 'tiposFactura',
+        'tipos_documento_sector' => 'tiposDocumentoSector',
+        'tipos_doc_identidad'    => 'tiposDocumentoIdentidad',
+        'tipos_metodo_pago'      => 'tiposMetodoPago',
+        'tipos_moneda'           => 'tiposMoneda',
+        'tipos_punto_venta'      => 'tiposPuntoVenta',
+        'paises_origen'          => 'paisesOrigen',
+        'tipos_habitacion'       => 'tiposHabitacion',
+        'mensajes_servicios'     => 'mensajesServicios',
+    ];
+
+    /**
      * Leyendas obligatorias por actividad económica.
      *
      * @return array<string, list<string>> actividad => leyendas
@@ -86,6 +115,48 @@ class SiatSincronizacionService
     }
 
     /**
+     * Documentos sector habilitados para cada actividad del contribuyente.
+     *
+     * Es la única forma exacta de saber qué documentos puede emitir este NIT: el
+     * SIN publica 28 sectores, pero solo cuentan los asociados a sus actividades.
+     * De aquí sale el alcance real de la homologación.
+     *
+     * @return array<string, array<int, string>> actividad => [código sector => nombre]
+     */
+    public function documentosSector(SiatSetting $setting): array
+    {
+        return $this->cacheado($setting, 'documentos_sector', function () use ($setting) {
+            $lista = $this->lista(
+                $setting,
+                'sincronizarListaActividadesDocumentoSector',
+                'listaActividadesDocumentoSector'
+            );
+
+            $porActividad = [];
+
+            foreach ($lista as $item) {
+                $actividad = (string) ($item['codigoActividad'] ?? '');
+
+                $porActividad[$actividad][(int) ($item['codigoDocumentoSector'] ?? 0)]
+                    = (string) ($item['tipoDocumentoSector'] ?? '');
+            }
+
+            return $porActividad;
+        });
+    }
+
+    /**
+     * Documentos sector de una actividad concreta. Vacío significa que la
+     * actividad no pertenece al NIT, igual que ocurre con las leyendas.
+     *
+     * @return array<int, string> código => nombre
+     */
+    public function documentosSectorDe(SiatSetting $setting, string $actividad): array
+    {
+        return $this->documentosSector($setting)[$actividad] ?? [];
+    }
+
+    /**
      * Unidades de medida.
      *
      * @return array<int, string> código => descripción
@@ -127,6 +198,102 @@ class SiatSincronizacionService
     }
 
     /**
+     * Tipos de factura: 1 con derecho a crédito fiscal, 2 sin él, 3 documento de
+     * ajuste (el de las notas de crédito-débito), 4 documento equivalente.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposFactura(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTiposFactura', 'tipos_factura');
+    }
+
+    /**
+     * Catálogo de los 28 documentos sector que publica el SIN. Es la lista
+     * completa; los que puede emitir este NIT salen de {@see documentosSector()}.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposDocumentoSector(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoDocumentoSector', 'tipos_documento_sector');
+    }
+
+    /**
+     * Tipos de documento de identidad del comprador (1 NIT, 2 CI...).
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposDocumentoIdentidad(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoDocumentoIdentidad', 'tipos_doc_identidad');
+    }
+
+    /**
+     * Métodos de pago admitidos. El 2 es tarjeta, y exige número de tarjeta en
+     * la factura.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposMetodoPago(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoMetodoPago', 'tipos_metodo_pago');
+    }
+
+    /**
+     * Monedas.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposMoneda(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoMoneda', 'tipos_moneda');
+    }
+
+    /**
+     * Tipos de punto de venta. Los necesita `registroPuntoVenta` al dar de alta
+     * el punto de venta 1 que exige la homologación.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposPuntoVenta(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoPuntoVenta', 'tipos_punto_venta');
+    }
+
+    /**
+     * Países de origen.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function paisesOrigen(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaPaisOrigen', 'paises_origen');
+    }
+
+    /**
+     * Tipos de habitación. Solo lo usa el sector hotelero; se sincroniza porque
+     * la etapa II de la homologación lo exige igual.
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function tiposHabitacion(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarParametricaTipoHabitacion', 'tipos_habitacion');
+    }
+
+    /**
+     * Catálogo de mensajes de los servicios: el significado de cada código de
+     * respuesta del SIN (908 validada, 915 tipo de factura inválido...).
+     *
+     * @return array<int, string> código => descripción
+     */
+    public function mensajesServicios(SiatSetting $setting): array
+    {
+        return $this->parametrica($setting, 'sincronizarListaMensajesServicios', 'mensajes_servicios');
+    }
+
+    /**
      * Hora oficial del SIN. Sirve para detectar un desfase del reloj local, que
      * invalida el CUF porque la fecha va dentro de su cálculo.
      */
@@ -139,12 +306,7 @@ class SiatSincronizacionService
 
     public function olvidarCache(SiatSetting $setting): void
     {
-        $claves = [
-            'leyendas', 'actividades', 'productos', 'unidades_medida',
-            'motivos_anulacion', 'eventos_significativos', 'tipos_emision',
-        ];
-
-        foreach ($claves as $clave) {
+        foreach (array_keys(self::CATALOGOS) as $clave) {
             Cache::forget($this->clave($setting, $clave));
         }
     }
@@ -164,9 +326,12 @@ class SiatSincronizacionService
     /**
      * Todas las operaciones de sincronización comparten la misma solicitud.
      *
+     * Protegido —y no privado— para que las pruebas puedan doblar la llamada SOAP
+     * sin tocar la red: es la única costura del servicio.
+     *
      * @return array<string, mixed>
      */
-    private function llamar(SiatSetting $setting, string $operacion): array
+    protected function llamar(SiatSetting $setting, string $operacion): array
     {
         if (blank($setting->cuis)) {
             throw new SiatException('Las paramétricas del SIN requieren un CUIS vigente y esta tienda no lo tiene.');
@@ -174,15 +339,32 @@ class SiatSincronizacionService
 
         $client = new SiatSoapClient($setting);
 
-        return $client->call(self::SERVICIO, $operacion, [
-            'codigoAmbiente'   => $client->codigoAmbiente(),
-            'codigoModalidad'  => (int) $setting->modalidad,
+        return $client->call(
+            self::SERVICIO,
+            $operacion,
+            $this->solicitud($setting, $client->codigoAmbiente()),
+            envoltura: 'SolicitudSincronizacion',
+        );
+    }
+
+    /**
+     * La solicitud que comparten las 18 operaciones.
+     *
+     * `solicitudSincronizacion` del WSDL son exactamente estos seis campos: no
+     * lleva `codigoModalidad`, a diferencia de la solicitud de CUFD.
+     *
+     * @return array<string, mixed>
+     */
+    protected function solicitud(SiatSetting $setting, int $codigoAmbiente): array
+    {
+        return [
+            'codigoAmbiente'   => $codigoAmbiente,
             'codigoPuntoVenta' => (int) $setting->codigo_punto_venta,
             'codigoSistema'    => (string) $setting->codigo_sistema,
             'codigoSucursal'   => (int) $setting->codigo_sucursal,
             'cuis'             => $setting->cuis,
             'nit'              => (int) $setting->nit,
-        ], envoltura: 'SolicitudSincronizacion');
+        ];
     }
 
     /**
