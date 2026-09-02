@@ -8,6 +8,7 @@ use App\Models\CashRegister;
 use App\Models\CashShift;
 use App\Models\Product;
 use App\Models\SiatCufdCode;
+use App\Models\SiatEvento;
 use App\Models\SiatHomologacionCaso;
 use App\Models\SiatInvoice;
 use App\Models\SiatPuntoVenta;
@@ -17,6 +18,7 @@ use App\Models\User;
 use App\Services\Siat\HomologacionMatriz;
 use App\Services\Siat\HomologacionRunner;
 use App\Services\Siat\SiatException;
+use App\Services\Siat\SiatOperacionesService;
 use App\Services\Siat\SiatSincronizacionService;
 use App\Services\SiatService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -201,6 +203,53 @@ class SiatHomologacionTest extends TestCase
         $this->assertSame(1, (int) $this->setting->fresh()->codigo_punto_venta);
     }
 
+    /**
+     * El SIN rechaza dos cortes con rangos solapados (981) y también uno cuya
+     * franja caiga fuera de la vigencia del CUFD (984). Cada corte nuevo se
+     * coloca justo antes del más temprano ya declarado.
+     */
+    public function test_cada_corte_se_declara_antes_del_anterior(): void
+    {
+        $this->prepararEmision();
+        $this->fakeContingencia();
+
+        $runner = app(HomologacionRunner::class);
+        $matriz = app(HomologacionMatriz::class);
+        $matriz->generar($this->setting, 5);
+
+        $primero = SiatHomologacionCaso::where('caso', 'e5-m1-pv0')->firstOrFail();
+        $segundo = SiatHomologacionCaso::where('caso', 'e5-m2-pv0')->firstOrFail();
+
+        $runner->ejecutar($primero, $this->setting);
+        $runner->ejecutar($segundo, $this->setting);
+
+        $eventos = SiatEvento::orderBy('fecha_inicio')->get();
+
+        $this->assertCount(2, $eventos);
+        $this->assertTrue(
+            $eventos[0]->fecha_fin->lessThanOrEqualTo($eventos[1]->fecha_inicio),
+            'Las franjas de dos cortes no pueden solaparse.',
+        );
+    }
+
+    /** Un corte que el SIN no acepta no puede dejar rastro: ocuparía un rango. */
+    public function test_un_corte_rechazado_no_deja_fila(): void
+    {
+        $this->prepararEmision();
+        $this->fakeContingencia(declararFalla: true);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e5-m1-pv0')->firstOrFail();
+
+        try {
+            app(HomologacionRunner::class)->ejecutar($caso, $this->setting);
+            $this->fail('Tenía que propagar el rechazo.');
+        } catch (SiatException) {
+            // esperado
+        }
+
+        $this->assertSame(0, SiatEvento::count());
+    }
+
     public function test_la_etapa_de_firma_digital_no_se_ejecuta(): void
     {
         $this->assertNotContains(8, HomologacionMatriz::EJECUTABLES);
@@ -277,12 +326,14 @@ class SiatHomologacionTest extends TestCase
             'codigo_producto_sin' => 1001967, 'unidad_medida_sin' => 57,
         ]);
 
+        // Un CUFD dura 24 horas; se fecha unas horas atrás porque los cortes se
+        // declaran en pasado y tienen que caber dentro de su vigencia.
         SiatCufdCode::create([
             'store_id' => $this->store->id,
             'punto_venta_id' => SiatPuntoVenta::where('codigo', 0)->value('id'),
             'codigo' => 'CUFD-PV0', 'codigo_control' => 'CTRL0',
-            'fecha_vigencia' => now()->addDay(), 'consecutivo' => 0, 'estado' => 'activo',
-        ]);
+            'fecha_vigencia' => now()->addHours(20), 'consecutivo' => 0, 'estado' => 'activo',
+        ])->forceFill(['created_at' => now()->subHours(4)])->save();
 
         $this->mock(SiatService::class, function ($mock) use ($rechazada): void {
             $mock->shouldReceive('createInvoice')->andReturnUsing(
@@ -292,6 +343,25 @@ class SiatHomologacionTest extends TestCase
                     'mensaje_error' => $rechazada ? '1000 ALGO' : null,
                 ]),
             );
+        });
+    }
+
+    /**
+     * Dobla solo la llamada SOAP del registro del evento: la contingencia real
+     * —abrir, cerrar, declarar— se ejecuta de verdad, que es lo que interesa
+     * comprobar. `SiatContingenciaService` es final y no se puede doblar.
+     */
+    private function fakeContingencia(bool $declararFalla = false): void
+    {
+        app(HomologacionMatriz::class)->generar($this->setting, 5);
+
+        $this->mock(SiatOperacionesService::class, function ($mock) use ($declararFalla): void {
+            if ($declararFalla) {
+                $mock->shouldReceive('registrarEvento')
+                    ->andThrow(new SiatException('981 RANGO DE FECHAS DE EVENTO SIGNIFICATIVO INVALIDO'));
+            } else {
+                $mock->shouldReceive('registrarEvento')->andReturn('9898021');
+            }
         });
     }
 

@@ -11,6 +11,8 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
+use App\Models\SiatCufdCode;
+use App\Models\SiatEvento;
 use App\Models\SiatHomologacionCaso;
 use App\Models\SiatInvoice;
 use App\Models\SiatNota;
@@ -151,15 +153,29 @@ final class HomologacionRunner
             );
         }
 
+        // Cada evento necesita su propia franja: el SIN responde «981 RANGO DE
+        // FECHAS DE EVENTO SIGNIFICATIVO INVALIDO» cuando el rango se solapa con
+        // otro ya registrado, así que se van escalonando hacia atrás.
+        [$inicio, $fin] = $this->franjaLibre($setting);
+
         $evento = $this->contingencia->abrir(
             $setting,
             (int) $caso->motivo_evento,
             'Homologación Fase I — etapa V, motivo ' . $caso->motivo_evento,
-            now()->subMinutes(5),
+            $inicio,
         );
 
-        $this->contingencia->cerrar($evento);
-        $evento = $this->contingencia->declarar($evento->refresh(), $setting);
+        $this->contingencia->cerrar($evento, $fin);
+
+        try {
+            $evento = $this->contingencia->declarar($evento->refresh(), $setting);
+        } catch (\Throwable $e) {
+            // Un corte que el SIN no aceptó no existe: dejar la fila local haría
+            // creer que ese rango está ocupado y desplazaría los siguientes.
+            $evento->delete();
+
+            throw $e;
+        }
 
         $caso->update([
             'codigo_resultado' => $evento->estado,
@@ -428,6 +444,62 @@ final class HomologacionRunner
     }
 
     // ─── Utilidades ─────────────────────────────────────────────────────────
+
+    /**
+     * Una franja horaria válida para declarar un corte.
+     *
+     * Tiene que cumplir dos condiciones a la vez, y son las que costaron dos
+     * rechazos del SIN:
+     *
+     * - **No solaparse con otro corte ya declarado**, o responde «981 RANGO DE
+     *   FECHAS DE EVENTO SIGNIFICATIVO INVALIDO».
+     * - **Caber dentro de la vigencia del CUFD del evento**, o responde «984 EL
+     *   EVENTO SIGNIFICATIVO NO CORRESPONDE AL CUFD DEL EVENTO REGISTRADO».
+     *
+     * Por eso las franjas se escalonan hacia atrás desde ahora, en bloques de
+     * diez minutos separados entre sí, sin bajar del momento en que se obtuvo el
+     * CUFD vigente.
+     *
+     * @return array{0: \Carbon\CarbonInterface, 1: \Carbon\CarbonInterface}
+     */
+    private function franjaLibre(SiatSetting $setting): array
+    {
+        $cufd = $this->cufdVigente($setting);
+
+        // Solo cuentan los cortes que el SIN llegó a registrar: los intentos
+        // fallidos dejan fila local pero no ocupan ningún rango allí.
+        $primero = SiatEvento::where('store_id', $setting->store_id)
+            ->where('estado', 'registrado')
+            ->where('fecha_inicio', '>=', $cufd->created_at)
+            ->min('fecha_inicio');
+
+        // Cada corte nuevo se coloca justo antes del más temprano ya declarado,
+        // así que la siguiente llamada retrocede sola sin llevar contador.
+        $tope = $primero !== null ? \Carbon\Carbon::parse($primero) : now();
+
+        $fin    = $tope->copy()->subMinutes(2);
+        $inicio = $fin->copy()->subMinutes(2);
+
+        if ($inicio->lessThan($cufd->created_at)) {
+            throw new SiatException(
+                'No queda hueco dentro de la vigencia del CUFD actual para declarar otro corte sin '
+                . 'solaparlo con los anteriores. Pida un CUFD nuevo y reanude mañana.'
+            );
+        }
+
+        return [$inicio, $fin];
+    }
+
+    private function cufdVigente(SiatSetting $setting): SiatCufdCode
+    {
+        return SiatCufdCode::where('store_id', $setting->store_id)
+            ->where('punto_venta_id', $setting->puntoVentaActivo()?->id)
+            ->where('estado', 'activo')
+            ->where('fecha_vigencia', '>', now())
+            ->latest()
+            ->first()
+            ?? throw new SiatException('No hay un CUFD vigente con el que declarar el corte.');
+    }
 
     private function esNota(SiatHomologacionCaso $caso): bool
     {
