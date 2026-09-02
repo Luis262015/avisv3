@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\SiatContingencyController;
 use App\Http\Controllers\Admin\SiatHomologationController;
 use App\Http\Controllers\Admin\SiatInvoiceController;
 use App\Http\Controllers\Admin\SiatNotaController;
+use App\Http\Controllers\Admin\SiatPuntoVentaController;
 use App\Http\Controllers\Admin\SiatPurchaseRegistryController;
 use App\Http\Controllers\Admin\SiatSettingController;
 use App\Http\Controllers\Admin\StockTransferController;
@@ -68,6 +69,21 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 ->name('settings.request-cuis');
             Route::post('settings/{setting}/test-connection', [SiatSettingController::class, 'testConnection'])
                 ->name('settings.test-connection');
+
+            // Puntos de venta. La homologación repite cada caso con el 0 y el 1,
+            // y cada punto lleva su propio CUIS y su propia cadena de CUFD.
+            Route::get('puntos-venta', [SiatPuntoVentaController::class, 'index'])
+                ->name('puntos-venta.index');
+            Route::post('settings/{setting}/puntos-venta', [SiatPuntoVentaController::class, 'store'])
+                ->name('puntos-venta.store');
+            Route::post('settings/{setting}/puntos-venta/sync', [SiatPuntoVentaController::class, 'sync'])
+                ->name('puntos-venta.sync');
+            Route::post('settings/{setting}/puntos-venta/{punto}/cuis', [SiatPuntoVentaController::class, 'requestCuis'])
+                ->name('puntos-venta.cuis');
+            Route::post('settings/{setting}/puntos-venta/{punto}/activate', [SiatPuntoVentaController::class, 'activate'])
+                ->name('puntos-venta.activate');
+            Route::post('settings/{setting}/puntos-venta/{punto}/close', [SiatPuntoVentaController::class, 'close'])
+                ->name('puntos-venta.close');
 
             // Homologación del catálogo propio con las paramétricas del SIN.
             Route::get('homologation', [SiatHomologationController::class, 'index'])

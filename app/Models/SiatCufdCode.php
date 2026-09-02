@@ -10,6 +10,9 @@ class SiatCufdCode extends Model
 {
     protected $fillable = [
         'store_id',
+        // El punto de venta que lo pidió: cada uno lleva su propia cadena de CUFD
+        // y, con el `consecutivo`, su propio correlativo de facturas.
+        'punto_venta_id',
         'codigo',
         'codigo_control',
         'direccion',

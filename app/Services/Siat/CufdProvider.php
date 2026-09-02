@@ -30,6 +30,7 @@ final class CufdProvider
         }
 
         SiatCufdCode::where('store_id', $setting->store_id)
+            ->where('punto_venta_id', $setting->puntoVentaActivo()?->id)
             ->where('estado', 'activo')
             ->update(['estado' => 'vencido']);
 
@@ -48,7 +49,11 @@ final class CufdProvider
      */
     public function activo(SiatSetting $setting): ?SiatCufdCode
     {
+        // Acotado al punto de venta activo: cada punto lleva su propia cadena de
+        // CUFD, y con ella su correlativo. Coger el de otro punto produciría un
+        // CUF incoherente con la cabecera del envío.
         return SiatCufdCode::where('store_id', $setting->store_id)
+            ->where('punto_venta_id', $setting->puntoVentaActivo()?->id)
             ->where('estado', 'activo')
             ->where('fecha_vigencia', '>', now())
             ->latest()
@@ -62,6 +67,7 @@ final class CufdProvider
 
         return SiatCufdCode::create([
             'store_id'       => $setting->store_id,
+            'punto_venta_id' => $setting->puntoVentaActivo()?->id,
             'codigo'         => $codigo,
             'codigo_control' => strtoupper(substr(hash('sha1', $codigo), 0, 8)),
             'fecha_vigencia' => now()->addHours(24),

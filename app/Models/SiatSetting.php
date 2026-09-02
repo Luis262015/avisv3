@@ -75,6 +75,26 @@ class SiatSetting extends Model
         return $this->belongsTo(Store::class);
     }
 
+    /**
+     * El punto de venta con el que se está emitiendo.
+     *
+     * `codigo_punto_venta` y `cuis` de la configuración son el reflejo de este
+     * registro: se actualizan al cambiar de punto de venta para que la emisión,
+     * el CUF y las cabeceras SOAP sigan leyendo de un único sitio.
+     */
+    public function puntoVentaActivo(): ?SiatPuntoVenta
+    {
+        return SiatPuntoVenta::where('store_id', $this->store_id)
+            ->where('codigo_sucursal', (int) $this->codigo_sucursal)
+            ->where('codigo', (int) $this->codigo_punto_venta)
+            ->first();
+    }
+
+    public function puntosVenta(): HasMany
+    {
+        return $this->hasMany(SiatPuntoVenta::class, 'store_id', 'store_id');
+    }
+
     public function cufdCodes(): HasMany
     {
         return $this->hasMany(SiatCufdCode::class, 'store_id', 'store_id');

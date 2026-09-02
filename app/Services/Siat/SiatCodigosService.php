@@ -36,30 +36,44 @@ class SiatCodigosService
             'nit'              => (int) $setting->nit,
         ], envoltura: 'SolicitudCuis');
 
+        // `respuestaCuis` del WSDL declara el campo como `codigo`, a secas.
+        $codigo = $respuesta['codigo'] ?? null;
+
         // El 980 no es un fallo: significa que el SIN ya emitió un CUIS para esta
-        // sucursal y punto de venta. No hay operación para recuperarlo, así que si
-        // no está guardado hay que recuperarlo de los registros propios.
+        // sucursal y punto de venta. Llega con `transaccion=false`, pero **la
+        // respuesta trae igualmente el CUIS vigente**, así que sirve para
+        // recuperarlo si se perdió por este lado.
         if ($this->tieneCodigo($respuesta, 980)) {
-            throw new SiatException(
-                'El SIN ya tiene un CUIS vigente para la sucursal ' . (int) $setting->codigo_sucursal
-                . ' y el punto de venta ' . (int) $setting->codigo_punto_venta . ', y no entrega uno nuevo. '
-                . 'Los servicios no permiten volver a consultarlo: recupérelo de sus registros y cárguelo '
-                . 'en la configuración, o dé de baja el punto de venta en el Portal SIAT para empezar de cero.'
-            );
+            if (blank($codigo)) {
+                throw new SiatException(
+                    'El SIN ya tiene un CUIS vigente para la sucursal ' . (int) $setting->codigo_sucursal
+                    . ' y el punto de venta ' . (int) $setting->codigo_punto_venta
+                    . ', pero no lo devolvió. Recupérelo de sus registros y cárguelo en la configuración.'
+                );
+            }
+        } else {
+            $this->assertTransaccion($respuesta, 'solicitud de CUIS');
+
+            if (blank($codigo)) {
+                throw new SiatException('El SIN no devolvió un CUIS en la respuesta.');
+            }
         }
 
-        $this->assertTransaccion($respuesta, 'solicitud de CUIS');
-
-        $codigo = $respuesta['codigoCuis'] ?? $respuesta['codigoCUIS'] ?? null;
-
-        if (blank($codigo)) {
-            throw new SiatException('El SIN no devolvió un CUIS en la respuesta.');
-        }
+        $vigencia = $this->parseFecha($respuesta['fechaVigencia'] ?? null);
 
         $setting->update([
             'cuis'                 => $codigo,
             'cuis_fecha_solicitud' => now(),
-            'cuis_fecha_vigencia'  => $this->parseFecha($respuesta['fechaVigencia'] ?? null),
+            'cuis_fecha_vigencia'  => $vigencia,
+        ]);
+
+        // El CUIS es de la pareja sucursal/punto de venta, no del sistema: se
+        // guarda también en el punto de venta para que sobreviva al cambio de
+        // punto activo, que reescribe el de la configuración.
+        $setting->puntoVentaActivo()?->update([
+            'cuis'                 => $codigo,
+            'cuis_fecha_solicitud' => now(),
+            'cuis_fecha_vigencia'  => $vigencia,
         ]);
 
         return $codigo;
@@ -103,13 +117,19 @@ class SiatCodigosService
             throw new SiatException('El SIN no devolvió el CUFD o su código de control.');
         }
 
-        // Vencer los CUFD anteriores de la tienda antes de registrar el nuevo.
+        $puntoVenta = $setting->puntoVentaActivo();
+
+        // Solo los del mismo punto de venta: cada uno lleva su propia cadena de
+        // CUFD y, con ella, su propio correlativo de facturas. Vencer los de otro
+        // punto rompería su serie.
         SiatCufdCode::where('store_id', $setting->store_id)
+            ->where('punto_venta_id', $puntoVenta?->id)
             ->where('estado', 'activo')
             ->update(['estado' => 'vencido']);
 
         return SiatCufdCode::create([
             'store_id'       => $setting->store_id,
+            'punto_venta_id' => $puntoVenta?->id,
             'codigo'         => $codigo,
             'codigo_control' => $codigoControl,
             'direccion'      => $respuesta['direccion'] ?? null,
