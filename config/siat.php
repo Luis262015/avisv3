@@ -44,6 +44,9 @@ return [
         // Registro de Compras: es el contribuyente el que reporta lo que compró,
         // no lo que factura. Servicio y formato distintos de los de venta.
         'compras'        => 'ServicioRecepcionCompras',
+        // Notas de crédito-débito (documentos sector 24 y 47). Servicio aparte del
+        // de compra-venta, y sin envío por paquete ni masivo.
+        'ajuste'         => 'ServicioFacturacionDocumentoAjuste',
     ],
 
     /*
@@ -93,6 +96,32 @@ return [
         */
         'unidad_medida_default'      => env('SIAT_UNIDAD_MEDIDA_DEFAULT', 57),
         'codigo_producto_sin_default' => env('SIAT_PRODUCTO_SIN_DEFAULT'),
+    ],
+
+    /*
+    | Nota de Crédito-Débito: los documentos sector que ajustan una factura ya
+    | emitida. La actividad 4741100 tiene habilitados los dos.
+    |
+    | El 24 y el 47 comparten servicio, algoritmo de CUF y casi todo el XML: el
+    | de descuento solo añade `descuentoAdicional` en cabecera y `nroItem` en
+    | cada línea del detalle.
+    */
+    'nota' => [
+        'documentos_sector' => [
+            24 => 'NOTA DE CRÉDITO-DÉBITO',
+            47 => 'NOTA CREDITO DEBITO DESCUENTO',
+        ],
+
+        /*
+        | Los dos sectores exigen tipo de factura 3 (documento de ajuste).
+        */
+        'tipo_factura' => 3,
+
+        /*
+        | `montoEfectivoCreditoDebito` es el 13 % del monto devuelto —el crédito
+        | fiscal que se revierte—, no el efectivo entregado al cliente.
+        */
+        'alicuota_iva' => env('SIAT_ALICUOTA_IVA', 0.13),
     ],
 
 ];

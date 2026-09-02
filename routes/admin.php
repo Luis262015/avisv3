@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\SalesReportController;
 use App\Http\Controllers\Admin\SiatContingencyController;
 use App\Http\Controllers\Admin\SiatHomologationController;
 use App\Http\Controllers\Admin\SiatInvoiceController;
+use App\Http\Controllers\Admin\SiatNotaController;
 use App\Http\Controllers\Admin\SiatPurchaseRegistryController;
 use App\Http\Controllers\Admin\SiatSettingController;
 use App\Http\Controllers\Admin\StockTransferController;
@@ -316,6 +317,20 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::post('invoices/{siatInvoice}/anexos/send', [SiatInvoiceController::class, 'sendAnexos'])
                 ->name('invoices.anexos.send');
             Route::post('sales/{sale}/emit-invoice', [SiatInvoiceController::class, 'emit'])->name('sales.emit-invoice');
+
+            // Notas de Crédito-Débito (documentos sector 24 y 47). Se emiten desde
+            // la devolución, que es lo que las origina; el resto del ciclo va
+            // sobre la nota, igual que en las facturas.
+            Route::get('notas', [SiatNotaController::class, 'index'])->name('notas.index');
+            Route::get('notas/{nota}', [SiatNotaController::class, 'show'])->name('notas.show');
+            Route::post('returns/{return}/emit-nota', [SiatNotaController::class, 'store'])
+                ->name('returns.emit-nota');
+            Route::post('notas/{nota}/resend', [SiatNotaController::class, 'resend'])->name('notas.resend');
+            Route::post('notas/{nota}/cancel', [SiatNotaController::class, 'cancel'])->name('notas.cancel');
+            Route::post('notas/{nota}/check-status', [SiatNotaController::class, 'checkStatus'])
+                ->name('notas.check-status');
+            Route::post('notas/{nota}/revert-cancellation', [SiatNotaController::class, 'revertCancellation'])
+                ->name('notas.revert-cancellation');
         });
 
         // Gastos

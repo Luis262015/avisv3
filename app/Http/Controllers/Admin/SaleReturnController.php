@@ -57,7 +57,15 @@ class SaleReturnController extends Controller
 
     public function show(SaleReturn $return): Response
     {
-        $return->load(['sale:id,folio', 'customer', 'user:id,name', 'items.product:id,name,sku']);
+        $return->load([
+            'sale:id,folio',
+            'sale.siatInvoice:id,sale_id,numero_factura,estado',
+            'customer',
+            'user:id,name',
+            'items.product:id,name,sku',
+            'siatNota:id,sale_return_id,numero_nota,documento_sector,estado',
+        ]);
+
         return Inertia::render('admin/returns/show', ['return' => $return]);
     }
 

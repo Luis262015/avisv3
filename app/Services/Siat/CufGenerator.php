@@ -39,6 +39,7 @@ class CufGenerator
     // ─── Tipo de documento sector ────────────────────────────────────────────
     public const SECTOR_COMPRA_VENTA   = 1;
     public const SECTOR_NOTA_CRED_DEB  = 24;
+    public const SECTOR_NOTA_CRED_DEB_DESCUENTO = 47;
 
     /**
      * Longitud de cada campo, en el orden exacto de la especificación.

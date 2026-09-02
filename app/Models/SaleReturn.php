@@ -48,6 +48,17 @@ class SaleReturn extends Model
         return $this->hasMany(SaleReturnItem::class);
     }
 
+    /**
+     * La nota de crédito-débito con la que se declaró la devolución al SIN.
+     *
+     * Es `hasOne` porque solo puede haber una vigente: una devolución ajusta la
+     * factura una vez. Si se anula, se puede emitir otra.
+     */
+    public function siatNota(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(SiatNota::class);
+    }
+
     public static function nextFolio(): string
     {
         $last = static::lockForUpdate()->max('id') ?? 0;

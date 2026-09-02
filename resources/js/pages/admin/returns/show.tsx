@@ -7,10 +7,11 @@ interface ReturnItem { id: number; quantity: string; unit_price: string; subtota
 interface SaleReturn {
     id: number; folio: string; date: string; reason: string | null; refund_method: string; refund_amount: string;
     status: string; restock: boolean; notes: string | null;
-    sale: { id: number; folio: string } | null;
+    sale: { id: number; folio: string; siat_invoice: { id: number; numero_factura: number; estado: string } | null } | null;
     customer: { id: number; name: string } | null;
     user: { name: string };
     items: ReturnItem[];
+    siat_nota: { id: number; numero_nota: number; documento_sector: number; estado: string } | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -32,6 +33,17 @@ export default function ReturnShow({ return: ret }: { return: SaleReturn }) {
     const canComplete = ['pending', 'approved'].includes(ret.status);
     const canReject = !['completed', 'rejected'].includes(ret.status);
 
+    // La nota de crédito-débito ajusta una factura ya emitida: sin factura
+    // vigente no hay nada que declarar al SIN.
+    const facturaVigente = ['enviada', 'validada'].includes(ret.sale?.siat_invoice?.estado ?? '');
+    const notaVigente = ret.siat_nota && ret.siat_nota.estado !== 'anulada' ? ret.siat_nota : null;
+    const canEmitNota = ret.status === 'completed' && facturaVigente && !notaVigente;
+
+    const emitNota = () => {
+        if (!window.confirm('¿Emitir la nota de crédito-débito ante el SIN? Consume un correlativo.')) return;
+        router.post(`/admin/siat/returns/${ret.id}/emit-nota`);
+    };
+
     return (
         <AppLayout breadcrumbs={[{ title: 'Devoluciones', href: '/admin/returns' }, { title: ret.folio, href: '' }]}>
             <FlashMessage />
@@ -51,6 +63,12 @@ export default function ReturnShow({ return: ret }: { return: SaleReturn }) {
                         {canApprove && <Button onClick={() => act(`/admin/returns/${ret.id}/approve`, '¿Aprobar devolución?')}>Aprobar</Button>}
                         {canComplete && <Button onClick={() => act(`/admin/returns/${ret.id}/complete`, '¿Completar devolución? Se reintegrará el inventario si corresponde.')}>Completar</Button>}
                         {canReject && <Button variant="destructive" onClick={() => act(`/admin/returns/${ret.id}/reject`, '¿Rechazar devolución?')}>Rechazar</Button>}
+                        {canEmitNota && <Button variant="outline" onClick={emitNota}>Emitir nota de crédito-débito</Button>}
+                        {notaVigente && (
+                            <Link href={`/admin/siat/notas/${notaVigente.id}`}>
+                                <Button variant="outline">Nota #{notaVigente.numero_nota} (sector {notaVigente.documento_sector})</Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
