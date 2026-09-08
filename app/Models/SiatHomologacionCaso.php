@@ -27,6 +27,7 @@ class SiatHomologacionCaso extends Model
         'tipo_factura',
         'motivo_evento',
         'catalogo',
+        'operacion',
         'cantidad',
         'tamano_lote',
         'completados',
@@ -58,6 +59,17 @@ class SiatHomologacionCaso extends Model
     public function scopePendientes(Builder $query): Builder
     {
         return $query->whereIn('estado', ['pendiente', 'en_curso', 'fallido']);
+    }
+
+    /**
+     * Si el caso consulta la validación de un paquete en vez de enviarlo.
+     *
+     * Las etapas VI y IX puntúan las dos cosas por separado: el envío responde
+     * 901 PENDIENTE y la consulta posterior 908 RECEPCION VALIDADA.
+     */
+    public function esValidacion(): bool
+    {
+        return $this->operacion === 'validacion';
     }
 
     public function restantes(): int

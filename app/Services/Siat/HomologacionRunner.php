@@ -16,6 +16,7 @@ use App\Models\SiatEvento;
 use App\Models\SiatHomologacionCaso;
 use App\Models\SiatInvoice;
 use App\Models\SiatNota;
+use App\Models\SiatPaquete;
 use App\Models\SiatPuntoVenta;
 use App\Models\SiatSetting;
 use App\Models\User;
@@ -64,9 +65,13 @@ final class HomologacionRunner
                 2 => $this->etapaSincronizacion($caso, $setting, $limite),
                 4 => $this->etapaEmision($caso, $setting, $limite),
                 5 => $this->etapaEvento($caso, $setting, $limite),
-                6 => $this->etapaPaquete($caso, $setting, $limite),
+                6 => $caso->esValidacion()
+                    ? $this->etapaValidacion($caso, $setting, $limite)
+                    : $this->etapaPaquete($caso, $setting, $limite),
                 7 => $this->etapaAnulacion($caso, $setting, $limite),
-                9 => $this->etapaMasiva($caso, $setting, $limite),
+                9 => $caso->esValidacion()
+                    ? $this->etapaValidacion($caso, $setting, $limite)
+                    : $this->etapaMasiva($caso, $setting, $limite),
                 default => throw new SiatException("La etapa {$caso->etapa} no se puede ejecutar desde aquí."),
             };
         } catch (\Throwable $e) {
@@ -314,6 +319,67 @@ final class HomologacionRunner
         }
 
         return $hechos;
+    }
+
+    /**
+     * Consulta si el SIN validó paquetes ya enviados.
+     *
+     * Es un caso puntuable aparte del envío, y responde otra cosa: el envío
+     * acusa 901 PENDIENTE y esta consulta 908 RECEPCION VALIDADA. Es de solo
+     * lectura, así que repetirla no gasta documentos.
+     *
+     * Recorre los paquetes de este punto de venta y vuelve a empezar si hay
+     * menos que pruebas pedidas: lo que se puntúa es la llamada, no cuántos
+     * paquetes distintos se miren.
+     */
+    private function etapaValidacion(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
+    {
+        $paquetes = $this->paquetesValidables($caso, $setting);
+        $cuantas  = $this->cuantas($caso, $limite);
+        $hechos   = 0;
+
+        for ($i = 0; $i < $cuantas; $i++) {
+            $paquete   = $paquetes[$i % count($paquetes)];
+            $resultado = $this->contingencia->validarPaquete($paquete->fresh(), $setting);
+
+            $this->anotar($caso, [
+                'codigo_resultado' => (string) ($resultado['codigoEstado'] ?? ''),
+                'referencia'       => $paquete->codigo_recepcion,
+                'mensaje'          => $resultado['mensajes'] ? implode(' | ', $resultado['mensajes']) : null,
+            ]);
+
+            $hechos++;
+        }
+
+        return $hechos;
+    }
+
+    /**
+     * Los paquetes que este caso puede consultar: los de su punto de venta y su
+     * tipo, que llegaron a recibir código de recepción.
+     *
+     * @return list<SiatPaquete>
+     */
+    private function paquetesValidables(SiatHomologacionCaso $caso, SiatSetting $setting): array
+    {
+        $tipo = $caso->etapa === 9 ? 'masivo' : 'paquete';
+
+        $paquetes = SiatPaquete::where('store_id', $setting->store_id)
+            ->where('tipo', $tipo)
+            ->whereNotNull('codigo_recepcion')
+            ->whereHas('invoices.cufdCode.puntoVenta', fn ($q) => $q->where('codigo', $caso->punto_venta))
+            ->orderBy('id')
+            ->get()
+            ->all();
+
+        if ($paquetes === []) {
+            throw new SiatException(
+                "No hay ningún paquete enviado por el punto de venta {$caso->punto_venta} que consultar. "
+                . "Ejecute antes los casos de envío de la etapa {$caso->etapa}."
+            );
+        }
+
+        return $paquetes;
     }
 
     /**

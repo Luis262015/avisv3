@@ -196,50 +196,82 @@ final class HomologacionMatriz
     }
 
     /**
-     * Paquetes de contingencia: el Excel pide un lote de **exactamente 500** y
-     * otro de menos, por cada motivo de evento y punto de venta. Solo aplica a la
-     * factura de compra-venta: las notas no tienen envío por paquete.
+     * Paquetes de contingencia, tal como los enumera `CasosDePruebaEmisionPor
+     * Paquetes.xlsx`: **16 casos** por documento sector.
+     *
+     * Catorce envíos —cada motivo de evento con un lote de «igual a 500» y otro
+     * de «menor a 500», todos con el punto de venta 1— y **dos validaciones**,
+     * una por punto de venta. La validación es un caso aparte porque puntúa otra
+     * cosa: el envío responde 901 PENDIENTE y la consulta posterior 908
+     * RECEPCION VALIDADA.
+     *
+     * El eje no es el punto de venta sino el tamaño del lote, que es donde la
+     * matriz se equivocaba. Solo aplica a la factura de compra-venta: el Excel
+     * no trae los sectores 24 ni 47, coherente con que las notas no tengan
+     * servicio de paquete.
      */
     private function paquetes(SiatSetting $setting): array
     {
         $definiciones = [];
+        $puntos       = $this->puntosVenta($setting);
+        $pvEnvio      = in_array(1, $puntos, true) ? 1 : $puntos[0];
 
         foreach (array_keys($this->motivosEvento($setting)) as $motivo) {
-            foreach ($this->puntosVenta($setting) as $indice => $pv) {
-                // El Excel alterna: un punto lleva el lote completo y el otro uno
-                // parcial.
-                $cantidad = $indice === 0 ? 500 : 250;
-
+            foreach ([500, 250] as $lote) {
                 $definiciones[] = [
-                    'caso'             => "e6-m{$motivo}-pv{$pv}",
-                    'punto_venta'      => $pv,
+                    'caso'             => "e6-m{$motivo}-n{$lote}",
+                    'punto_venta'      => $pvEnvio,
                     'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
                     'tipo_factura'     => 1,
                     'motivo_evento'    => (int) $motivo,
-                    'tamano_lote'      => $cantidad,
+                    'tamano_lote'      => $lote,
+                    'operacion'        => 'envio',
                 ];
             }
+        }
+
+        foreach ($puntos as $pv) {
+            $definiciones[] = [
+                'caso'             => "e6-val-pv{$pv}",
+                'punto_venta'      => $pv,
+                'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
+                'tipo_factura'     => 1,
+                'operacion'        => 'validacion',
+            ];
         }
 
         return $definiciones;
     }
 
     /**
-     * Emisión masiva: un lote de **exactamente 1000** y otro de menos, por punto
-     * de venta. La página dice «hasta 2000», pero el Excel puntúa 1000.
+     * Emisión masiva, tal como la enumera `CasosDePruebaEmisionMasiva.xlsx`:
+     * **8 casos** por documento sector.
+     *
+     * Cuatro envíos —«igual a 1000» y «menor a 1000», por cada punto de venta— y
+     * la validación de cada uno. La página dice «hasta 2000», pero el Excel
+     * puntúa 1000.
      */
     private function masiva(SiatSetting $setting): array
     {
         $definiciones = [];
 
         foreach ($this->puntosVenta($setting) as $pv) {
-            foreach ([1000, 500] as $cantidad) {
-                $definiciones[] = [
-                    'caso'             => "e9-pv{$pv}-n{$cantidad}",
+            foreach ([1000, 500] as $lote) {
+                $comun = [
                     'punto_venta'      => $pv,
                     'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
                     'tipo_factura'     => 1,
-                    'tamano_lote'      => $cantidad,
+                    'tamano_lote'      => $lote,
+                ];
+
+                $definiciones[] = $comun + [
+                    'caso'      => "e9-pv{$pv}-n{$lote}",
+                    'operacion' => 'envio',
+                ];
+
+                $definiciones[] = $comun + [
+                    'caso'      => "e9-val-pv{$pv}-n{$lote}",
+                    'operacion' => 'validacion',
                 ];
             }
         }

@@ -103,11 +103,53 @@ class SiatHomologacionTest extends TestCase
         $paquetes = collect(app(HomologacionMatriz::class)->generar($this->setting, 6));
         $masiva   = collect(app(HomologacionMatriz::class)->generar($this->setting, 9));
 
-        $this->assertSame([500, 250], $paquetes->pluck('tamano_lote')->unique()->sort()->reverse()->values()->all());
-        $this->assertSame([1000, 500], $masiva->pluck('tamano_lote')->unique()->sort()->reverse()->values()->all());
+        $envios = fn ($casos) => $casos->reject->esValidacion();
+
+        $this->assertSame([500, 250], $envios($paquetes)->pluck('tamano_lote')->unique()->sort()->reverse()->values()->all());
+        $this->assertSame([1000, 500], $envios($masiva)->pluck('tamano_lote')->unique()->sort()->reverse()->values()->all());
 
         $this->assertSame([10], $paquetes->pluck('cantidad')->unique()->values()->all());
         $this->assertSame([10], $masiva->pluck('cantidad')->unique()->values()->all());
+    }
+
+    /**
+     * El Excel de paquetes son 16 casos por sector: catorce envíos —cada motivo
+     * con lote completo y parcial— y dos validaciones, una por punto de venta.
+     * El eje es el tamaño del lote, no el punto de venta.
+     */
+    public function test_los_paquetes_siguen_los_dieciseis_casos_del_excel(): void
+    {
+        $casos = collect(app(HomologacionMatriz::class)->generar($this->setting, 6));
+
+        $this->assertCount(16, $casos);
+        $this->assertCount(14, $casos->reject->esValidacion());
+        $this->assertSame(['e6-val-pv0', 'e6-val-pv1'], $casos->filter->esValidacion()->pluck('caso')->sort()->values()->all());
+        $this->assertContains('e6-m1-n500', $casos->pluck('caso')->all());
+        $this->assertContains('e6-m1-n250', $casos->pluck('caso')->all());
+    }
+
+    /** La masiva son 8: cuatro envíos y la validación de cada uno. */
+    public function test_la_masiva_valida_cada_lote_que_envia(): void
+    {
+        $casos = collect(app(HomologacionMatriz::class)->generar($this->setting, 9));
+
+        $this->assertCount(8, $casos);
+        $this->assertSame(
+            ['e9-val-pv0-n1000', 'e9-val-pv0-n500', 'e9-val-pv1-n1000', 'e9-val-pv1-n500'],
+            $casos->filter->esValidacion()->pluck('caso')->sort()->values()->all(),
+        );
+    }
+
+    /** Sin paquetes enviados no hay nada que consultar, y se dice. */
+    public function test_una_validacion_sin_paquetes_lo_explica(): void
+    {
+        app(HomologacionMatriz::class)->generar($this->setting, 9);
+        $caso = SiatHomologacionCaso::where('caso', 'e9-val-pv0-n1000')->firstOrFail();
+
+        $this->expectException(SiatException::class);
+        $this->expectExceptionMessageMatches('/Ejecute antes los casos de envío/');
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
     }
 
     /**
@@ -350,7 +392,7 @@ class SiatHomologacionTest extends TestCase
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-pv0')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => 2]);
 
         $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 3);
@@ -379,7 +421,7 @@ class SiatHomologacionTest extends TestCase
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-pv0')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => 1]);
 
         app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 2);
@@ -401,7 +443,7 @@ class SiatHomologacionTest extends TestCase
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-pv0')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => null]);
 
         $this->expectException(SiatException::class);
@@ -488,12 +530,16 @@ class SiatHomologacionTest extends TestCase
 
         // Un CUFD dura 24 horas; se fecha unas horas atrás porque los cortes se
         // declaran en pasado y tienen que caber dentro de su vigencia.
-        SiatCufdCode::create([
-            'store_id' => $this->store->id,
-            'punto_venta_id' => SiatPuntoVenta::where('codigo', 0)->value('id'),
-            'codigo' => 'CUFD-PV0', 'codigo_control' => 'CTRL0',
-            'fecha_vigencia' => now()->addHours(20), 'consecutivo' => 0, 'estado' => 'activo',
-        ])->forceFill(['created_at' => now()->subHours(4)])->save();
+        // Cada punto de venta lleva su propia cadena: los envíos de paquete van
+        // por el punto 1, que es el que usa el Excel de la etapa VI.
+        foreach ([0, 1] as $pv) {
+            SiatCufdCode::create([
+                'store_id' => $this->store->id,
+                'punto_venta_id' => SiatPuntoVenta::where('codigo', $pv)->value('id'),
+                'codigo' => "CUFD-PV{$pv}", 'codigo_control' => "CTRL{$pv}",
+                'fecha_vigencia' => now()->addHours(20), 'consecutivo' => 0, 'estado' => 'activo',
+            ])->forceFill(['created_at' => now()->subHours(4)])->save();
+        }
 
         // Los casos que solo cuentan emisiones no necesitan facturas de verdad.
         // Los de paquete sí: `enviarPaquete` las vuelve a buscar en la base.
