@@ -136,7 +136,13 @@ class SiatSoapClient
             // el SoapFault que viene detrás ya describe el fallo.
             return $this->clients[$servicio] = @new SoapClient($wsdl, [
                 'stream_context'     => $context,
-                'cache_wsdl'         => WSDL_CACHE_NONE,
+                // Cada servicio construye un cliente nuevo por operación, y armar
+                // uno cuesta ~0,8 s porque el WSDL importa otro WSDL y su esquema:
+                // tres viajes al SIN antes de la llamada de verdad. En memoria se
+                // paga una vez por proceso —en la homologación son horas de
+                // diferencia— y sin arriesgar copias rancias entre ejecuciones,
+                // que es lo que traería el caché en disco.
+                'cache_wsdl'         => WSDL_CACHE_MEMORY,
                 'compression'        => SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP | SOAP_COMPRESSION_DEFLATE,
                 'connection_timeout' => (int) config('siat.timeout'),
                 'exceptions'         => true,

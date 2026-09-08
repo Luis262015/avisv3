@@ -307,8 +307,21 @@ class SiatSincronizacionService
     public function olvidarCache(SiatSetting $setting): void
     {
         foreach (array_keys(self::CATALOGOS) as $clave) {
-            Cache::forget($this->clave($setting, $clave));
+            $this->olvidar($setting, $clave);
         }
+    }
+
+    /**
+     * Olvida un solo catálogo.
+     *
+     * La caché vive en la base de datos, así que vaciarla entera para forzar una
+     * única lectura son diecisiete borrados en lugar de uno. Con el volumen que
+     * pide la etapa II de la homologación —1800 llamadas— la diferencia son
+     * treinta mil escrituras contra mil ochocientas.
+     */
+    public function olvidar(SiatSetting $setting, string $clave): void
+    {
+        Cache::forget($this->clave($setting, $clave));
     }
 
     /** @return array<int, string> */
