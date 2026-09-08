@@ -395,14 +395,20 @@ final class HomologacionRunner
         $hechos  = 0;
 
         for ($i = 0; $i < $cuantas; $i++) {
+            // Revertir devuelve el documento a «enviada», así que vuelve al
+            // montón: sin avanzar, cada vuelta anularía **el mismo** una y otra
+            // vez y las 250 anulaciones serían una repetida. Se salta lo ya
+            // hecho, que además hace la reanudación exacta.
+            $saltar = (int) $caso->completados;
+
             if ($this->esNota($caso)) {
-                $nota = $this->notaAnulable($caso, $setting);
+                $nota = $this->notaAnulable($caso, $setting, $saltar);
 
                 $this->notas->anular($nota, SiatService::ANULACION_NOTA_MAL_EMITIDA);
                 $resultado = $this->notas->revertirAnulacion($nota->fresh());
                 $referencia = $nota->cuf;
             } else {
-                $factura = $this->facturaAnulable($setting, $caso->punto_venta);
+                $factura = $this->facturaAnulable($setting, $caso->punto_venta, $saltar);
 
                 $this->siat->cancelInvoice($factura, 'Homologación Fase I — etapa VII');
                 $resultado  = $this->siat->revertCancellation($factura->fresh());
@@ -546,30 +552,35 @@ final class HomologacionRunner
 
     // ─── Selección de documentos a anular ───────────────────────────────────
 
-    private function facturaAnulable(SiatSetting $setting, int $puntoVenta): SiatInvoice
+    private function facturaAnulable(SiatSetting $setting, int $puntoVenta, int $saltar = 0): SiatInvoice
     {
         return SiatInvoice::where('store_id', $setting->store_id)
             ->whereIn('estado', ['enviada', 'validada'])
             ->whereHas('sale', fn ($q) => $q->where('folio', 'like', self::PREFIJO . '%'))
             ->whereHas('cufdCode.puntoVenta', fn ($q) => $q->where('codigo', $puntoVenta))
-            ->oldest()
+            ->orderBy('id')
+            ->skip($saltar)
             ->first()
             ?? throw new SiatException(
-                "No quedan facturas de homologación sin anular en el punto de venta {$puntoVenta}. "
-                . 'Ejecute antes la etapa 4 para tener documentos que anular.'
+                "Se agotaron las facturas de homologación del punto de venta {$puntoVenta} tras {$saltar} "
+                . 'anulaciones. Emita más con la etapa 4 para poder seguir.'
             );
     }
 
-    private function notaAnulable(SiatHomologacionCaso $caso, SiatSetting $setting): SiatNota
+    private function notaAnulable(SiatHomologacionCaso $caso, SiatSetting $setting, int $saltar = 0): SiatNota
     {
         return SiatNota::where('store_id', $setting->store_id)
             ->where('documento_sector', $caso->documento_sector)
             ->whereIn('estado', ['enviada', 'validada'])
-            ->oldest()
+            // Acotado al punto de venta del caso: sin esto los dos casos del
+            // mismo sector comparten montón y se pisan al saltar.
+            ->whereHas('cufdCode.puntoVenta', fn ($q) => $q->where('codigo', $caso->punto_venta))
+            ->orderBy('id')
+            ->skip($saltar)
             ->first()
             ?? throw new SiatException(
-                "No quedan notas del sector {$caso->documento_sector} sin anular. "
-                . 'Ejecute antes la etapa 4.'
+                "Se agotaron las notas del sector {$caso->documento_sector} en el punto de venta "
+                . "{$caso->punto_venta} tras {$saltar} anulaciones. Emita más con la etapa 4."
             );
     }
 

@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\CashRegister;
 use App\Models\CashShift;
 use App\Models\Product;
+use App\Models\Sale;
 use App\Models\SiatCufdCode;
 use App\Models\SiatEvento;
 use App\Models\SiatHomologacionCaso;
@@ -502,6 +503,79 @@ class SiatHomologacionTest extends TestCase
     }
 
     // ─── Andamiaje ──────────────────────────────────────────────────────────
+
+    /**
+     * Revertir devuelve la factura a «enviada», así que vuelve al montón. Sin
+     * avanzar, las 250 anulaciones de la etapa VII serían una sola repetida.
+     */
+    public function test_cada_anulacion_toma_un_documento_distinto(): void
+    {
+        $this->prepararEmision(doblarEmision: false);
+
+        $facturas = collect(range(1, 3))->map(fn (int $n) => $this->facturaHomologada($n));
+        $anuladas = [];
+
+        $this->mock(SiatService::class, function ($mock) use (&$anuladas): void {
+            $mock->shouldReceive('cancelInvoice')->andReturnUsing(
+                function (SiatInvoice $f) use (&$anuladas): void { $anuladas[] = $f->id; },
+            );
+            $mock->shouldReceive('revertCancellation')->andReturn(['codigoEstado' => 907]);
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 7);
+        $caso = SiatHomologacionCaso::where('caso', 'e7-s1-pv0')->firstOrFail();
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 3);
+
+        $this->assertSame($facturas->pluck('id')->all(), $anuladas);
+        $this->assertSame(3, $caso->fresh()->completados);
+    }
+
+    /** Se agota el montón antes que las pruebas y hay que decirlo, no repetir. */
+    public function test_sin_documentos_bastantes_la_anulacion_lo_dice(): void
+    {
+        $this->prepararEmision(doblarEmision: false);
+        $this->facturaHomologada(1);
+
+        $this->mock(SiatService::class, function ($mock): void {
+            $mock->shouldReceive('cancelInvoice')->andReturnNull();
+            $mock->shouldReceive('revertCancellation')->andReturn(['codigoEstado' => 907]);
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 7);
+        $caso = SiatHomologacionCaso::where('caso', 'e7-s1-pv0')->firstOrFail();
+
+        try {
+            app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 2);
+            $this->fail('Tenía que quedarse sin facturas.');
+        } catch (SiatException $e) {
+            $this->assertStringContainsString('Se agotaron las facturas', $e->getMessage());
+        }
+
+        // La primera sí se hizo y no se pierde.
+        $this->assertSame(1, $caso->fresh()->completados);
+    }
+
+    private function facturaHomologada(int $numero): SiatInvoice
+    {
+        $turno = CashShift::query()->firstOrFail();
+
+        $venta = Sale::create([
+            'cash_shift_id' => $turno->id, 'user_id' => $turno->user_id,
+            'folio' => HomologacionRunner::PREFIJO . "-{$numero}",
+            'subtotal' => 100, 'total' => 100, 'amount_paid' => 100,
+            'payment_method' => 'cash', 'status' => 'completed',
+        ]);
+
+        return SiatInvoice::create([
+            'sale_id' => $venta->id, 'store_id' => $this->store->id,
+            'cufd_code_id'  => SiatCufdCode::where('codigo', 'CUFD-PV0')->value('id'),
+            'numero_factura' => $numero, 'fecha_emision' => now(),
+            'cuf' => 'CUF-HOMOL-' . $numero, 'cufd' => 'CUFD-PV0',
+            'importe_total' => 100, 'importe_base_cf' => 100,
+            'tipo_factura' => 1, 'estado' => 'enviada',
+        ]);
+    }
 
     private function caso(string $nombre): SiatHomologacionCaso
     {
