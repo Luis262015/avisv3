@@ -208,9 +208,49 @@ class SiatNotaService
     {
         $setting = $this->settingDe($nota);
 
-        return $this->ajuste->verificacionEstadoDocumentoAjuste(
+        $resultado = $this->ajuste->verificacionEstadoDocumentoAjuste(
             $setting, $nota->cuf, $this->siat->getOrCreateCufd($setting)->codigo, (int) $nota->documento_sector,
         );
+
+        $this->reconciliar($nota, $resultado);
+
+        return $resultado;
+    }
+
+    /**
+     * Pone al día la nota con lo que acaba de decir el SIN.
+     *
+     * Es lo que cierra el ciclo que abre un timeout: la peticion llegó y se
+     * proceso, pero se perdio la respuesta, así que la nota se quedó pendiente y
+     * **sin código de recepción**. Consultarla lo recupera —el SIN lo devuelve—
+     * y sin él `anular()` la rechaza por no enviada, que es como la etapa VII se
+     * quedó a medias.
+     *
+     * Solo repara hacia adelante: una nota anulada aquí no se resucita por que
+     * el SIN todavía la dé por vigente, porque la anulación pudo ser posterior
+     * a lo que responde esta consulta.
+     *
+     * @param  array<string, mixed>  $resultado
+     */
+    private function reconciliar(SiatNota $nota, array $resultado): void
+    {
+        if ((int) ($resultado['codigoEstado'] ?? 0) !== SiatDocumentoAjusteService::ESTADO_VIGENTE) {
+            return;
+        }
+
+        // Lo único intocable es una nota anulada aquí: el resto se pone al día,
+        // incluida una que ya figure validada pero a la que le falte el código
+        // de recepción, que es como quedan las que se perdieron por timeout.
+        if ($nota->estado === 'anulada') {
+            return;
+        }
+
+        $nota->update([
+            'estado'           => 'validada',
+            'mensaje_error'    => null,
+            'codigo_recepcion' => $nota->codigo_recepcion ?: ($resultado['codigoRecepcion'] ?? null),
+            'enviado_at'       => $nota->enviado_at ?? now(),
+        ]);
     }
 
     /**

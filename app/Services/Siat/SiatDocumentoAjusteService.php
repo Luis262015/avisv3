@@ -33,6 +33,15 @@ class SiatDocumentoAjusteService
     public const ESTADO_REVERTIDA = 907;
 
     /**
+     * El documento está vivo ante el SIN.
+     *
+     * No confundir con {@see ESTADO_VALIDADA}, que es el 908 y responde a «este
+     * paquete quedó recibido». El 690 lo responde
+     * `verificacionEstadoDocumentoAjuste` y habla del documento en sí.
+     */
+    public const ESTADO_VIGENTE = 690;
+
+    /**
      * Envía una nota ya construida y validada contra el XSD.
      *
      * @return array{codigoRecepcion: ?string, codigoEstado: ?int, codigoDescripcion: ?string, mensajes: list<string>, respuesta: array<string, mixed>}

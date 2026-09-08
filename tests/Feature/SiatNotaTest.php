@@ -324,6 +324,64 @@ class SiatNotaTest extends TestCase
         $this->assertStringContainsString('http headers', (string) $nota->mensaje_error);
     }
 
+    /**
+     * Consultar una nota que se perdió por timeout la recupera entera. Sin el
+     * codigo de recepción —que el SIN devuelve en la consulta— `anular()` la
+     * rechaza por no enviada, y así fue como la etapa VII se quedó a medias.
+     */
+    public function test_consultar_recupera_una_nota_perdida_por_timeout(): void
+    {
+        $this->mock(SiatDocumentoAjusteService::class, function ($mock): void {
+            $mock->shouldReceive('recepcionDocumentoAjuste')->andThrow(new SiatException(
+                'Error al comunicarse con el SIN', previous: new \SoapFault('HTTP', 'timeout'),
+            ));
+            $mock->shouldReceive('verificacionEstadoDocumentoAjuste')->andReturn([
+                'codigoRecepcion' => 'REC-RECUPERADO', 'codigoEstado' => 690,
+                'codigoDescripcion' => 'VALIDA', 'mensajes' => [], 'respuesta' => [],
+            ]);
+        });
+
+        $servicio = app(SiatNotaService::class);
+        $nota     = $servicio->emitir($this->devolucion());
+
+        $this->assertSame('pendiente', $nota->estado);
+        $this->assertNull($nota->codigo_recepcion);
+
+        $servicio->consultarEstado($nota);
+
+        $nota->refresh();
+        $this->assertSame('validada', $nota->estado);
+        $this->assertSame('REC-RECUPERADO', $nota->codigo_recepcion);
+        $this->assertNull($nota->mensaje_error);
+    }
+
+    /** Reparar hacia atrás seria peor: la anulación pudo ser posterior. */
+    public function test_consultar_no_resucita_una_nota_anulada(): void
+    {
+        $this->mock(SiatDocumentoAjusteService::class, function ($mock): void {
+            $mock->shouldReceive('recepcionDocumentoAjuste')->andReturn([
+                'codigoRecepcion' => 'REC-1', 'codigoEstado' => 908,
+                'codigoDescripcion' => 'VALIDADA', 'mensajes' => [], 'respuesta' => [],
+            ]);
+            $mock->shouldReceive('anulacionDocumentoAjuste')->andReturn([
+                'codigoRecepcion' => null, 'codigoEstado' => 905,
+                'codigoDescripcion' => 'ANULADA', 'mensajes' => [], 'respuesta' => [],
+            ]);
+            $mock->shouldReceive('verificacionEstadoDocumentoAjuste')->andReturn([
+                'codigoRecepcion' => 'REC-1', 'codigoEstado' => 690,
+                'codigoDescripcion' => 'VALIDA', 'mensajes' => [], 'respuesta' => [],
+            ]);
+        });
+
+        $servicio = app(SiatNotaService::class);
+        $nota     = $servicio->emitir($this->devolucion());
+        $servicio->anular($nota);
+
+        $servicio->consultarEstado($nota->fresh());
+
+        $this->assertSame('anulada', $nota->fresh()->estado);
+    }
+
     public function test_no_se_anula_una_nota_que_nunca_se_envio(): void
     {
         $this->mock(SiatDocumentoAjusteService::class, function ($mock): void {
