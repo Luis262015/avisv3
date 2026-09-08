@@ -297,9 +297,10 @@ final class HomologacionRunner
         // El interruptor se mueve una sola vez para todo el caso: dejarlo dentro
         // del bucle sería una escritura por lote y, si algo revienta a mitad, la
         // tienda se queda en modo masivo.
-        $previo = (bool) $setting->emision_masiva;
+        $previo  = (bool) $setting->emision_masiva;
+        $cuantas = $this->cuantas($caso, $limite);
         $setting->update(['emision_masiva' => true]);
-        $hechos = 0;
+        $hechos  = 0;
 
         try {
             for ($i = 0; $i < $cuantas; $i++) {

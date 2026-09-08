@@ -486,6 +486,35 @@ class SiatHomologacionTest extends TestCase
         $this->assertNull(SiatEvento::where('codigo_motivo_evento', 1)->value('cafc'));
     }
 
+    /**
+     * La masiva no tenía ninguna prueba que la ejecutara, y por eso se coló un
+     * `$cuantas` sin declarar que solo apareció contra el piloto.
+     */
+    public function test_la_masiva_manda_tantos_lotes_como_pruebas_pida_el_caso(): void
+    {
+        $this->prepararEmision(doblarEmision: false);
+        $this->setting->update(['leyenda' => 'Ley N 453: El proveedor debe habilitar medios e instancias de atencion.']);
+        $this->fakeContingencia();
+
+        $this->mock(SiatFacturacionService::class, function ($mock): void {
+            $mock->shouldReceive('recepcionMasivaFactura')->times(2)->andReturn([
+                'codigoRecepcion' => 'MAS-1', 'codigoEstado' => 901,
+                'codigoDescripcion' => 'PENDIENTE', 'mensajes' => [], 'respuesta' => [],
+            ]);
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 9);
+        $caso = SiatHomologacionCaso::where('caso', 'e9-pv0-n500')->firstOrFail();
+        $caso->update(['tamano_lote' => 2]);
+
+        $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 2);
+
+        $this->assertSame(2, $hechos);
+        $this->assertSame(2, $caso->fresh()->completados);
+        $this->assertSame(4, SiatInvoice::count(), 'Dos lotes de dos facturas.');
+        $this->assertFalse((bool) $this->setting->fresh()->emision_masiva, 'El interruptor vuelve a su sitio.');
+    }
+
     /** Sin tamaño de lote el paquete saldría vacío y quemaría una prueba. */
     public function test_un_caso_sin_tamano_de_lote_no_manda_un_paquete_vacio(): void
     {
