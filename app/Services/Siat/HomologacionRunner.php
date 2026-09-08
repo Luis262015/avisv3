@@ -64,9 +64,9 @@ final class HomologacionRunner
                 2 => $this->etapaSincronizacion($caso, $setting, $limite),
                 4 => $this->etapaEmision($caso, $setting, $limite),
                 5 => $this->etapaEvento($caso, $setting, $limite),
-                6 => $this->etapaPaquete($caso, $setting),
+                6 => $this->etapaPaquete($caso, $setting, $limite),
                 7 => $this->etapaAnulacion($caso, $setting, $limite),
-                9 => $this->etapaMasiva($caso, $setting),
+                9 => $this->etapaMasiva($caso, $setting, $limite),
                 default => throw new SiatException("La etapa {$caso->etapa} no se puede ejecutar desde aquí."),
             };
         } catch (\Throwable $e) {
@@ -79,18 +79,27 @@ final class HomologacionRunner
             throw $e;
         }
 
-        // El total nuevo se calcula antes de escribirlo: consultarlo con `fresh()`
-        // dentro del propio `update()` leería el valor viejo y el caso nunca se
-        // daría por completado.
-        $completados = $caso->completados + $hechos;
-
         $caso->update([
-            'completados'  => $completados,
-            'estado'       => $completados >= $caso->cantidad ? 'completado' : 'en_curso',
+            'estado'       => $caso->estaCompleto() ? 'completado' : 'en_curso',
             'ejecutado_at' => now(),
         ]);
 
         return $hechos;
+    }
+
+    /**
+     * Anota un documento recién aceptado por el SIN.
+     *
+     * Se escribe uno a uno, no al cerrar el caso: un caso de la etapa IV son 84
+     * emisiones y, si el proceso se corta a la mitad, lo ya emitido está en el
+     * SIN y hay que contarlo. Llevándolo al final, una interrupción dejaba 84
+     * documentos gastados en el piloto y el contador a cero.
+     *
+     * @param  array<string, mixed>  $datos
+     */
+    private function anotar(SiatHomologacionCaso $caso, array $datos = []): void
+    {
+        $caso->update($datos + ['completados' => $caso->completados + 1]);
     }
 
     // ─── Etapas ─────────────────────────────────────────────────────────────
@@ -112,16 +121,18 @@ final class HomologacionRunner
         }
 
         for ($i = 0; $i < $vueltas; $i++) {
-            // Sin vaciar la caché la segunda llamada no saldría a la red y el SIN
-            // no contaría la prueba.
-            $this->sincronizacion->olvidarCache($setting);
+            // Sin olvidar el catálogo, la segunda llamada saldría de la caché y el
+            // SIN no contaría la prueba. Se olvida solo el suyo: la caché vive en
+            // la base de datos y vaciarla entera multiplicaría por diecisiete las
+            // escrituras de una etapa que ya son 1800 llamadas.
+            $this->sincronizacion->olvidar($setting, $caso->catalogo);
 
             $metodo === null
                 ? $this->sincronizacion->fechaHora($setting)
                 : $this->sincronizacion->{$metodo}($setting);
-        }
 
-        $caso->update(['codigo_resultado' => 'OK', 'mensaje' => null]);
+            $this->anotar($caso, ['codigo_resultado' => 'OK', 'mensaje' => null]);
+        }
 
         return $vueltas;
     }
@@ -137,15 +148,21 @@ final class HomologacionRunner
                 ? $this->emitirNota($caso, $setting)
                 : $this->emitirFactura($setting);
 
-            $caso->update([
+            if ($documento->estado === 'rechazada') {
+                $caso->update([
+                    'codigo_resultado' => $documento->estado,
+                    'referencia'       => $documento->cuf,
+                    'mensaje'          => $documento->mensaje_error,
+                ]);
+
+                throw new SiatException("El SIN rechazó el documento: {$documento->mensaje_error}");
+            }
+
+            $this->anotar($caso, [
                 'codigo_resultado' => $documento->estado,
                 'referencia'       => $documento->cuf,
                 'mensaje'          => $documento->mensaje_error,
             ]);
-
-            if ($documento->estado === 'rechazada') {
-                throw new SiatException("El SIN rechazó el documento: {$documento->mensaje_error}");
-            }
 
             $hechos++;
         }
@@ -156,9 +173,10 @@ final class HomologacionRunner
     /** Un evento significativo por motivo: abrir, cerrar y declarar. */
     private function etapaEvento(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
     {
-        $hechos = 0;
+        $cuantas = $this->cuantas($caso, $limite);
+        $hechos  = 0;
 
-        for ($i = 0; $i < $this->cuantas($caso, $limite); $i++) {
+        for ($i = 0; $i < $cuantas; $i++) {
             $this->declararUnCorte($caso, $setting);
             $hechos++;
         }
@@ -200,7 +218,7 @@ final class HomologacionRunner
             throw $e;
         }
 
-        $caso->update([
+        $this->anotar($caso, [
             'codigo_resultado' => $evento->estado,
             'referencia'       => $evento->codigo_recepcion_evento,
             'mensaje'          => $evento->mensaje_error,
@@ -210,8 +228,25 @@ final class HomologacionRunner
     /**
      * Paquete de contingencia: abre el corte, emite las facturas fuera de línea
      * dentro de él y manda el lote.
+     *
+     * Una prueba es un paquete entero, y el caso pide diez: sin el bucle haría
+     * falta invocar el comando diez veces para cerrar un solo caso.
      */
-    private function etapaPaquete(SiatHomologacionCaso $caso, SiatSetting $setting): int
+    private function etapaPaquete(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
+    {
+        $this->exigeLote($caso);
+        $cuantas = $this->cuantas($caso, $limite);
+        $hechos  = 0;
+
+        for ($i = 0; $i < $cuantas; $i++) {
+            $this->unPaquete($caso, $setting);
+            $hechos++;
+        }
+
+        return $hechos;
+    }
+
+    private function unPaquete(SiatHomologacionCaso $caso, SiatSetting $setting): void
     {
         if ($this->contingencia->eventoAbierto($setting->store_id) !== null) {
             throw new SiatException('Hay un corte abierto en esta tienda; ciérrelo antes.');
@@ -221,7 +256,7 @@ final class HomologacionRunner
             $setting,
             (int) $caso->motivo_evento,
             'Homologación Fase I — etapa VI, lote de ' . $caso->tamano_lote,
-            now()->subHours(2),
+            $this->inicioDelCorte($setting),
         );
 
         // Dentro del corte, `createInvoice` emite fuera de línea por sí solo.
@@ -233,14 +268,11 @@ final class HomologacionRunner
         $evento  = $this->contingencia->declarar($evento->refresh(), $setting);
         $paquete = $this->contingencia->enviarPaquete($evento, $setting);
 
-        $caso->update([
+        $this->anotar($caso, [
             'codigo_resultado' => (string) $paquete->codigo_estado,
             'referencia'       => $paquete->codigo_recepcion,
             'mensaje'          => $paquete->mensaje_error,
         ]);
-
-        // Una prueba es un paquete enviado, no una factura suelta.
-        return 1;
     }
 
     /**
@@ -248,30 +280,40 @@ final class HomologacionRunner
      * emisión va dentro del CUF, así que se decide al emitir— y después se manda
      * el lote entero.
      */
-    private function etapaMasiva(SiatHomologacionCaso $caso, SiatSetting $setting): int
+    private function etapaMasiva(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
     {
+        $this->exigeLote($caso);
+
+        // El interruptor se mueve una sola vez para todo el caso: dejarlo dentro
+        // del bucle sería una escritura por lote y, si algo revienta a mitad, la
+        // tienda se queda en modo masivo.
         $previo = (bool) $setting->emision_masiva;
         $setting->update(['emision_masiva' => true]);
+        $hechos = 0;
 
         try {
-            $facturas = new Collection();
+            for ($i = 0; $i < $cuantas; $i++) {
+                $facturas = new Collection();
 
-            for ($i = 0; $i < (int) $caso->tamano_lote; $i++) {
-                $facturas->push($this->emitirFactura($setting));
+                for ($j = 0; $j < (int) $caso->tamano_lote; $j++) {
+                    $facturas->push($this->emitirFactura($setting));
+                }
+
+                $paquete = $this->contingencia->enviarMasivo($setting, $facturas);
+
+                $this->anotar($caso, [
+                    'codigo_resultado' => (string) $paquete->codigo_estado,
+                    'referencia'       => $paquete->codigo_recepcion,
+                    'mensaje'          => $paquete->mensaje_error,
+                ]);
+
+                $hechos++;
             }
-
-            $paquete = $this->contingencia->enviarMasivo($setting, $facturas);
         } finally {
             $setting->update(['emision_masiva' => $previo]);
         }
 
-        $caso->update([
-            'codigo_resultado' => (string) $paquete->codigo_estado,
-            'referencia'       => $paquete->codigo_recepcion,
-            'mensaje'          => $paquete->mensaje_error,
-        ]);
-
-        return 1;
+        return $hechos;
     }
 
     /**
@@ -301,7 +343,7 @@ final class HomologacionRunner
                 $referencia = $factura->cuf;
             }
 
-            $caso->update([
+            $this->anotar($caso, [
                 'codigo_resultado' => (string) ($resultado['codigoEstado'] ?? ''),
                 'referencia'       => $referencia,
                 'mensaje'          => null,
@@ -484,6 +526,30 @@ final class HomologacionRunner
      *
      * @return array{0: \Carbon\CarbonInterface, 1: \Carbon\CarbonInterface}
      */
+    /**
+     * Dónde empieza el corte de un paquete.
+     *
+     * No sirve {@see franjaLibre}: esa coloca la franja en el pasado, y las
+     * facturas del paquete se emiten ahora, así que caerían fuera del corte que
+     * las justifica. La franja tiene que llegar hasta el presente y, a la vez,
+     * no pisar la del paquete anterior —diez seguidos abriendo todos en
+     * `now()-2h` chocarían con el «981 RANGO DE FECHAS INVALIDO»—, así que cada
+     * corte arranca donde cerró el último ya declarado.
+     */
+    private function inicioDelCorte(SiatSetting $setting): \Carbon\CarbonInterface
+    {
+        $ultimo = SiatEvento::where('store_id', $setting->store_id)
+            ->where('estado', 'registrado')
+            ->where('fecha_fin', '>=', $this->cufdVigente($setting)->created_at)
+            ->max('fecha_fin');
+
+        $desde = now()->subHours(2);
+
+        return $ultimo !== null && \Carbon\Carbon::parse($ultimo)->greaterThan($desde)
+            ? \Carbon\Carbon::parse($ultimo)->addSecond()
+            : $desde;
+    }
+
     private function franjaLibre(SiatSetting $setting): array
     {
         $cufd = $this->cufdVigente($setting);
@@ -526,6 +592,23 @@ final class HomologacionRunner
     private function esNota(SiatHomologacionCaso $caso): bool
     {
         return in_array((int) $caso->documento_sector, [24, 47], true);
+    }
+
+    /**
+     * Las etapas VI y IX puntúan el tamaño del lote —«igual a 500», «igual a
+     * 1000»—, así que un caso sin él mandaría un paquete vacío y quemaría una
+     * prueba. Pasa con las filas anteriores a la columna `tamano_lote`: se
+     * arreglan regenerando la matriz.
+     */
+    private function exigeLote(SiatHomologacionCaso $caso): void
+    {
+        if ((int) $caso->tamano_lote > 0) {
+            return;
+        }
+
+        throw new SiatException(
+            "El caso {$caso->caso} no tiene tamaño de lote. Regenere la matriz de la etapa {$caso->etapa}."
+        );
     }
 
     private function cuantas(SiatHomologacionCaso $caso, ?int $limite): int

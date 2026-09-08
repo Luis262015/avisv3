@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\Siat\HomologacionMatriz;
 use App\Services\Siat\HomologacionRunner;
 use App\Services\Siat\SiatException;
+use App\Services\Siat\SiatFacturacionService;
 use App\Services\Siat\SiatOperacionesService;
 use App\Services\Siat\SiatSincronizacionService;
 use App\Services\SiatService;
@@ -130,7 +131,7 @@ class SiatHomologacionTest extends TestCase
 
         $this->mock(SiatSincronizacionService::class, function ($mock) use (&$llamadas): void {
             $mock->shouldReceive('documentosSectorDe')->andReturn([1 => 'FCV']);
-            $mock->shouldReceive('olvidarCache')->andReturnNull();
+            $mock->shouldReceive('olvidar')->andReturnNull();
             $mock->shouldReceive('tiposMoneda')->andReturnUsing(function () use (&$llamadas) {
                 $llamadas[] = 'tiposMoneda';
 
@@ -220,6 +221,40 @@ class SiatHomologacionTest extends TestCase
         $this->assertSame('completado', $caso->fresh()->estado);
     }
 
+    /**
+     * Lo emitido antes del corte ya está en el SIN y hay que contarlo. Llevando
+     * el contador al final del caso, matar el proceso a la mitad de las 84
+     * emisiones dejaba los documentos gastados en el piloto y el caso a cero, y
+     * al reanudar se emitían otras 84.
+     */
+    public function test_una_interrupcion_a_media_tanda_conserva_lo_ya_emitido(): void
+    {
+        $this->prepararEmision();
+        $caso = $this->caso('e4-s1-pv0');
+
+        $emitidas = 0;
+
+        $this->mock(SiatService::class, function ($mock) use (&$emitidas): void {
+            $mock->shouldReceive('createInvoice')->andReturnUsing(function () use (&$emitidas) {
+                if (++$emitidas > 3) {
+                    throw new SiatException('se cayó la red');
+                }
+
+                return new SiatInvoice(['estado' => 'enviada', 'cuf' => 'CUF-' . $emitidas]);
+            });
+        });
+
+        try {
+            app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 10);
+            $this->fail('Tenía que propagar el corte.');
+        } catch (SiatException) {
+            // esperado
+        }
+
+        $this->assertSame(3, $caso->fresh()->completados);
+        $this->assertSame('fallido', $caso->fresh()->estado);
+    }
+
     public function test_un_rechazo_del_sin_deja_el_caso_fallido_con_el_motivo(): void
     {
         $this->prepararEmision(rechazada: true);
@@ -294,6 +329,87 @@ class SiatHomologacionTest extends TestCase
         $this->assertSame(0, SiatEvento::count());
     }
 
+    /**
+     * Un caso de paquete pide diez pruebas, y una prueba es un paquete entero.
+     * Sin el bucle cada pasada mandaba uno solo y cerrar el caso exigía invocar
+     * el comando diez veces.
+     */
+    public function test_una_pasada_manda_tantos_paquetes_como_pruebas_pida_el_caso(): void
+    {
+        $this->prepararEmision(doblarEmision: false);
+        $this->setting->update(['leyenda' => 'Ley N 453: El proveedor debe habilitar medios e instancias de atencion.']);
+        $this->fakeContingencia();
+
+        $this->mock(SiatFacturacionService::class, function ($mock): void {
+            $mock->shouldNotReceive('recepcionFactura');
+            $mock->shouldReceive('recepcionPaqueteFactura')->times(3)->andReturn([
+                'codigoRecepcion' => 'PAQ-1', 'codigoEstado' => 901,
+                'codigoDescripcion' => 'PENDIENTE', 'mensajes' => [], 'respuesta' => [],
+            ]);
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 6);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-pv0')->firstOrFail();
+        $caso->update(['tamano_lote' => 2]);
+
+        $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 3);
+
+        $this->assertSame(3, $hechos);
+        $this->assertSame(3, $caso->fresh()->completados);
+        $this->assertSame(6, SiatInvoice::count(), 'Tres paquetes de dos facturas.');
+    }
+
+    /**
+     * Diez paquetes seguidos abriendo todos el corte en `now()-2h` se solaparían,
+     * y el SIN los rechaza con el 981.
+     */
+    public function test_los_cortes_de_dos_paquetes_seguidos_no_se_solapan(): void
+    {
+        $this->prepararEmision(doblarEmision: false);
+        $this->setting->update(['leyenda' => 'Ley N 453: El proveedor debe habilitar medios e instancias de atencion.']);
+        $this->fakeContingencia();
+
+        $this->mock(SiatFacturacionService::class, function ($mock): void {
+            $mock->shouldReceive('recepcionPaqueteFactura')->andReturn([
+                'codigoRecepcion' => 'PAQ-1', 'codigoEstado' => 901,
+                'codigoDescripcion' => 'PENDIENTE', 'mensajes' => [], 'respuesta' => [],
+            ]);
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 6);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-pv0')->firstOrFail();
+        $caso->update(['tamano_lote' => 1]);
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 2);
+
+        $cortes = SiatEvento::orderBy('fecha_inicio')->get();
+
+        $this->assertCount(2, $cortes);
+        $this->assertTrue(
+            $cortes[0]->fecha_fin->lessThanOrEqualTo($cortes[1]->fecha_inicio),
+            'El segundo corte tiene que empezar después de que cierre el primero.',
+        );
+    }
+
+    /** Sin tamaño de lote el paquete saldría vacío y quemaría una prueba. */
+    public function test_un_caso_sin_tamano_de_lote_no_manda_un_paquete_vacio(): void
+    {
+        $this->prepararEmision();
+        $this->fakeContingencia();
+
+        app(HomologacionMatriz::class)->generar($this->setting, 6);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-pv0')->firstOrFail();
+        $caso->update(['tamano_lote' => null]);
+
+        $this->expectException(SiatException::class);
+        $this->expectExceptionMessageMatches('/tamaño de lote/');
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
+    }
+
     public function test_la_etapa_de_firma_digital_no_se_ejecuta(): void
     {
         $this->assertNotContains(8, HomologacionMatriz::EJECUTABLES);
@@ -353,7 +469,7 @@ class SiatHomologacionTest extends TestCase
     }
 
     /** Dobla la emisión: el runner no habla con el SIN en las pruebas. */
-    private function prepararEmision(bool $rechazada = false): void
+    private function prepararEmision(bool $rechazada = false, bool $doblarEmision = true): void
     {
         $register = CashRegister::create([
             'store_id' => $this->store->id, 'name' => 'Caja 1', 'is_active' => true,
@@ -378,6 +494,12 @@ class SiatHomologacionTest extends TestCase
             'codigo' => 'CUFD-PV0', 'codigo_control' => 'CTRL0',
             'fecha_vigencia' => now()->addHours(20), 'consecutivo' => 0, 'estado' => 'activo',
         ])->forceFill(['created_at' => now()->subHours(4)])->save();
+
+        // Los casos que solo cuentan emisiones no necesitan facturas de verdad.
+        // Los de paquete sí: `enviarPaquete` las vuelve a buscar en la base.
+        if (! $doblarEmision) {
+            return;
+        }
 
         $this->mock(SiatService::class, function ($mock) use ($rechazada): void {
             $mock->shouldReceive('createInvoice')->andReturnUsing(
