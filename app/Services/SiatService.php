@@ -448,7 +448,11 @@ class SiatService
             $this->facturacion->anulacionFactura(
                 $setting,
                 $invoice->cuf,
-                $invoice->cufd,
+                // El CUFD de la cabecera identifica el envío de ahora, no la
+                // emisión: mandar el de la factura hace que el SIN responda «123
+                // CUFD FUERA DE TOLERANCIA» en cuanto la factura es de otro día.
+                // El de la emisión ya va dentro del CUF, que es lo que la ata.
+                $this->getOrCreateCufd($setting)->codigo,
                 $codigoMotivo,
                 (int) $invoice->tipo_factura,
             );
@@ -483,7 +487,7 @@ class SiatService
 
         if ($setting->ambiente !== 'simulado') {
             $resultado = $this->facturacion->reversionAnulacionFactura(
-                $setting, $invoice->cuf, $invoice->cufd, (int) $invoice->tipo_factura,
+                $setting, $invoice->cuf, $this->getOrCreateCufd($setting)->codigo, (int) $invoice->tipo_factura,
             );
         }
 
@@ -508,7 +512,7 @@ class SiatService
             ?? throw new SiatException('No hay configuración SIAT activa para esta tienda.');
 
         return $this->facturacion->verificacionEstadoFactura(
-            $setting, $invoice->cuf, $invoice->cufd, (int) $invoice->tipo_factura,
+            $setting, $invoice->cuf, $this->getOrCreateCufd($setting)->codigo, (int) $invoice->tipo_factura,
         );
     }
 

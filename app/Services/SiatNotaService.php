@@ -164,8 +164,12 @@ class SiatNotaService
             );
         }
 
+        // Con el CUFD de la emisión el SIN responde «123 CUFD FUERA DE
+        // TOLERANCIA» en cuanto la nota es de otro día: la cabecera pide el
+        // vigente. Ver {@see SiatService::cancelInvoice}.
         $resultado = $this->ajuste->anulacionDocumentoAjuste(
-            $setting, $nota->cuf, $nota->cufd, $codigoMotivo, (int) $nota->documento_sector,
+            $setting, $nota->cuf, $this->siat->getOrCreateCufd($setting)->codigo,
+            $codigoMotivo, (int) $nota->documento_sector,
         );
 
         $nota->update([
@@ -187,7 +191,7 @@ class SiatNotaService
         }
 
         $resultado = $this->ajuste->reversionAnulacionDocumentoAjuste(
-            $setting, $nota->cuf, $nota->cufd, (int) $nota->documento_sector,
+            $setting, $nota->cuf, $this->siat->getOrCreateCufd($setting)->codigo, (int) $nota->documento_sector,
         );
 
         $nota->update([
@@ -202,8 +206,10 @@ class SiatNotaService
     /** @return array<string, mixed> */
     public function consultarEstado(SiatNota $nota): array
     {
+        $setting = $this->settingDe($nota);
+
         return $this->ajuste->verificacionEstadoDocumentoAjuste(
-            $this->settingDe($nota), $nota->cuf, $nota->cufd, (int) $nota->documento_sector,
+            $setting, $nota->cuf, $this->siat->getOrCreateCufd($setting)->codigo, (int) $nota->documento_sector,
         );
     }
 

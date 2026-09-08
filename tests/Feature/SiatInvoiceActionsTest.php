@@ -167,6 +167,33 @@ class SiatInvoiceActionsTest extends TestCase
             ->assertSessionHasErrors('siat');
     }
 
+    /**
+     * El CUFD de la cabecera identifica el envío de ahora, no la emisión. Con el
+     * de la factura el SIN responde «123 CUFD FUERA DE TOLERANCIA» en cuanto la
+     * factura es de otro día, que es lo que tumbó la etapa VII de la
+     * homologación: allí se anulan facturas emitidas semanas antes.
+     */
+    public function test_cancelling_sends_the_current_cufd_not_the_one_it_was_issued_with(): void
+    {
+        $this->setting('piloto');
+        $invoice = $this->invoice(['estado' => 'enviada', 'cufd' => 'CUFD-VENCIDO-DE-AGOSTO']);
+
+        $this->mock(SiatFacturacionService::class, function ($mock): void {
+            $mock->shouldReceive('anulacionFactura')
+                ->once()
+                ->withArgs(fn ($setting, $cuf, $cufd) => $cufd === 'CUFD-DE-PRUEBA')
+                ->andReturn([
+                    'codigoRecepcion' => null, 'codigoEstado' => 907,
+                    'codigoDescripcion' => 'ANULACION CONFIRMADA', 'mensajes' => [], 'respuesta' => [],
+                ]);
+        });
+
+        $this->post("/admin/siat/invoices/{$invoice->id}/cancel", ['motivo' => 'Datos incorrectos'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('anulada', $invoice->fresh()->estado);
+    }
+
     // ─── Reversión de anulación ──────────────────────────────────────────────
 
     public function test_it_reverts_a_cancellation_and_the_invoice_is_valid_again(): void
