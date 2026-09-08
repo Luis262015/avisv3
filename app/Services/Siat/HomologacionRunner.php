@@ -40,6 +40,9 @@ final class HomologacionRunner
 {
     public const PREFIJO = 'HOMOL';
 
+    /** Contador de folios de este proceso. Ver {@see folio()}. */
+    private int $secuencia = 0;
+
     public function __construct(
         private readonly SiatService $siat,
         private readonly SiatNotaService $notas,
@@ -480,6 +483,20 @@ final class HomologacionRunner
         return $this->notas->emitir($devolucion->fresh(), (int) $caso->documento_sector);
     }
 
+    /**
+     * Folio único para una venta de prueba.
+     *
+     * `sales.folio` es único y las etapas VI y IX emiten lotes enteros dentro
+     * del mismo segundo —hasta mil facturas—, así que un sufijo aleatorio de
+     * tres cifras choca casi seguro: novecientos valores no dan ni para
+     * cincuenta documentos sin repetir. Lleva contador propio, y el PID para
+     * que dos procesos a la vez tampoco coincidan.
+     */
+    private function folio(): string
+    {
+        return sprintf('%s-%s-%d-%d', self::PREFIJO, now()->format('ymdHis'), getmypid(), ++$this->secuencia);
+    }
+
     /** Una venta sintética de una línea, con un producto homologado. */
     private function venta(SiatSetting $setting): Sale
     {
@@ -489,7 +506,7 @@ final class HomologacionRunner
         $venta = Sale::create([
             'cash_shift_id'  => $turno->id,
             'user_id'        => $turno->user_id,
-            'folio'          => self::PREFIJO . '-' . now()->format('ymdHis') . '-' . random_int(100, 999),
+            'folio'          => $this->folio(),
             'subtotal'       => $producto->price,
             'total'          => $producto->price,
             'amount_paid'    => $producto->price,

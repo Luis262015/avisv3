@@ -556,6 +556,25 @@ class SiatHomologacionTest extends TestCase
         $this->assertSame(1, $caso->fresh()->completados);
     }
 
+    /**
+     * `sales.folio` es único y los lotes de las etapas VI y IX se emiten dentro
+     * del mismo segundo. Con un sufijo aleatorio de tres cifras —novecientos
+     * valores— el lote reventaba por clave duplicada antes de la factura
+     * cincuenta.
+     */
+    public function test_un_lote_emitido_de_golpe_no_repite_folio(): void
+    {
+        $this->prepararEmision();
+        $caso = $this->caso('e4-s1-pv0');
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 60);
+
+        $folios = Sale::where('folio', 'like', HomologacionRunner::PREFIJO . '%')->pluck('folio');
+
+        $this->assertCount(60, $folios);
+        $this->assertCount(60, $folios->unique(), 'Dos ventas del mismo lote comparten folio.');
+    }
+
     private function facturaHomologada(int $numero): SiatInvoice
     {
         $turno = CashShift::query()->firstOrFail();
