@@ -302,6 +302,28 @@ class SiatNotaTest extends TestCase
         $this->assertNotNull($nota->cuf);
     }
 
+    /**
+     * Un timeout no dice que el SIN rechazara nada: la petición pudo llegar y
+     * procesarse. Marcarla rechazada la deja muerta aquí y viva ante Impuestos,
+     * que es justo lo que pasó con la nota #28 de la homologación —«rechazada»
+     * en local y 690 VALIDA en el SIN—.
+     */
+    public function test_un_timeout_deja_la_nota_pendiente_no_rechazada(): void
+    {
+        $this->mock(SiatDocumentoAjusteService::class, function ($mock): void {
+            $mock->shouldReceive('recepcionDocumentoAjuste')->andThrow(new SiatException(
+                'Error al comunicarse con el SIN (recepcionDocumentoAjuste): Error Fetching http headers',
+                previous: new \SoapFault('HTTP', 'Error Fetching http headers'),
+            ));
+        });
+
+        $nota = app(SiatNotaService::class)->emitir($this->devolucion());
+
+        $this->assertSame('pendiente', $nota->estado);
+        $this->assertNotNull($nota->cuf);
+        $this->assertStringContainsString('http headers', (string) $nota->mensaje_error);
+    }
+
     public function test_no_se_anula_una_nota_que_nunca_se_envio(): void
     {
         $this->mock(SiatDocumentoAjusteService::class, function ($mock): void {

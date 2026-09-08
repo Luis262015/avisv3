@@ -322,7 +322,14 @@ class SiatNotaService
                 'error' => $e->getMessage(),
             ]);
 
-            $nota->update(['estado' => 'rechazada', 'mensaje_error' => $e->getMessage()]);
+            // Un fallo de transporte no es un rechazo: la nota puede estar viva
+            // en el SIN. Queda pendiente —igual que la factura en
+            // {@see SiatService}— para que se resuelva consultando su estado, no
+            // dándola por muerta.
+            $nota->update([
+                'estado'        => $e->esFalloDeComunicacion() ? 'pendiente' : 'rechazada',
+                'mensaje_error' => $e->getMessage(),
+            ]);
         }
     }
 
