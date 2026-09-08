@@ -436,6 +436,56 @@ class SiatHomologacionTest extends TestCase
         );
     }
 
+    /**
+     * El SIN rechaza el paquete al enviarlo, o sea despues de haber emitido las
+     * quinientas facturas del corte. Sin CAFC configurado hay que pararlo antes.
+     */
+    public function test_un_motivo_que_exige_cafc_se_para_antes_de_emitir(): void
+    {
+        config(['siat.cafc.codigo' => null]);
+        $this->prepararEmision(doblarEmision: false);
+        app(HomologacionMatriz::class)->generar($this->setting, 6);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m5-n500')->firstOrFail();
+
+        try {
+            app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
+            $this->fail('Tenía que exigir el CAFC.');
+        } catch (SiatException $e) {
+            $this->assertStringContainsString('exige un CAFC', $e->getMessage());
+        }
+
+        $this->assertSame(0, SiatEvento::where('codigo_motivo_evento', 5)->count(), 'No debe abrir el corte.');
+        $this->assertSame(0, SiatInvoice::count(), 'No debe emitir ninguna factura.');
+    }
+
+    /** Los motivos de conectividad van sin CAFC: mandarlo el SIN lo rechaza. */
+    public function test_los_motivos_de_conectividad_no_piden_cafc(): void
+    {
+        config(['siat.cafc.codigo' => null]);
+        $this->prepararEmision(doblarEmision: false);
+        $this->setting->update(['leyenda' => 'Ley N 453: El proveedor debe habilitar medios e instancias de atencion.']);
+        $this->fakeContingencia();
+
+        $this->mock(SiatFacturacionService::class, function ($mock): void {
+            $mock->shouldReceive('recepcionPaqueteFactura')->once()
+                ->withArgs(fn (...$args) => end($args) === null)
+                ->andReturn([
+                    'codigoRecepcion' => 'PAQ-1', 'codigoEstado' => 901,
+                    'codigoDescripcion' => 'PENDIENTE', 'mensajes' => [], 'respuesta' => [],
+                ]);
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 6);
+        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
+        $caso->update(['tamano_lote' => 1]);
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
+
+        $this->assertSame(1, $caso->fresh()->completados);
+        $this->assertNull(SiatEvento::where('codigo_motivo_evento', 1)->value('cafc'));
+    }
+
     /** Sin tamaño de lote el paquete saldría vacío y quemaría una prueba. */
     public function test_un_caso_sin_tamano_de_lote_no_manda_un_paquete_vacio(): void
     {

@@ -70,6 +70,26 @@ return [
     'cache_catalogos_horas' => env('SIAT_CACHE_CATALOGOS_HORAS', 12),
 
     /*
+    | Código de Autorización de Factura de Contingencia.
+    |
+    | No lo entrega ningún servicio: se pide en el Portal SIAT. Y no hace falta
+    | en todo corte, solo en los motivos que el SIN considera imputables al
+    | contribuyente. Verificado contra el piloto en los dos sentidos: con el
+    | motivo 2 y un CAFC cualquiera responde «1045 VALOR DE CAFC NO VALIDO ...
+    | Cafc esperado null», y con los motivos 5, 6 y 7 sin CAFC responde «0 Cafc
+    | no encontrado».
+    |
+    | Motivos que lo exigen, por la paramétrica viva: 5 virus o falla de
+    | software, 6 cambio de infraestructura o falla de hardware, 7 corte de
+    | energía eléctrica. Los otros cuatro son problemas de conectividad y van
+    | sin él.
+    */
+    'cafc' => [
+        'codigo'  => env('SIAT_CAFC'),
+        'motivos' => [5, 6, 7],
+    ],
+
+    /*
     | Valores de la Factura Compra Venta.
     |
     | El tipo de emisión es independiente de la modalidad: una factura

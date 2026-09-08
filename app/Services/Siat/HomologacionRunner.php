@@ -243,6 +243,7 @@ final class HomologacionRunner
     private function etapaPaquete(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
     {
         $this->exigeLote($caso);
+        $this->cafcPara((int) $caso->motivo_evento);
         $cuantas = $this->cuantas($caso, $limite);
         $hechos  = 0;
 
@@ -265,6 +266,7 @@ final class HomologacionRunner
             (int) $caso->motivo_evento,
             'Homologación Fase I — etapa VI, lote de ' . $caso->tamano_lote,
             $this->inicioDelCorte($setting),
+            $this->cafcPara((int) $caso->motivo_evento),
         );
 
         // Dentro del corte, `createInvoice` emite fuera de línea por sí solo.
@@ -694,6 +696,35 @@ final class HomologacionRunner
      * prueba. Pasa con las filas anteriores a la columna `tamano_lote`: se
      * arreglan regenerando la matriz.
      */
+    /**
+     * El CAFC que necesita un corte, o null si ese motivo va sin él.
+     *
+     * El SIN es estricto en los dos sentidos: los motivos de conectividad lo
+     * rechazan si se manda («1045 ... Cafc esperado null») y los imputables al
+     * contribuyente lo exigen («0 Cafc no encontrado»). Se comprueba antes de
+     * abrir el corte porque el rechazo llega al enviar el paquete, o sea
+     * después de haber emitido las quinientas facturas para nada.
+     *
+     * No se puede pedir por servicio: sale del Portal SIAT.
+     */
+    private function cafcPara(int $motivo): ?string
+    {
+        if (! in_array($motivo, (array) config('siat.cafc.motivos'), true)) {
+            return null;
+        }
+
+        $cafc = config('siat.cafc.codigo');
+
+        if (blank($cafc)) {
+            throw new SiatException(
+                "El motivo de evento {$motivo} exige un CAFC y no hay ninguno configurado. Pídalo en el "
+                . 'Portal SIAT (Factura de Contingencia) y póngalo en SIAT_CAFC; ningún servicio lo emite.'
+            );
+        }
+
+        return (string) $cafc;
+    }
+
     private function exigeLote(SiatHomologacionCaso $caso): void
     {
         if ((int) $caso->tamano_lote > 0) {
