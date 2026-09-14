@@ -28,8 +28,16 @@ final class HomologacionMatriz
      *
      * - «son N pruebas **por cada caso**» → el número se multiplica por los casos
      *   de la matriz (etapas I, II, III, V, VI y IX).
-     * - «debe realizar N emisiones / N anulaciones» → es el **total de la etapa**
-     *   y se reparte entre los casos (etapas IV, VII y VIII).
+     * - «debe realizar N emisiones / N anulaciones» → parecía ser el **total de
+     *   la etapa** (IV, VII y VIII).
+     *
+     * **Y esa segunda lectura era falsa en la VII.** La página dice «debe
+     * realizar 250 anulaciones» y el panel de Seguimiento pide **125 en cada uno
+     * de sus 12 casos = 1500**. La redacción de la página no decide nada: lo que
+     * se puntúa es la columna «Pruebas Esperadas» del panel, caso por caso.
+     * Comprobado el 2026-09-10 sobre el caso del sector 1 por el punto 1, que el
+     * panel daba en 42/125 (33 %) —los mismos 42 que tenía la matriz local, que
+     * los creía 42 de 21 y por eso lo marcaba «completado»—.
      *
      * Confirmado con el panel de Seguimiento del Portal: la etapa II son 18
      * catálogos × 2 puntos de venta × 50 pruebas = **1800**.
@@ -40,18 +48,41 @@ final class HomologacionMatriz
         3 => 100,  // CUFD
         5 => 5,    // Eventos significativos
         6 => 10,   // Paquetes
+        7 => 125,  // Anulación y reversión — del panel, no de la página
         9 => 10,   // Emisión masiva
     ];
 
-    /** Etapas cuyo número es el total, no el de cada caso. */
+    /**
+     * Etapas cuyo número es el total, no el de cada caso.
+     *
+     * Queda solo la IV, y **está sin contrastar con el panel**: es la otra que
+     * usa la redacción «debe realizar N emisiones», la misma que resultó ser
+     * falsa en la VII. Sus 12 casos figuran con 42 de 42 cada uno; si el panel
+     * pidiera 125, estaría igual de corta.
+     */
     public const TOTAL_ETAPA = [
-        4 => 500,  // Emisión individual
-        7 => 250,  // Anulación y reversión
+        4 => 500,  // Emisión individual — sin confirmar contra el panel
         8 => 250,  // Firma digital — N/A en modalidad computarizada
     ];
 
+    /** Los sectores de nota, que van por otro servicio y no tienen paquete ni masiva. */
+    public const SECTORES_NOTA = [
+        CufGenerator::SECTOR_NOTA_CRED_DEB,
+        CufGenerator::SECTOR_NOTA_CRED_DEB_DESCUENTO,
+    ];
+
+    /**
+     * El punto de venta con que el Excel de la etapa VI manda cada tamaño de
+     * lote: «igual a 500» por el punto 1 y «menor a 500» por el 0.
+     *
+     * Va aquí y no suelto en {@see self::paquetes} porque es un dato del Excel,
+     * no una decisión: la columna «cantidad de facturas» y la de «código punto
+     * venta» se mueven juntas fila a fila.
+     */
+    public const PUNTO_POR_LOTE = [500 => 1, 250 => 0];
+
     /** Las etapas que este generador sabe ejecutar. */
-    public const EJECUTABLES = [2, 4, 5, 6, 7, 9];
+    public const EJECUTABLES = [2, 3, 4, 5, 6, 7, 9];
 
     public function __construct(private readonly SiatSincronizacionService $sincronizacion) {}
 
@@ -112,6 +143,7 @@ final class HomologacionMatriz
     {
         return match ($etapa) {
             2       => $this->sincronizacion($setting),
+            3       => $this->cufd($setting),
             4, 7    => $this->porSectorYPunto($setting, $etapa),
             5       => $this->eventos($setting),
             6       => $this->paquetes($setting),
@@ -154,6 +186,24 @@ final class HomologacionMatriz
         'tipos_punto_venta', 'paises_origen', 'tipos_habitacion', 'mensajes_servicios',
         'fecha_hora',
     ];
+
+    /**
+     * Solicitud de CUFD, tal como la enumera `CasosDePruebaCUFD.xlsx`: **un caso
+     * por punto de venta** —el Excel lista solo dos filas, la del punto 1 y la
+     * del 0— con cien pruebas cada uno, o sea 200 en total.
+     *
+     * No se cruza con el documento sector, a diferencia de la emisión: el CUFD
+     * es del punto de venta y sirve para cualquier documento que se emita bajo
+     * él. Sus únicas variables son el CUIS y el punto, y el CUIS ya va atado al
+     * punto.
+     */
+    private function cufd(SiatSetting $setting): array
+    {
+        return array_map(fn (int $pv) => [
+            'caso'        => "e3-pv{$pv}",
+            'punto_venta' => $pv,
+        ], $this->puntosVenta($setting));
+    }
 
     /**
      * Emisión individual y anulación: cada documento sector de la actividad, por
@@ -200,44 +250,52 @@ final class HomologacionMatriz
      * Paquetes.xlsx`: **16 casos** por documento sector.
      *
      * Catorce envíos —cada motivo de evento con un lote de «igual a 500» y otro
-     * de «menor a 500», todos con el punto de venta 1— y **dos validaciones**,
-     * una por punto de venta. La validación es un caso aparte porque puntúa otra
-     * cosa: el envío responde 901 PENDIENTE y la consulta posterior 908
-     * RECEPCION VALIDADA.
+     * de «menor a 500»— y **dos validaciones**, una por punto de venta. La
+     * validación es un caso aparte porque puntúa otra cosa: el envío responde
+     * 901 PENDIENTE y la consulta posterior 908 RECEPCION VALIDADA.
      *
-     * El eje no es el punto de venta sino el tamaño del lote, que es donde la
-     * matriz se equivocaba. Solo aplica a la factura de compra-venta: el Excel
-     * no trae los sectores 24 ni 47, coherente con que las notas no tengan
-     * servicio de paquete.
+     * **El tamaño del lote y el punto de venta son la misma columna, no dos
+     * ejes.** El Excel manda «igual a 500» por el punto 1 y «menor a 500» por
+     * el 0 —{@see self::PUNTO_POR_LOTE}—, así que los catorce envíos se reparten
+     * siete y siete. Mandarlos todos por el punto 1, como se hacía, deja los
+     * siete casos del punto 0 sin puntuar y le carga al 1 el doble de pruebas
+     * de las que su fila pide. Ojo que es al revés que en la etapa IX, donde el
+     * Excel sí cruza los dos tamaños con los dos puntos ({@see self::masiva}).
+     *
+     * Y se repite **por cada sector facturable**, no solo por la compra-venta:
+     * el Excel trae 27 sectores con estos mismos 16 casos cada uno, y el panel
+     * cuenta los que el SIN asocia al NIT. Las notas no están, coherente con
+     * que no tengan servicio de paquete.
      */
     private function paquetes(SiatSetting $setting): array
     {
         $definiciones = [];
         $puntos       = $this->puntosVenta($setting);
-        $pvEnvio      = in_array(1, $puntos, true) ? 1 : $puntos[0];
 
-        foreach (array_keys($this->motivosEvento($setting)) as $motivo) {
-            foreach ([500, 250] as $lote) {
+        foreach ($this->sectoresConPaquete($setting) as $sector) {
+            foreach (array_keys($this->motivosEvento($setting)) as $motivo) {
+                foreach (self::PUNTO_POR_LOTE as $lote => $pv) {
+                    $definiciones[] = [
+                        'caso'             => "e6-s{$sector}-m{$motivo}-n{$lote}",
+                        'punto_venta'      => in_array($pv, $puntos, true) ? $pv : $puntos[0],
+                        'documento_sector' => $sector,
+                        'tipo_factura'     => $this->tipoFactura($sector),
+                        'motivo_evento'    => (int) $motivo,
+                        'tamano_lote'      => $lote,
+                        'operacion'        => 'envio',
+                    ];
+                }
+            }
+
+            foreach ($puntos as $pv) {
                 $definiciones[] = [
-                    'caso'             => "e6-m{$motivo}-n{$lote}",
-                    'punto_venta'      => $pvEnvio,
-                    'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
-                    'tipo_factura'     => 1,
-                    'motivo_evento'    => (int) $motivo,
-                    'tamano_lote'      => $lote,
-                    'operacion'        => 'envio',
+                    'caso'             => "e6-s{$sector}-val-pv{$pv}",
+                    'punto_venta'      => $pv,
+                    'documento_sector' => $sector,
+                    'tipo_factura'     => $this->tipoFactura($sector),
+                    'operacion'        => 'validacion',
                 ];
             }
-        }
-
-        foreach ($puntos as $pv) {
-            $definiciones[] = [
-                'caso'             => "e6-val-pv{$pv}",
-                'punto_venta'      => $pv,
-                'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
-                'tipo_factura'     => 1,
-                'operacion'        => 'validacion',
-            ];
         }
 
         return $definiciones;
@@ -250,29 +308,34 @@ final class HomologacionMatriz
      * Cuatro envíos —«igual a 1000» y «menor a 1000», por cada punto de venta— y
      * la validación de cada uno. La página dice «hasta 2000», pero el Excel
      * puntúa 1000.
+     *
+     * Ocho **por cada sector facturable**: con los cuatro del NIT son 32 casos y
+     * 320 pruebas, que es lo que muestra el panel.
      */
     private function masiva(SiatSetting $setting): array
     {
         $definiciones = [];
 
-        foreach ($this->puntosVenta($setting) as $pv) {
-            foreach ([1000, 500] as $lote) {
-                $comun = [
-                    'punto_venta'      => $pv,
-                    'documento_sector' => CufGenerator::SECTOR_COMPRA_VENTA,
-                    'tipo_factura'     => 1,
-                    'tamano_lote'      => $lote,
-                ];
+        foreach ($this->sectoresConPaquete($setting) as $sector) {
+            foreach ($this->puntosVenta($setting) as $pv) {
+                foreach ([1000, 500] as $lote) {
+                    $comun = [
+                        'punto_venta'      => $pv,
+                        'documento_sector' => $sector,
+                        'tipo_factura'     => $this->tipoFactura($sector),
+                        'tamano_lote'      => $lote,
+                    ];
 
-                $definiciones[] = $comun + [
-                    'caso'      => "e9-pv{$pv}-n{$lote}",
-                    'operacion' => 'envio',
-                ];
+                    $definiciones[] = $comun + [
+                        'caso'      => "e9-s{$sector}-pv{$pv}-n{$lote}",
+                        'operacion' => 'envio',
+                    ];
 
-                $definiciones[] = $comun + [
-                    'caso'      => "e9-val-pv{$pv}-n{$lote}",
-                    'operacion' => 'validacion',
-                ];
+                    $definiciones[] = $comun + [
+                        'caso'      => "e9-s{$sector}-val-pv{$pv}-n{$lote}",
+                        'operacion' => 'validacion',
+                    ];
+                }
             }
         }
 
@@ -280,26 +343,61 @@ final class HomologacionMatriz
     }
 
     /**
-     * Los documentos sector habilitados para la actividad del contribuyente.
+     * Los documentos sector que el SIN asocia al **contribuyente**.
+     *
+     * No son los de la actividad de la tienda: son los de **todas** las
+     * actividades del NIT. La página lo dice en las etapas IV, VI y IX —«para
+     * todos los tipos de documento sector que estén asociados a su actividad
+     * económica»— y el panel de Seguimiento los cuenta todos.
+     *
+     * Fijar el alcance en `siat_settings.actividad_economica` costó caro: ese
+     * NIT tiene 21 actividades y entre todas suman **seis** sectores (1, 23, 24,
+     * 34, 35 y 47), no los tres de la actividad de las tiendas. Con tres, la
+     * etapa IX salía de 80 pruebas cuando el panel pide 320 —cuatro sectores
+     * facturables por ocho casos por diez pruebas— y se daba por vencida con la
+     * cuarta parte hecha.
      *
      * @return list<int>
      */
     public function sectores(SiatSetting $setting): array
     {
-        $sectores = array_keys(
-            $this->sincronizacion->documentosSectorDe($setting, (string) $setting->actividad_economica)
-        );
+        $sectores = [];
+
+        foreach (array_keys($this->sincronizacion->actividades($setting)) as $actividad) {
+            foreach ($this->sincronizacion->documentosSectorDe($setting, (string) $actividad) as $sector => $nombre) {
+                $sectores[(int) $sector] = true;
+            }
+        }
 
         if ($sectores === []) {
             throw new SiatException(
-                "El SIN no asocia ningún documento sector a la actividad {$setting->actividad_economica}. "
-                . 'Suele significar que esa actividad no corresponde a este NIT.'
+                "El SIN no asocia ningún documento sector a las actividades del NIT {$setting->nit}. "
+                . 'Suele significar que el catálogo de actividades no se ha sincronizado todavía.'
             );
         }
 
+        $sectores = array_keys($sectores);
         sort($sectores);
 
         return $sectores;
+    }
+
+    /**
+     * Los sectores que se pueden enviar por paquete y por lote masivo.
+     *
+     * Las notas de crédito-débito quedan fuera: las emite
+     * `ServicioFacturacionDocumentoAjuste`, que **no tiene** `recepcionPaquete`
+     * ni `recepcionMasiva`. Por eso la etapa IX son cuatro sectores y no seis,
+     * que es justo lo que hace cuadrar sus 320 pruebas.
+     *
+     * @return list<int>
+     */
+    public function sectoresConPaquete(SiatSetting $setting): array
+    {
+        return array_values(array_filter(
+            $this->sectores($setting),
+            fn (int $sector) => ! in_array($sector, self::SECTORES_NOTA, true),
+        ));
     }
 
     /** @return list<int> */
@@ -335,7 +433,7 @@ final class HomologacionMatriz
      */
     private function tipoFactura(int $sector): int
     {
-        return in_array($sector, [24, 47], true)
+        return in_array($sector, self::SECTORES_NOTA, true)
             ? (int) config('siat.nota.tipo_factura')
             : CufGenerator::FACTURA_CON_CREDITO_FISCAL;
     }

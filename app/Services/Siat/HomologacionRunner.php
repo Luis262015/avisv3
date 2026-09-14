@@ -40,6 +40,14 @@ final class HomologacionRunner
 {
     public const PREFIJO = 'HOMOL';
 
+    /**
+     * Lo que dura el corte de una prueba de la etapa V, en segundos.
+     *
+     * Corto a propósito: las 70 pruebas tienen que caber dentro de la vigencia
+     * del CUFD y sin solaparse entre ellas. Ver {@see franjaLibre()}.
+     */
+    private const SEGUNDOS_DE_CORTE = 2;
+
     /** Contador de folios de este proceso. Ver {@see folio()}. */
     private int $secuencia = 0;
 
@@ -49,6 +57,7 @@ final class HomologacionRunner
         private readonly SiatPuntoVentaService $puntos,
         private readonly SiatContingenciaService $contingencia,
         private readonly SiatSincronizacionService $sincronizacion,
+        private readonly SiatCodigosService $codigos,
     ) {}
 
     /**
@@ -66,6 +75,7 @@ final class HomologacionRunner
         try {
             $hechos = match ($caso->etapa) {
                 2 => $this->etapaSincronizacion($caso, $setting, $limite),
+                3 => $this->etapaCufd($caso, $setting, $limite),
                 4 => $this->etapaEmision($caso, $setting, $limite),
                 5 => $this->etapaEvento($caso, $setting, $limite),
                 6 => $caso->esValidacion()
@@ -143,6 +153,49 @@ final class HomologacionRunner
         }
 
         return $vueltas;
+    }
+
+    /**
+     * Solicitud de CUFD: cien llamadas por punto de venta.
+     *
+     * No puede pasar por {@see CufdProvider}, que es por donde va la emisión:
+     * ese devuelve el CUFD que ya está vigente sin hablar con el SIN, y lo que
+     * aquí se puntúa es justamente la llamada. Va derecho al servicio de
+     * códigos, que es el que la hace.
+     *
+     * **No es de solo lectura**, y esa es la diferencia con la etapa II: cada
+     * CUFD nuevo vence al anterior de ese punto de venta y arranca su propio
+     * correlativo en cero. De ahí las dos cautelas de abajo: no correrla con un
+     * corte abierto, y no intercalarla con una etapa que esté emitiendo.
+     */
+    private function etapaCufd(SiatHomologacionCaso $caso, SiatSetting $setting, ?int $limite): int
+    {
+        $abierto = $this->contingencia->eventoAbierto($setting->store_id);
+
+        if ($abierto !== null) {
+            // La franja de un corte tiene que caber dentro de la vigencia del CUFD
+            // con que se declaró; rotarlo por debajo deja el evento huérfano y el
+            // SIN responde «984 EL EVENTO NO CORRESPONDE AL CUFD REGISTRADO» al
+            // enviar el paquete, o sea después de haber emitido sus facturas.
+            throw new SiatException(
+                "Hay un corte abierto (#{$abierto->id}) en esta tienda. Pedir CUFD nuevos dejaría su "
+                . 'franja fuera de vigencia: ciérrelo antes de correr la etapa III.'
+            );
+        }
+
+        $cuantas = $this->cuantas($caso, $limite);
+
+        for ($i = 0; $i < $cuantas; $i++) {
+            $cufd = $this->codigos->solicitarCufd($setting);
+
+            $this->anotar($caso, [
+                'codigo_resultado' => 'OK',
+                'referencia'       => $cufd->codigo,
+                'mensaje'          => null,
+            ]);
+        }
+
+        return $cuantas;
     }
 
     /** Emisión individual: factura del sector 1 o nota de los sectores 24 y 47. */
@@ -607,68 +660,78 @@ final class HomologacionRunner
     // ─── Utilidades ─────────────────────────────────────────────────────────
 
     /**
-     * Una franja horaria válida para declarar un corte.
-     *
-     * Tiene que cumplir dos condiciones a la vez, y son las que costaron dos
-     * rechazos del SIN:
-     *
-     * - **No solaparse con otro corte ya declarado**, o responde «981 RANGO DE
-     *   FECHAS DE EVENTO SIGNIFICATIVO INVALIDO».
-     * - **Caber dentro de la vigencia del CUFD del evento**, o responde «984 EL
-     *   EVENTO SIGNIFICATIVO NO CORRESPONDE AL CUFD DEL EVENTO REGISTRADO».
-     *
-     * Por eso las franjas se escalonan hacia atrás desde ahora, en bloques de
-     * diez minutos separados entre sí, sin bajar del momento en que se obtuvo el
-     * CUFD vigente.
-     *
-     * @return array{0: \Carbon\CarbonInterface, 1: \Carbon\CarbonInterface}
-     */
-    /**
      * Dónde empieza el corte de un paquete.
      *
-     * No sirve {@see franjaLibre}: esa coloca la franja en el pasado, y las
-     * facturas del paquete se emiten ahora, así que caerían fuera del corte que
-     * las justifica. La franja tiene que llegar hasta el presente y, a la vez,
-     * no pisar la del paquete anterior —diez seguidos abriendo todos en
+     * No sirve {@see franjaLibre}: esa deja la franja cerrada en el pasado, y
+     * las facturas del paquete se emiten ahora, así que caerían fuera del corte
+     * que las justifica. La franja tiene que llegar hasta el presente y, a la
+     * vez, no pisar la del paquete anterior —diez seguidos abriendo todos en
      * `now()-2h` chocarían con el «981 RANGO DE FECHAS INVALIDO»—, así que cada
      * corte arranca donde cerró el último ya declarado.
      */
     private function inicioDelCorte(SiatSetting $setting): \Carbon\CarbonInterface
     {
+        $cufd = $this->cufdVigente($setting);
+
         $ultimo = SiatEvento::where('store_id', $setting->store_id)
             ->where('estado', 'registrado')
-            ->where('fecha_fin', '>=', $this->cufdVigente($setting)->created_at)
+            ->where('fecha_fin', '>=', $cufd->created_at)
             ->max('fecha_fin');
 
-        $desde = now()->subHours(2);
+        // Nunca antes de que existiera el CUFD con el que se va a declarar: dos
+        // horas atrás cae fuera de su vigencia si se pidió hace un rato —lo que
+        // pasa siempre después de correr la etapa III— y el SIN contesta 984 al
+        // enviar el paquete, con las facturas ya emitidas.
+        $desde = \Carbon\Carbon::parse($cufd->created_at)->addSecond();
+        $antes = now()->subHours(2);
+
+        if ($antes->greaterThan($desde)) {
+            $desde = $antes;
+        }
 
         return $ultimo !== null && \Carbon\Carbon::parse($ultimo)->greaterThan($desde)
             ? \Carbon\Carbon::parse($ultimo)->addSecond()
             : $desde;
     }
 
+    /**
+     * Una franja horaria libre con la que declarar un corte.
+     *
+     * Tiene que cumplir tres cosas a la vez, y las tres las cobró el SIN:
+     *
+     * - **No solaparse con otro corte ya declarado**, o responde «981 RANGO DE
+     *   FECHAS DE EVENTO SIGNIFICATIVO INVALIDO».
+     * - **Caber dentro de la vigencia del CUFD**, o responde «984 EL EVENTO
+     *   SIGNIFICATIVO NO CORRESPONDE AL CUFD DEL EVENTO REGISTRADO». Esa
+     *   vigencia empieza cuando se pidió el CUFD, no al comenzar el día.
+     * - **Haber terminado ya**: un corte que sigue abierto no se declara.
+     *
+     * Por eso las franjas se empaquetan **hacia adelante**, desde donde cerró el
+     * último corte declarado, en bloques de pocos segundos. Escalonarlas hacia
+     * atrás desde ahora —como estaban— gastaba el hueco al revés y a cuatro
+     * minutos por corte: con un CUFD recién pedido no entraban ni tres, y las 70
+     * pruebas de la etapa V eran imposibles de correr. La duración no la puntúa
+     * nadie; lo que se puntúa es el registro del evento.
+     */
     private function franjaLibre(SiatSetting $setting): array
     {
         $cufd = $this->cufdVigente($setting);
 
         // Solo cuentan los cortes que el SIN llegó a registrar: los intentos
         // fallidos dejan fila local pero no ocupan ningún rango allí.
-        $primero = SiatEvento::where('store_id', $setting->store_id)
+        $ultimo = SiatEvento::where('store_id', $setting->store_id)
             ->where('estado', 'registrado')
-            ->where('fecha_inicio', '>=', $cufd->created_at)
-            ->min('fecha_inicio');
+            ->where('fecha_fin', '>=', $cufd->created_at)
+            ->max('fecha_fin');
 
-        // Cada corte nuevo se coloca justo antes del más temprano ya declarado,
-        // así que la siguiente llamada retrocede sola sin llevar contador.
-        $tope = $primero !== null ? \Carbon\Carbon::parse($primero) : now();
+        $inicio = \Carbon\Carbon::parse($ultimo ?? $cufd->created_at)->addSecond();
+        $fin    = $inicio->copy()->addSeconds(self::SEGUNDOS_DE_CORTE);
 
-        $fin    = $tope->copy()->subMinutes(2);
-        $inicio = $fin->copy()->subMinutes(2);
-
-        if ($inicio->lessThan($cufd->created_at)) {
+        if ($fin->greaterThan(now())) {
             throw new SiatException(
-                'No queda hueco dentro de la vigencia del CUFD actual para declarar otro corte sin '
-                . 'solaparlo con los anteriores. Pida un CUFD nuevo y reanude mañana.'
+                'Los cortes ya declarados llenan la vigencia del CUFD hasta ' . $inicio->format('H:i:s')
+                . ', y una franja no puede terminar en el futuro. El hueco crece con el reloj: espere '
+                . 'un par de minutos y reanude.'
             );
         }
 

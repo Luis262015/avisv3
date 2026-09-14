@@ -1,0 +1,46 @@
+=== CASO A — codigoEvento 9908746 (motivo 5, corte declarado) + cafc 101160D18E851F (el emitido por el Portal SIAT) ===
+Fecha de la prueba: 2026-09-09 12:09:57 (hora de Bolivia)
+
+-- cafc enviado en la peticion --
+'101160D18E851F'
+
+-- respuesta del servicio --
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><ns2:recepcionPaqueteFacturaResponse xmlns:ns2="https://siat.impuestos.gob.bo/"><RespuestaServicioFacturacion><codigoDescripcion>RECHAZADA</codigoDescripcion><codigoEstado>902</codigoEstado><mensajesList><codigo>0</codigo><descripcion>Cafc no encontrado</descripcion></mensajesList><transaccion>false</transaccion></RespuestaServicioFacturacion></ns2:recepcionPaqueteFacturaResponse></soap:Body></soap:Envelope>
+
+=== CASO B — codigoEvento 9908746 (motivo 5) + cafc AAAAAAAAAAAAAA (valor inventado, para contraste) ===
+Fecha de la prueba: 2026-09-09 12:09:57 (hora de Bolivia)
+
+-- cafc enviado en la peticion --
+'AAAAAAAAAAAAAA'
+
+-- respuesta del servicio --
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><ns2:recepcionPaqueteFacturaResponse xmlns:ns2="https://siat.impuestos.gob.bo/"><RespuestaServicioFacturacion><codigoDescripcion>RECHAZADA</codigoDescripcion><codigoEstado>902</codigoEstado><mensajesList><codigo>0</codigo><descripcion>Cafc no encontrado</descripcion></mensajesList><transaccion>false</transaccion></RespuestaServicioFacturacion></ns2:recepcionPaqueteFacturaResponse></soap:Body></soap:Envelope>
+
+=== CASO C — codigoEvento 9908746 (motivo 5) sin cafc (elemento omitido) ===
+Fecha de la prueba: 2026-09-09 12:09:57 (hora de Bolivia)
+
+-- cafc enviado en la peticion --
+NULL
+
+-- respuesta del servicio --
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><ns2:recepcionPaqueteFacturaResponse xmlns:ns2="https://siat.impuestos.gob.bo/"><RespuestaServicioFacturacion><codigoDescripcion>RECHAZADA</codigoDescripcion><codigoEstado>902</codigoEstado><mensajesList><codigo>0</codigo><descripcion>Cafc no encontrado</descripcion></mensajesList><transaccion>false</transaccion></RespuestaServicioFacturacion></ns2:recepcionPaqueteFacturaResponse></soap:Body></soap:Envelope>
+
+=== CASO D — codigoEvento 9908185 (motivo 1, corte por corte de internet) + cafc 101160D18E851F ===
+Fecha de la prueba: 2026-09-09 12:08 (hora de Bolivia)
+
+-- cafc enviado en la peticion --
+'101160D18E851F'
+
+-- respuesta de recepcionPaqueteFactura (el paquete SI es recibido) --
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><ns2:recepcionPaqueteFacturaResponse xmlns:ns2="https://siat.impuestos.gob.bo/"><RespuestaServicioFacturacion><codigoDescripcion>PENDIENTE</codigoDescripcion><codigoEstado>901</codigoEstado><codigoRecepcion>c3b34cf3-ac68-11f1-aa49-b16e2d246119</codigoRecepcion><transaccion>true</transaccion></RespuestaServicioFacturacion></ns2:recepcionPaqueteFacturaResponse></soap:Body></soap:Envelope>
+
+-- respuesta de validacionRecepcionPaqueteFactura sobre ese mismo codigo de recepcion --
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><ns2:validacionRecepcionPaqueteFacturaResponse xmlns:ns2="https://siat.impuestos.gob.bo/"><RespuestaServicioFacturacion><codigoDescripcion>OBSERVADA</codigoDescripcion><codigoEstado>904</codigoEstado><codigoRecepcion>c3b34cf3-ac68-11f1-aa49-b16e2d246119</codigoRecepcion><mensajesList><codigo>1040</codigo><descripcion>FECHA DE EMISION NO SE ENCUENTRA EN EL RANGO DE CONTINGENCIA Fecha emision envio 2026-09-08T23:24:59.750 
+ Fecha inicio 2026-09-08T15:55:53.000 
+ Fecha fin 2026-09-08T17:55:57.000</descripcion><numeroArchivo>0</numeroArchivo></mensajesList><mensajesList><codigo>1045</codigo><descripcion>VALOR DE CAFC NO VALIDO PARA LA FACTURA Cafc esperado null enviado 101160D18E851F para el codigo evento 1</descripcion><numeroArchivo>0</numeroArchivo></mensajesList><transaccion>true</transaccion></RespuestaServicioFacturacion></ns2:validacionRecepcionPaqueteFacturaResponse></soap:Body></soap:Envelope>
+
+NOTA: la observacion 1040 de este caso D se debe a que, para no consumir documentos
+nuevos, la prueba reutiliza una factura emitida dentro del corte del evento 9908746 y
+la envia bajo el evento 9908185, cuya ventana de contingencia es anterior. Lo
+relevante del caso D es la observacion 1045, que devuelve el valor exacto de CAFC
+enviado.

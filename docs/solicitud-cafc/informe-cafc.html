@@ -1,0 +1,443 @@
+<title>Solicitud de CAFC Piloto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --paper:      #FAFBFC;
+    --surface:    #F1F4F6;
+    --ink:        #16202B;
+    --ink-soft:   #4C5A67;
+    --ink-faint:  #75838F;
+    --rule:       #DCE3E9;
+    --accent:     #1F4E63;
+    --accent-soft:#E4EDF1;
+    --bad:        #A32217;
+    --bad-soft:   #F6E7E5;
+    --good:       #1C6141;
+    --good-soft:  #E3EFE9;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #10161C;
+      --surface:    #182027;
+      --ink:        #E4EAEF;
+      --ink-soft:   #A7B4BF;
+      --ink-faint:  #7C8B97;
+      --rule:       #2A353F;
+      --accent:     #7FBBD4;
+      --accent-soft:#1B2C36;
+      --bad:        #E58B80;
+      --bad-soft:   #2C1D1B;
+      --good:       #82C4A2;
+      --good-soft:  #16281F;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #10161C;
+    --surface:    #182027;
+    --ink:        #E4EAEF;
+    --ink-soft:   #A7B4BF;
+    --ink-faint:  #7C8B97;
+    --rule:       #2A353F;
+    --accent:     #7FBBD4;
+    --accent-soft:#1B2C36;
+    --bad:        #E58B80;
+    --bad-soft:   #2C1D1B;
+    --good:       #82C4A2;
+    --good-soft:  #16281F;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hoja {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  /* ---------- Encabezado ---------- */
+
+  .membrete { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    font-size: clamp(1.75rem, 1.2rem + 2.2vw, 2.4rem);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .bajada {
+    color: var(--ink-soft);
+    font-size: 1.03rem;
+    max-width: 34rem;
+    margin: 0;
+  }
+
+  /* ---------- Ficha de identificación ---------- */
+
+  .ficha {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: .1rem 2.25rem;
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+    padding: 1.25rem 0 1.35rem;
+    margin: 0;
+  }
+
+  .ficha div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: .3rem 0;
+    border-bottom: 1px dotted var(--rule);
+  }
+
+  .ficha dt {
+    font-size: .78rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  .ficha dd {
+    margin: 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .84rem;
+    font-weight: 500;
+    text-align: right;
+  }
+
+  /* ---------- Secciones ---------- */
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+
+  h2 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-size: 1.28rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--rule);
+    text-wrap: balance;
+  }
+
+  h2 .num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .8em;
+    font-weight: 500;
+    color: var(--accent);
+    margin-right: .55rem;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: .95rem;
+    font-weight: 600;
+    margin: .5rem 0 0;
+    color: var(--ink);
+  }
+
+  p { margin: 0; max-width: 40rem; }
+
+  strong { font-weight: 600; }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+    background: var(--surface);
+    border-radius: 3px;
+    padding: .08em .32em;
+  }
+
+  ol, ul { margin: 0; padding-left: 1.35rem; display: flex; flex-direction: column; gap: .5rem; }
+  li { max-width: 38rem; }
+
+  /* ---------- Tablas ---------- */
+
+  .tabla { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: .88rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  caption {
+    caption-side: top;
+    text-align: left;
+    font-size: .78rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-bottom: .5rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: .55rem .7rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-size: .74rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    border-bottom: 1px solid var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  td.mono, th.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .82rem; }
+
+  tr.bloqueo td { background: var(--bad-soft); }
+  tr.bloqueo td:first-child { font-weight: 600; }
+
+  .estado {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .76rem;
+    font-weight: 500;
+    padding: .1rem .45rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .estado.ko { background: var(--bad-soft);  color: var(--bad); }
+  .estado.ok { background: var(--good-soft); color: var(--good); }
+
+  /* ---------- Bloques de evidencia ---------- */
+
+  pre {
+    margin: 0;
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: .95rem 1.1rem;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .78rem;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  pre.rechazo { border-left-color: var(--bad); }
+
+  .nota {
+    font-size: .85rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--rule);
+    padding-left: .9rem;
+  }
+
+  /* ---------- Pie ---------- */
+
+  footer {
+    border-top: 2px solid var(--ink);
+    padding-top: 1rem;
+    font-size: .85rem;
+    color: var(--ink-soft);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem 2rem;
+    justify-content: space-between;
+  }
+
+  footer .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    .hoja { padding: 0; max-width: none; gap: 1.6rem; }
+    section, table, pre { break-inside: avoid; }
+    h2 { break-after: avoid; }
+    pre { background: #f4f4f4; }
+  }
+</style>
+
+<div class="hoja">
+
+  <header class="membrete">
+    <p class="eyebrow">Servicio de Impuestos Nacionales · Homologación Fase I</p>
+    <h1>Solicitud de CAFC para el ambiente Piloto</h1>
+    <p class="bajada">Respaldo técnico del rechazo <code>0 Cafc no encontrado</code> que impide cerrar la Etapa VI (Recepción de Paquetes) del proceso de homologación.</p>
+
+    <dl class="ficha">
+      <div><dt>Razón social</dt><dd>LUIS R. ISLA ALANOCA</dd></div>
+      <div><dt>NIT emisor</dt><dd>6923448010</dd></div>
+      <div><dt>Código de sistema</dt><dd>2280EE3A3729A542C92F6</dd></div>
+      <div><dt>CUIS vigente</dt><dd>74E5E97B</dd></div>
+      <div><dt>Ambiente</dt><dd>Piloto (2)</dd></div>
+      <div><dt>Modalidad</dt><dd>Computarizada (2)</dd></div>
+      <div><dt>Sucursal</dt><dd>0</dd></div>
+      <div><dt>Puntos de venta</dt><dd>0 y 1</dd></div>
+      <div><dt>Actividad</dt><dd>4741100</dd></div>
+      <div><dt>Fecha del informe</dt><dd>09/09/2026</dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <h2><span class="num">1</span>Qué se solicita</h2>
+    <p>La <strong>emisión de un Código de Autorización de Factura de Contingencia (CAFC) válido en el ambiente Piloto</strong> para el NIT 6923448010, sucursal 0, puntos de venta 0 y 1, con vigencia que cubra los días de prueba.</p>
+    <p>Es el único requisito que falta para cerrar la <strong>Etapa VI — Recepción Paquete de Facturas</strong>: los casos de prueba de esa etapa correspondientes a los motivos de evento <strong>5, 6 y 7</strong> exigen CAFC, y el servicio del Piloto rechaza el único código del que disponemos.</p>
+
+    <div class="tabla">
+      <table>
+        <caption>Estado de la homologación Fase I al 9 de septiembre de 2026</caption>
+        <thead>
+          <tr><th>Etapa</th><th>Volumen exigido</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>I — Solicitud de CUIS</td><td class="mono">2</td><td>completa</td></tr>
+          <tr><td>II — Sincronización de catálogos</td><td class="mono">1800</td><td>completa</td></tr>
+          <tr><td>III — Solicitud de CUFD</td><td class="mono">100 por caso</td><td>completa</td></tr>
+          <tr><td>IV — Emisión individual</td><td class="mono">500</td><td>completa</td></tr>
+          <tr><td>V — Eventos significativos</td><td class="mono">14</td><td>completa</td></tr>
+          <tr class="bloqueo"><td>VI — Recepción de paquetes</td><td class="mono">160</td><td>100 / 160 — bloqueada por el CAFC</td></tr>
+          <tr><td>VII — Anulación y reversión</td><td class="mono">250</td><td>completa</td></tr>
+          <tr><td>VIII — Firma digital</td><td class="mono">—</td><td>no aplica a la modalidad Computarizada</td></tr>
+          <tr><td>IX — Recepción masiva</td><td class="mono">80</td><td>completa</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">2</span>El problema</h2>
+    <p>Al enviar un paquete de facturas emitidas fuera de línea durante un corte declarado con <strong>motivo de evento 5, 6 o 7</strong>, la operación <code>recepcionPaqueteFactura</code> responde:</p>
+
+<pre class="rechazo">&lt;RespuestaServicioFacturacion&gt;
+  &lt;codigoDescripcion&gt;RECHAZADA&lt;/codigoDescripcion&gt;
+  &lt;codigoEstado&gt;902&lt;/codigoEstado&gt;
+  &lt;mensajesList&gt;
+    &lt;codigo&gt;0&lt;/codigo&gt;
+    &lt;descripcion&gt;Cafc no encontrado&lt;/descripcion&gt;
+  &lt;/mensajesList&gt;
+  &lt;transaccion&gt;false&lt;/transaccion&gt;
+&lt;/RespuestaServicioFacturacion&gt;</pre>
+
+    <p>El CAFC enviado es <code>101160D18E851F</code>, obtenido del Portal SIAT, y viaja tanto en el elemento <code>cafc</code> de <code>solicitudRecepcionPaquete</code> como en la cabecera de cada factura del paquete (anexos A y B).</p>
+    <p>El corte que ampara esas facturas <strong>sí fue aceptado</strong> por el propio Piloto: <code>registroEventoSignificativo</code> devolvió el código de recepción <strong>9908746</strong> para el motivo 5 (anexo D).</p>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span>Evidencia</h2>
+    <p>Las cuatro pruebas siguientes se ejecutaron el <strong>9 de septiembre de 2026, entre las 12:08 y las 12:10 (hora de Bolivia)</strong>, todas con la misma factura, el mismo paquete <code>.tar.gz</code> y el mismo CUFD vigente, variando un único dato. Las respuestas completas están en el anexo C.</p>
+
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr><th>Caso</th><th><code>codigoEvento</code> (motivo)</th><th><code>cafc</code> enviado</th><th>Respuesta del Piloto</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">A</td><td class="mono">9908746 (motivo 5)</td><td class="mono">101160D18E851F</td><td><span class="estado ko">902 RECHAZADA</span> · <code>0 Cafc no encontrado</code></td></tr>
+          <tr><td class="mono">B</td><td class="mono">9908746 (motivo 5)</td><td class="mono">AAAAAAAAAAAAAA <span style="font-family:inherit">(inventado)</span></td><td><span class="estado ko">902 RECHAZADA</span> · <code>0 Cafc no encontrado</code></td></tr>
+          <tr><td class="mono">C</td><td class="mono">9908746 (motivo 5)</td><td>elemento omitido</td><td><span class="estado ko">902 RECHAZADA</span> · <code>0 Cafc no encontrado</code></td></tr>
+          <tr><td class="mono">D</td><td class="mono">9908185 (motivo 1)</td><td class="mono">101160D18E851F</td><td><span class="estado ok">901 recibido</span>, y al validarlo <span class="estado ko">904 OBSERVADA · 1045</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3.1 · El servicio recibe y procesa correctamente el CAFC enviado</h3>
+    <p>En el caso D —un corte de motivo 1, que no admite CAFC— la validación del paquete devuelve el valor exacto que se envió:</p>
+
+<pre>&lt;mensajesList&gt;
+  &lt;codigo&gt;1045&lt;/codigo&gt;
+  &lt;descripcion&gt;VALOR DE CAFC NO VALIDO PARA LA FACTURA Cafc esperado null
+               enviado 101160D18E851F para el codigo evento 1&lt;/descripcion&gt;
+&lt;/mensajesList&gt;</pre>
+
+    <p>Es decir: <strong>el campo llega, se lee y se contrasta</strong>. La petición está bien formada y el valor no se pierde ni se altera en el camino.</p>
+
+    <h3>3.2 · Con los motivos 5, 6 y 7 la respuesta es la misma con el CAFC real, con uno inventado y sin ninguno</h3>
+    <p>Los casos A, B y C devuelven <strong>exactamente el mismo mensaje</strong>. El servicio no distingue entre <code>101160D18E851F</code> y un valor inventado, lo que indica que ese código <strong>no está registrado en la base de datos del ambiente Piloto</strong>.</p>
+
+    <h3>3.3 · El resto del circuito de contingencia funciona en este mismo ambiente</h3>
+    <p>Con un corte de motivo 1, que no requiere CAFC, el circuito completo se cierra sin observaciones. Paquete de 250 facturas del evento 9908185:</p>
+
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Operación</th><th>Respuesta</th></tr></thead>
+        <tbody>
+          <tr><td><code>registroEventoSignificativo</code></td><td class="mono">código de recepción 9908185</td></tr>
+          <tr><td><code>recepcionPaqueteFactura</code></td><td class="mono">901 · 167c2d38-abd0-11f1-aa49-b16e2d246119</td></tr>
+          <tr><td><code>validacionRecepcionPaqueteFactura</code></td><td><span class="estado ok">908 VALIDADA</span>, sin observaciones</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>El fallo, por tanto, <strong>no está en la construcción del paquete, ni en el XML, ni en el hash, ni en la cabecera de identificación</strong>: es únicamente el CAFC.</p>
+
+    <h3>3.4 · Reiteración del error</h3>
+    <p>El rechazo se ha reproducido de forma idéntica los días <strong>8 y 9 de septiembre de 2026</strong>, en distintos cortes, con distintos CUFD y con lotes de 500 y de 250 facturas (anexos D y E). Hay en este momento <strong>3.000 facturas emitidas fuera de línea que no pueden enviarse</strong> por esta causa.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span>Conclusión</h2>
+    <p>El aplicativo construye y transmite el CAFC conforme al contrato del WSDL —lo confirma el propio servicio al devolverlo en el mensaje 1045—, pero el código <code>101160D18E851F</code> no es reconocido por el ambiente Piloto.</p>
+    <p>Entendemos que puede deberse a que el CAFC fue emitido en el Portal de producción y que el ambiente Piloto mantiene su propio registro, del mismo modo que ocurre con el Token Delegado y con el CUIS, que se emiten por separado en cada ambiente. En la documentación publicada no hemos encontrado la vía para solicitar un CAFC específico del ambiente Piloto, y ninguno de los servicios web (<code>FacturacionCodigos</code>, <code>FacturacionOperaciones</code>, <code>ServicioFacturacionCompraVenta</code>) expone una operación que lo emita.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">5</span>Petición concreta</h2>
+    <ol>
+      <li>La <strong>emisión de un CAFC válido en el ambiente Piloto</strong> para el NIT 6923448010, sucursal 0, puntos de venta 0 y 1, con vigencia que incluya los días de prueba.</li>
+      <li>En su defecto, la <strong>indicación del procedimiento</strong> para solicitarlo en el ambiente Piloto, si es distinto del Portal SIAT de producción.</li>
+      <li>Si el CAFC <code>101160D18E851F</code> debiera ser válido también en Piloto, la revisión de su registro en ese ambiente.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="num">6</span>Anexos adjuntos</h2>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Anexo</th><th>Archivo</th><th>Contenido</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">A</td><td class="mono">anexo-a-peticion-recepcionPaqueteFactura.xml</td><td>Petición SOAP completa enviada al Piloto, con el CAFC en <code>solicitudRecepcionPaquete</code></td></tr>
+          <tr><td class="mono">B</td><td class="mono">anexo-b-factura-fuera-de-linea.xml</td><td>XML de una factura del paquete, con <code>&lt;cafc&gt;101160D18E851F&lt;/cafc&gt;</code> en la cabecera</td></tr>
+          <tr><td class="mono">C</td><td class="mono">anexo-c-respuestas-del-piloto.txt</td><td>Respuestas SOAP íntegras de los cuatro casos de la sección 3</td></tr>
+          <tr><td class="mono">D</td><td class="mono">anexo-d-base-de-datos.csv</td><td>Extracto de la base de datos del aplicativo: cortes declarados, paquetes enviados y facturas afectadas</td></tr>
+          <tr><td class="mono">E</td><td class="mono">anexo-e-registro-aplicacion.txt</td><td>Extracto del registro de errores de la aplicación, con los rechazos del 8 y 9 de septiembre</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="nota">Los anexos A, B y C se generaron con las peticiones reales enviadas al ambiente Piloto el 9 de septiembre de 2026; el anexo D es un volcado directo de las tablas <code>siat_eventos</code>, <code>siat_paquetes</code> y <code>siat_invoices</code> del aplicativo.</p>
+  </section>
+
+  <footer>
+    <span>Sistema de facturación computarizada en línea · avisv3</span>
+    <span class="mono">islaluis25@gmail.com</span>
+  </footer>
+
+</div>

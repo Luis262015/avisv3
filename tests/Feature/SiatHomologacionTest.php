@@ -18,6 +18,8 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\Siat\HomologacionMatriz;
 use App\Services\Siat\HomologacionRunner;
+use App\Services\Siat\SiatCodigosService;
+use App\Services\Siat\SiatDocumentoAjusteService;
 use App\Services\Siat\SiatException;
 use App\Services\Siat\SiatFacturacionService;
 use App\Services\Siat\SiatOperacionesService;
@@ -124,9 +126,159 @@ class SiatHomologacionTest extends TestCase
 
         $this->assertCount(16, $casos);
         $this->assertCount(14, $casos->reject->esValidacion());
-        $this->assertSame(['e6-val-pv0', 'e6-val-pv1'], $casos->filter->esValidacion()->pluck('caso')->sort()->values()->all());
-        $this->assertContains('e6-m1-n500', $casos->pluck('caso')->all());
-        $this->assertContains('e6-m1-n250', $casos->pluck('caso')->all());
+        $this->assertSame(['e6-s1-val-pv0', 'e6-s1-val-pv1'], $casos->filter->esValidacion()->pluck('caso')->sort()->values()->all());
+        $this->assertContains('e6-s1-m1-n500', $casos->pluck('caso')->all());
+        $this->assertContains('e6-s1-m1-n250', $casos->pluck('caso')->all());
+    }
+
+    /**
+     * En la etapa VI el tamaño del lote y el punto de venta son **una sola
+     * columna**: el Excel manda «igual a 500» por el punto 1 y «menor a 500»
+     * por el 0, fila a fila.
+     *
+     * Estaban los catorce envíos saliendo por el punto 1, que es lo que deja
+     * sin puntuar las siete filas del punto 0. No lo cazaba el test de los
+     * dieciséis casos porque el número de casos es el mismo: lo que cambia es
+     * con qué punto sale cada uno.
+     */
+    public function test_el_tamano_del_lote_decide_el_punto_de_venta_del_envio(): void
+    {
+        $envios = collect(app(HomologacionMatriz::class)->generar($this->setting, 6))
+            ->reject->esValidacion();
+
+        $this->assertSame(
+            [250 => 0, 500 => 1],
+            $envios->groupBy('tamano_lote')
+                ->map(fn ($grupo) => $grupo->pluck('punto_venta')->unique()->sole())
+                ->sortKeys()
+                ->all(),
+        );
+
+        $this->assertCount(7, $envios->where('punto_venta', 0));
+        $this->assertCount(7, $envios->where('punto_venta', 1));
+    }
+
+    /**
+     * El alcance sale de **todas** las actividades del NIT, no de la de la
+     * tienda. Fijarlo en `siat_settings.actividad_economica` dejaba la etapa IX
+     * en 80 pruebas cuando el panel pide 320: ese NIT tiene 21 actividades y
+     * entre todas suman seis sectores, cuatro de ellos facturables.
+     */
+    /**
+     * La etapa VII **no** reparte un total entre sus casos: el panel de
+     * Seguimiento pide **125 pruebas en cada uno de los 12**, o sea 1500.
+     *
+     * La página dice «debe realizar 250 anulaciones», y esa redacción se había
+     * tomado por «total de la etapa». Con 250 repartidos entre 12 casos salían
+     * 21 por caso, así que los seis que llevaban 42 anulaciones figuraban
+     * «completados» al doble de lo pedido mientras el panel los daba en 33 %.
+     */
+    public function test_la_anulacion_son_ciento_veinticinco_pruebas_por_caso(): void
+    {
+        $casos = collect(app(HomologacionMatriz::class)->generar($this->setting, 7));
+
+        // Cada caso pide las 125 enteras: no se reparte nada entre ellos, que
+        // es justo lo que hacía `TOTAL_ETAPA`. Con los seis sectores del NIT
+        // real son 12 casos y 1500 pruebas.
+        $this->assertSame([125], $casos->pluck('cantidad')->unique()->values()->all());
+        $this->assertSame(125 * $casos->count(), $casos->sum('cantidad'));
+        $this->assertArrayNotHasKey(7, HomologacionMatriz::TOTAL_ETAPA);
+        $this->assertSame(125, HomologacionMatriz::POR_CASO[7]);
+    }
+
+    /**
+     * Los timeouts internos del piloto llegan con `mensajesList` vacío y el
+     * motivo suelto en `codigoDescripcion`. Mirando solo la lista salían como
+     * «sin detalle en la respuesta», que parece un rechazo nuestro cuando en
+     * realidad es el SIN cayéndose y basta reintentar.
+     */
+    public function test_un_fallo_sin_mensajes_explica_lo_que_diga_el_sin(): void
+    {
+        $porQue = function (string $servicio, array $resultado): string {
+            $metodo = new \ReflectionMethod($servicio, 'porQue');
+            $metodo->setAccessible(true);
+
+            return $metodo->invoke(app($servicio), $resultado);
+        };
+
+        foreach ([SiatFacturacionService::class, SiatDocumentoAjusteService::class] as $servicio) {
+            // El caso real: el piloto se cae y solo manda codigoDescripcion.
+            $this->assertSame(
+                'Error inesperado: java.util.concurrent.TimeoutException: Request timeout (codigoEstado -1)',
+                $porQue($servicio, [
+                    'mensajes'          => [],
+                    'codigoEstado'      => -1,
+                    'codigoDescripcion' => 'Error inesperado: java.util.concurrent.TimeoutException: Request timeout',
+                ]),
+            );
+
+            // Con mensajes de verdad manda la lista, como siempre.
+            $this->assertSame(
+                '1045 CAFC ESPERADO NULL',
+                $porQue($servicio, [
+                    'mensajes'          => ['1045 CAFC ESPERADO NULL'],
+                    'codigoEstado'      => 904,
+                    'codigoDescripcion' => 'OBSERVADA',
+                ]),
+            );
+
+            // Y sin nada aprovechable se dice tal cual.
+            $this->assertSame(
+                'sin detalle en la respuesta.',
+                $porQue($servicio, ['mensajes' => [], 'codigoEstado' => null, 'codigoDescripcion' => null]),
+            );
+        }
+    }
+
+    public function test_el_alcance_es_el_de_todas_las_actividades_del_nit(): void
+    {
+        $this->mock(SiatSincronizacionService::class, function ($mock): void {
+            $mock->shouldReceive('actividades')->andReturn([
+                '4741100' => 'VENTA AL POR MENOR DE COMPUTADORAS',
+                '474000'  => 'VENTA AL POR MENOR EN COMERCIOS',
+                '620900'  => 'OTRAS ACTIVIDADES DE TECNOLOGIA',
+            ]);
+            $mock->shouldReceive('documentosSectorDe')->with(\Mockery::any(), '4741100')
+                ->andReturn([1 => 'FCV', 24 => 'NCD', 47 => 'NCDDE']);
+            $mock->shouldReceive('documentosSectorDe')->with(\Mockery::any(), '474000')
+                ->andReturn([1 => 'FCV', 23 => 'FAC_PRE', 34 => 'FAC_SEG', 35 => 'FAC_CVB', 24 => 'NCD', 47 => 'NCDDE']);
+            $mock->shouldReceive('documentosSectorDe')->with(\Mockery::any(), '620900')
+                ->andReturn([34 => 'FAC_SEG', 35 => 'FAC_CVB']);
+            $mock->shouldReceive('eventosSignificativos')->andReturn([
+                1 => 'CORTE DE INTERNET', 2 => 'INACCESIBILIDAD', 3 => 'ZONAS SIN INTERNET',
+                4 => 'VENTA SIN INTERNET', 5 => 'VIRUS', 6 => 'HARDWARE', 7 => 'ENERGIA',
+            ]);
+        });
+
+        $matriz = app(HomologacionMatriz::class);
+
+        $this->assertSame([1, 23, 24, 34, 35, 47], $matriz->sectores($this->setting));
+        // Las notas no tienen ni paquete ni masiva: quedan fuera de VI y de IX.
+        $this->assertSame([1, 23, 34, 35], $matriz->sectoresConPaquete($this->setting));
+    }
+
+    /**
+     * Y de ahí salen los 320: cuatro sectores facturables × ocho casos × diez
+     * pruebas. Con un solo sector eran 80, y la etapa parecía vencida.
+     */
+    public function test_la_masiva_cruza_todos_los_sectores_facturables(): void
+    {
+        $this->mock(SiatSincronizacionService::class, function ($mock): void {
+            $mock->shouldReceive('actividades')->andReturn(['474000' => 'VENTA AL POR MENOR']);
+            $mock->shouldReceive('documentosSectorDe')->andReturn([
+                1 => 'FCV', 23 => 'FAC_PRE', 34 => 'FAC_SEG', 35 => 'FAC_CVB', 24 => 'NCD', 47 => 'NCDDE',
+            ]);
+            $mock->shouldReceive('eventosSignificativos')->andReturn([1 => 'CORTE DE INTERNET']);
+        });
+
+        $casos = collect(app(HomologacionMatriz::class)->generar($this->setting, 9));
+
+        $this->assertCount(32, $casos);
+        $this->assertSame(320, $casos->sum('cantidad'));
+        $this->assertSame([1, 23, 34, 35], $casos->pluck('documento_sector')->unique()->sort()->values()->all());
+        // Ocho por sector: dos puntos de venta × dos tamaños × envío y validación.
+        $this->assertCount(8, $casos->where('documento_sector', 34));
+        $this->assertContains('e9-s34-pv1-n1000', $casos->pluck('caso')->all());
     }
 
     /** La masiva son 8: cuatro envíos y la validación de cada uno. */
@@ -136,7 +288,7 @@ class SiatHomologacionTest extends TestCase
 
         $this->assertCount(8, $casos);
         $this->assertSame(
-            ['e9-val-pv0-n1000', 'e9-val-pv0-n500', 'e9-val-pv1-n1000', 'e9-val-pv1-n500'],
+            ['e9-s1-val-pv0-n1000', 'e9-s1-val-pv0-n500', 'e9-s1-val-pv1-n1000', 'e9-s1-val-pv1-n500'],
             $casos->filter->esValidacion()->pluck('caso')->sort()->values()->all(),
         );
     }
@@ -145,7 +297,7 @@ class SiatHomologacionTest extends TestCase
     public function test_una_validacion_sin_paquetes_lo_explica(): void
     {
         app(HomologacionMatriz::class)->generar($this->setting, 9);
-        $caso = SiatHomologacionCaso::where('caso', 'e9-val-pv0-n1000')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e9-s1-val-pv0-n1000')->firstOrFail();
 
         $this->expectException(SiatException::class);
         $this->expectExceptionMessageMatches('/Ejecute antes los casos de envío/');
@@ -173,6 +325,7 @@ class SiatHomologacionTest extends TestCase
         $llamadas = [];
 
         $this->mock(SiatSincronizacionService::class, function ($mock) use (&$llamadas): void {
+            $mock->shouldReceive('actividades')->andReturn(['4741100' => 'VENTA']);
             $mock->shouldReceive('documentosSectorDe')->andReturn([1 => 'FCV']);
             $mock->shouldReceive('olvidar')->andReturnNull();
             $mock->shouldReceive('tiposMoneda')->andReturnUsing(function () use (&$llamadas) {
@@ -197,6 +350,9 @@ class SiatHomologacionTest extends TestCase
 
         $this->assertCount(14, $casos);
         $this->assertSame([1, 2, 3, 4, 5, 6, 7], collect($casos)->pluck('motivo_evento')->unique()->sort()->values()->all());
+        // «Son 5 pruebas por cada caso»: 14 × 5 = 70, no 14.
+        $this->assertSame([5], collect($casos)->pluck('cantidad')->unique()->values()->all());
+        $this->assertSame(70, collect($casos)->sum('cantidad'));
     }
 
     /** Regenerar la matriz no duplica filas ni pierde lo ya hecho. */
@@ -226,6 +382,7 @@ class SiatHomologacionTest extends TestCase
     public function test_una_actividad_sin_sectores_se_detecta(): void
     {
         $this->mock(SiatSincronizacionService::class, function ($mock): void {
+            $mock->shouldReceive('actividades')->andReturn(['4741100' => 'VENTA']);
             $mock->shouldReceive('documentosSectorDe')->andReturn([]);
         });
 
@@ -328,9 +485,9 @@ class SiatHomologacionTest extends TestCase
     /**
      * El SIN rechaza dos cortes con rangos solapados (981) y también uno cuya
      * franja caiga fuera de la vigencia del CUFD (984). Cada corte nuevo se
-     * coloca justo antes del más temprano ya declarado.
+     * coloca justo después del último ya declarado.
      */
-    public function test_cada_corte_se_declara_antes_del_anterior(): void
+    public function test_los_cortes_se_declaran_sin_solaparse(): void
     {
         $this->prepararEmision();
         $this->fakeContingencia();
@@ -393,7 +550,7 @@ class SiatHomologacionTest extends TestCase
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-s1-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => 2]);
 
         $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 3);
@@ -422,7 +579,7 @@ class SiatHomologacionTest extends TestCase
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-s1-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => 1]);
 
         app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 2);
@@ -446,7 +603,7 @@ class SiatHomologacionTest extends TestCase
         $this->prepararEmision(doblarEmision: false);
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m5-n500')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-s1-m5-n500')->firstOrFail();
 
         try {
             app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
@@ -477,7 +634,7 @@ class SiatHomologacionTest extends TestCase
         });
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-s1-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => 1]);
 
         app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
@@ -504,7 +661,7 @@ class SiatHomologacionTest extends TestCase
         });
 
         app(HomologacionMatriz::class)->generar($this->setting, 9);
-        $caso = SiatHomologacionCaso::where('caso', 'e9-pv0-n500')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e9-s1-pv0-n500')->firstOrFail();
         $caso->update(['tamano_lote' => 2]);
 
         $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 2);
@@ -523,11 +680,161 @@ class SiatHomologacionTest extends TestCase
 
         app(HomologacionMatriz::class)->generar($this->setting, 6);
 
-        $caso = SiatHomologacionCaso::where('caso', 'e6-m1-n500')->firstOrFail();
+        $caso = SiatHomologacionCaso::where('caso', 'e6-s1-m1-n500')->firstOrFail();
         $caso->update(['tamano_lote' => null]);
 
         $this->expectException(SiatException::class);
         $this->expectExceptionMessageMatches('/tamaño de lote/');
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
+    }
+
+    /**
+     * Las 70 pruebas de la etapa V tienen que caber dentro de la vigencia del
+     * CUFD, que empieza cuando se pidió. Escalonando las franjas hacia atrás en
+     * bloques de cuatro minutos, un CUFD recién pedido no daba ni para tres
+     * cortes: la etapa era imposible de terminar. Empaquetadas hacia adelante,
+     * entran.
+     */
+    public function test_muchos_cortes_caben_bajo_un_cufd_recien_pedido(): void
+    {
+        $this->prepararEmision();
+        $this->fakeContingencia();
+
+        // Recién pedido: solo hay hueco entre su emisión y ahora.
+        SiatCufdCode::query()->each(
+            fn (SiatCufdCode $c) => $c->forceFill(['created_at' => now()->subMinutes(3)])->save()
+        );
+
+        $caso  = SiatHomologacionCaso::where('caso', 'e5-m1-pv0')->firstOrFail();
+        $caso->update(['cantidad' => 10]);
+
+        $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting);
+
+        $this->assertSame(10, $hechos);
+        $this->assertSame(10, $caso->fresh()->completados);
+
+        $franjas = SiatEvento::orderBy('fecha_inicio')->get();
+        $this->assertCount(10, $franjas);
+
+        foreach ($franjas as $i => $evento) {
+            $this->assertTrue(
+                $evento->fecha_inicio->greaterThanOrEqualTo(SiatCufdCode::first()->created_at),
+                'Una franja fuera de la vigencia del CUFD es un 984.',
+            );
+            $this->assertTrue($evento->fecha_fin->lessThanOrEqualTo(now()), 'Un corte no termina en el futuro.');
+
+            if ($i > 0) {
+                $this->assertTrue(
+                    $franjas[$i - 1]->fecha_fin->lessThan($evento->fecha_inicio),
+                    'Dos franjas solapadas son un 981.',
+                );
+            }
+        }
+    }
+
+    /**
+     * Cuando los cortes ya llenan la vigencia hasta ahora, la única franja
+     * posible terminaría en el futuro. Se dice en vez de declararla.
+     */
+    public function test_sin_hueco_por_delante_se_explica_en_vez_de_inventar_franja(): void
+    {
+        $this->prepararEmision();
+        $this->fakeContingencia();
+
+        SiatEvento::create([
+            'store_id'             => $this->store->id,
+            'cufd_code_id'         => SiatCufdCode::first()->id,
+            'codigo_motivo_evento' => 1,
+            'descripcion'          => 'corte que llega hasta ahora',
+            'fecha_inicio'         => now()->subHour(),
+            'fecha_fin'            => now(),
+            'estado'               => 'registrado',
+        ]);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e5-m1-pv0')->firstOrFail();
+
+        $this->expectException(SiatException::class);
+        $this->expectExceptionMessageMatches('/no puede terminar en el futuro/');
+
+        app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
+    }
+
+    // ─── Etapa III: CUFD ────────────────────────────────────────────────────
+
+    /**
+     * `CasosDePruebaCUFD.xlsx` son dos filas —punto de venta 1 y punto de venta
+     * 0— y la página pide «100 pruebas por cada caso»: 200 en total.
+     *
+     * No se cruza con el documento sector, a diferencia de la emisión: el CUFD
+     * es del punto de venta y vale para cualquier documento emitido bajo él.
+     */
+    public function test_el_cufd_son_dos_casos_de_cien_pruebas(): void
+    {
+        $casos = app(HomologacionMatriz::class)->generar($this->setting, 3);
+
+        $this->assertSame(['e3-pv0', 'e3-pv1'], array_map(fn ($c) => $c->caso, $casos));
+        $this->assertSame([100, 100], array_map(fn ($c) => $c->cantidad, $casos));
+        $this->assertSame(200, array_sum(array_map(fn ($c) => $c->cantidad, $casos)));
+        $this->assertNull($casos[0]->documento_sector);
+    }
+
+    /**
+     * Cada prueba es una llamada al SIN, no una lectura del CUFD vigente: por
+     * `CufdProvider` —que es por donde va la emisión— devolvería el que ya está
+     * activo sin hablar con el servicio, y el Portal no contaría nada.
+     */
+    public function test_cada_prueba_de_cufd_pide_uno_nuevo_al_sin(): void
+    {
+        $pedidos = 0;
+
+        $this->mock(SiatCodigosService::class, function ($mock) use (&$pedidos): void {
+            // Cierre de verdad y no flecha: `fn ()` captura por valor y el
+            // contador de fuera se quedaría a cero.
+            $mock->shouldReceive('solicitarCufd')->andReturnUsing(function () use (&$pedidos) {
+                return new SiatCufdCode(['codigo' => 'CUFD-' . ++$pedidos]);
+            });
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 3);
+        $caso = SiatHomologacionCaso::where('caso', 'e3-pv1')->firstOrFail();
+
+        $hechos = app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 3);
+
+        $this->assertSame(3, $hechos);
+        $this->assertSame(3, $pedidos);
+        $this->assertSame(3, $caso->fresh()->completados);
+        $this->assertSame('CUFD-3', $caso->fresh()->referencia);
+        // Y por el punto de venta del caso, que es lo que distingue las dos filas.
+        $this->assertSame(1, (int) $this->setting->fresh()->codigo_punto_venta);
+    }
+
+    /**
+     * Con un corte abierto, rotar el CUFD deja su franja fuera de vigencia y el
+     * SIN solo lo dice al enviar el paquete —«984 EL EVENTO NO CORRESPONDE AL
+     * CUFD»—, o sea cuando ya se emitieron sus quinientas facturas. Se para
+     * antes de la primera llamada.
+     */
+    public function test_no_se_piden_cufd_con_un_corte_abierto(): void
+    {
+        $this->mock(SiatCodigosService::class, function ($mock): void {
+            $mock->shouldNotReceive('solicitarCufd');
+        });
+
+        app(HomologacionMatriz::class)->generar($this->setting, 3);
+
+        SiatEvento::create([
+            'store_id'             => $this->store->id,
+            'codigo_motivo_evento' => 1,
+            'descripcion'          => 'CORTE DE INTERNET',
+            'fecha_inicio'         => now()->subHour(),
+            'estado'               => 'abierto',
+        ]);
+
+        $caso = SiatHomologacionCaso::where('caso', 'e3-pv0')->firstOrFail();
+
+        $this->expectException(SiatException::class);
+        $this->expectExceptionMessageMatches('/corte abierto/');
 
         app(HomologacionRunner::class)->ejecutar($caso, $this->setting, limite: 1);
     }
@@ -752,6 +1059,7 @@ class SiatHomologacionTest extends TestCase
     private function fakeCatalogos(): void
     {
         $this->mock(SiatSincronizacionService::class, function ($mock): void {
+            $mock->shouldReceive('actividades')->andReturn(['4741100' => 'VENTA AL POR MENOR DE COMPUTADORAS']);
             $mock->shouldReceive('documentosSectorDe')
                 ->andReturn([1 => 'FCV', 24 => 'NCD', 47 => 'NCDDE']);
             $mock->shouldReceive('eventosSignificativos')->andReturn([

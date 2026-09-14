@@ -1,0 +1,36 @@
+"TABLA siat_eventos — cortes declarados con registroEventoSignificativo"
+id,codigo_motivo_evento,descripcion,cafc,fecha_inicio,fecha_fin,codigo_recepcion_evento,estado
+29,1,"Homologación Fase I — etapa VI, lote de 250",,"2026-09-08 19:55:53","2026-09-08 21:55:57",9908185,registrado
+30,7,"Homologación Fase I — etapa VI, lote de 500",,"2026-09-08 21:55:58","2026-09-08 21:57:11",9908186,registrado
+31,7,"Homologación Fase I — etapa VI, lote de 250",,"2026-09-08 21:57:12","2026-09-08 21:57:28",9908187,registrado
+32,5,"Homologación Fase I — etapa VI, lote de 500",,"2026-09-08 21:57:29","2026-09-08 21:57:42",9908188,registrado
+33,5,"Homologación Fase I — etapa VI, lote de 250",,"2026-09-08 21:57:43","2026-09-08 21:57:56",9908189,registrado
+34,6,"Homologación Fase I — etapa VI, lote de 500",,"2026-09-08 21:57:57","2026-09-08 21:58:11",9908190,registrado
+35,6,"Homologación Fase I — etapa VI, lote de 250",,"2026-09-08 21:58:12","2026-09-08 21:58:28",9908191,registrado
+116,5,"Homologación Fase I — etapa VI, lote de 250",101160D18E851F,"2026-09-09 01:24:59","2026-09-09 03:25:04",9908746,registrado
+
+"TABLA siat_paquetes — envios por recepcionPaqueteFactura de esos cortes"
+id,evento_id,cantidad_facturas,hash_archivo,codigo_recepcion,codigo_estado,estado,mensaje_error,enviado_at
+5,29,250,11376b7f52984bd7909568df88c4dc26eb8bfc67e74d200e9615d1130553b467,167c2d38-abd0-11f1-aa49-b16e2d246119,908,validado,,"2026-09-08 21:56:04"
+6,30,500,262c9d74e99c5acea84f53fdb158f443fe295543edd0f99757d8fc8073ca3e37,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+7,31,250,8b8816649e3a608ba4555590c5b298582ae83277e859d66277fb65d76ee8391d,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+8,32,500,41bfdbca74d1d863993540f12fe952bfb339d75b41df0099b05ea975df3de1a2,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+9,33,250,063fd80aa0e51d77b6fafa20de4daf2f8453134c6c1ae5a4b392d6db35f22d55,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+10,34,500,dbf77fa4d8375a743e9f89f42122fa3e11993a63a8696985ac7a6304cc6ab205,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+11,35,250,1a7839b84aa9b92691daf269b7f61e8188147f08af5aa6b772f94912d4785ae9,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+131,116,250,97f0c3259d4678b3c478185077311011733bf86e29cdc339386d7e9e16bd79c0,,,rechazado,"El SIN rechazó la operación: 0 Cafc no encontrado",
+
+"TABLA siat_invoices — muestra de facturas fuera de linea del corte 116 (motivo 5), todas con el CAFC declarado"
+id,numero_factura,fecha_emision,cuf,cafc,tipo_emision,importe_total,estado
+63272,48005,"2026-09-09 03:24:59.750",1D9B8B69B433E585954ABF8BDE788E509CC290A51318C4D73A7403BF74,101160D18E851F,2,90.00,contingencia
+63273,48006,"2026-09-09 03:24:59.779",1D9B8B69B433E585954AC10BAE4AF5240B7660BD7CB8C4D73A7403BF74,101160D18E851F,2,200.00,contingencia
+63274,48007,"2026-09-09 03:24:59.797",1D9B8B69B433E585954AC1F9E8AA3DCA96CB80D5E6C8C4D73A7403BF74,101160D18E851F,2,1100.00,contingencia
+63275,48008,"2026-09-09 03:24:59.815",1D9B8B69B433E585954AC2E8230986712220A0EE50B8C4D73A7403BF74,101160D18E851F,2,5200.00,contingencia
+63276,48009,"2026-09-09 03:24:59.833",1D9B8B69B433E585954AC3D65D68CF17AD75C106BAC8C4D73A7403BF74,101160D18E851F,2,4200.00,contingencia
+63277,48010,"2026-09-09 03:24:59.851",1D9B8B69B433E585954AC4C497C817BE38CAE11F2518C4D73A7403BF74,101160D18E851F,2,1100.00,contingencia
+63278,48011,"2026-09-09 03:24:59.868",1D9B8B69B433E585954AC5A59605A377F545F1378EB8C4D73A7403BF74,101160D18E851F,2,480.00,contingencia
+63279,48012,"2026-09-09 03:24:59.887",1D9B8B69B433E585954AC6A10C86A90B4F75214FF8C8C4D73A7403BF74,101160D18E851F,2,700.00,contingencia
+63280,48013,"2026-09-09 03:24:59.904",1D9B8B69B433E585954AC7820AC434C50BF0316862B8C4D73A7403BF74,101160D18E851F,2,950.00,contingencia
+63281,48014,"2026-09-09 03:24:59.924",1D9B8B69B433E585954AC88ABD66F74534F97180CCA8C4D73A7403BF74,101160D18E851F,2,65.00,contingencia
+
+"Total de facturas emitidas fuera de linea que siguen sin poder enviarse por este motivo: 3000"

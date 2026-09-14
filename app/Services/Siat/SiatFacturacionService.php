@@ -348,11 +348,38 @@ class SiatFacturacionService
         if (($respuesta['transaccion'] ?? false) !== true) {
             Log::error('SIAT: el servicio de facturación rechazó la operación', $resultado);
 
-            throw new SiatException(
-                'El SIN rechazó la operación: ' . ($textos ? implode(' | ', $textos) : 'sin detalle en la respuesta.')
-            );
+            throw new SiatException('El SIN rechazó la operación: ' . $this->porQue($resultado));
         }
 
         return $resultado;
     }
+
+    /**
+     * Por qué rechazó el SIN, con lo mejor que traiga la respuesta.
+     *
+     * `mensajesList` es lo normal, pero **cuando el fallo es del propio SIN
+     * llega vacío** y el motivo va suelto en `codigoDescripcion` con
+     * `codigoEstado` a -1: así viajan sus timeouts internos («Error inesperado:
+     * java.util.concurrent.TimeoutException: Request timeout to
+     * sre-fac-rvcc-share-rest ... after 45000 ms»). Mirando solo `mensajesList`
+     * eso salía como «sin detalle en la respuesta» y parecía un rechazo nuestro,
+     * cuando es el piloto cayéndose y basta reintentar.
+     *
+     * @param  array<string, mixed>  $resultado
+     */
+    private function porQue(array $resultado): string
+    {
+        if ($resultado['mensajes'] !== []) {
+            return implode(' | ', $resultado['mensajes']);
+        }
+
+        $descripcion = trim((string) ($resultado['codigoDescripcion'] ?? ''));
+
+        if ($descripcion !== '') {
+            return $descripcion . ' (codigoEstado ' . ($resultado['codigoEstado'] ?? '?') . ')';
+        }
+
+        return 'sin detalle en la respuesta.';
+    }
+
 }

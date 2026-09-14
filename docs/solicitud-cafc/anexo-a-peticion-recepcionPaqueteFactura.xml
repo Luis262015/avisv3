@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="https://siat.impuestos.gob.bo/">
+  <SOAP-ENV:Body>
+    <ns1:recepcionPaqueteFactura>
+      <SolicitudServicioRecepcionPaquete>
+        <codigoAmbiente>2</codigoAmbiente>
+        <codigoDocumentoSector>1</codigoDocumentoSector>
+        <codigoEmision>2</codigoEmision>
+        <codigoModalidad>2</codigoModalidad>
+        <codigoPuntoVenta>1</codigoPuntoVenta>
+        <codigoSistema>2280EE3A3729A542C92F6</codigoSistema>
+        <codigoSucursal>0</codigoSucursal>
+        <cufd>JBQUFCd2nDk0dBI5QTU0MkM5MkY2Q0taWUlNS0phVUMjI4MEVFM0EzNz</cufd>
+        <cuis>74E5E97B</cuis>
+        <nit>6923448010</nit>
+        <tipoFacturaDocumento>1</tipoFacturaDocumento>
+        <archivo>H4sIAAAAAAAACu1W227jNhDd5/0Kwu+xLpZsyWC0kGR5o0CyHV+CNm8MRSfcSKShS5LN3+wfFOgfdH+sI9uynUuxiyZoCzTzYIlnRnM5MyStDWzP8rq2Z3Q6gWmZtmm43tDyBkHPsgJTtX1ft1XX1Dqa5RuDXsftGWrHG/aM9n2WfvgpUUG63e6LOIjR1bUPmqmbakfVta4JuGaomo7Un3P/OqmKkuQQ8p+I9R8U/AnaiG5ZXnApjltaW20hJqhMuLg6bi3mwyOr9cn5iJeEllVOfJmtKiCMP5BkvcjJORMlQeBFFP37gh+3rsty1VeUu7u79l2nLfMrRYeOKr/E0Yxes4wccQGcC8paCOz7Qo5IxooVoWyjjyQl5TqbHwRt3xdJy8GUXDLKcuJgwcsg44XMna6tdwzDUjUVK3sU5+RBipmknKRbKFqEMzQNYi+YzsconEUuciN3NPZdrDy3xlklOOUrLh0wnLgXWNkjuGQpW0ohX0MGT49bZV6xlgLlVBnL5XBDggPVqCZU8wjEtFo62t/ew1ipv6+dJM6pd7YY+okuBjdq4oXm2XyhxjexGd/8qp+pw9VocDqa3ayuzxfxl9CIg/NhrAYPo4e1jwScwMxcyVlFq7wgqQPEP0FwwnNGKXTWcaP5YuoC79H4FA0CVJMZTIMLNAn9k3Dkn7holMt2H1majYKEL+HVD0bz6Rj54ziY+qEboUnkXtQ+6lfoDpgYaMBWZf1mIi8any0C5KILKYjikTznsvHiRljZJ7PNfFKJUq7nytGa3A8wvGT0mtRzUH+jq3r3SLWPVGuud/q60Tftds+Emh9ZYSGzy5xN93Pk+FEIGQR10SfjeByNP7t+OB5BX5+ZbvOa85UcSApth1zCBH55QpJ9jn+h307PTuPYVq9rGp1mgvYKiJOtUrZevNXoblLzUw5O2T70Y3hrFbNSJnJCruS+qANsW8ic5F/Y6w6awwQzCdXOZQk822pbhc4dIAfaWQVRZXhLnpvtVU0hUrDkYHq2a1xCh3ySXcIZoa19HAAHobbmz+I0btbIZ74sfZInb8VDwgpa1Z13E17vhnrnruO/oNiWGdxTtqqhNxsWsqSOpmpaVx1oVmCZ2hAorEGcsq9MQPER+4pGf/yGDLPTR5OKQXaIUArPHBGUEgSbOSUZofz77wLRiohEorIqEBjAjpQFuiYCFRzQ2yoVcFsksmgjrDQBcFVUcMNIx00yLnhR1hY5Vhp4W/tu18wYLeFC2PX6qaIuoLmWEpjbNIV5h0Ob39a7M6BwTWScwqneMzSt5vsFXXMw5TKpwOmMC2BJ1eyevjufDlRPrJ154B8tZt5T003Lc77uoDOvaQNSwBCxovz+DbjIN81vTKA9zZGzHozdEsPNB8+YJfBwzB6QdQjgFTDP5QKu3zWD27l+gm6metAMm3Mw/HsQF9Xlo726W28PhxnLOXvbazfMGH8rj8puApQf/KVxPv7bfwjf5V3e5X8jfwJRxUE/ABAAAA==</archivo>
+        <fechaEnvio>2026-09-09T12:08:23.995</fechaEnvio>
+        <hashArchivo>72587b06dd3dccc855ffbfdbfe5ae9724d8fee2308b49e494b7739e1dddd7976</hashArchivo>
+        <cafc>101160D18E851F</cafc>
+        <cantidadFacturas>1</cantidadFacturas>
+        <codigoEvento>9908746</codigoEvento>
+      </SolicitudServicioRecepcionPaquete>
+    </ns1:recepcionPaqueteFactura>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

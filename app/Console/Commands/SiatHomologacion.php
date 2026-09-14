@@ -24,7 +24,7 @@ use Throwable;
 class SiatHomologacion extends Command
 {
     protected $signature = 'siat:homologacion
-        {etapa? : Etapa a ejecutar (2, 4, 5, 6, 7, 9); sin ella solo muestra el estado}
+        {etapa? : Etapa a ejecutar (2, 3, 4, 5, 6, 7, 9); sin ella solo muestra el estado}
         {--tienda= : ID de la tienda; por defecto la primera con configuración activa}
         {--caso= : Ejecuta solo este caso (p. ej. e4-s24-pv1)}
         {--limit= : Máximo de documentos a emitir en esta pasada}
@@ -64,7 +64,7 @@ class SiatHomologacion extends Command
         if (! in_array($etapa, HomologacionMatriz::EJECUTABLES, true)) {
             $this->error('Etapa no ejecutable desde aquí. Disponibles: '
                 . implode(', ', HomologacionMatriz::EJECUTABLES) . '.');
-            $this->line('  I y III (CUIS y CUFD) se cubren al dar de alta cada punto de venta.');
+            $this->line('  I (CUIS) se cubre al dar de alta cada punto de venta.');
             $this->line('  VIII (firma digital) no aplica a la modalidad computarizada.');
 
             return self::FAILURE;
@@ -163,17 +163,22 @@ class SiatHomologacion extends Command
             $total       = $grupo->sum('cantidad');
             $completados = $grupo->sum('completados');
             $fallidos    = $grupo->where('estado', 'fallido')->count();
+            // Los casos hechos van aparte de las pruebas hechas a propósito: un
+            // caso que se pasó de la raya —84 emisiones donde ahora se piden 42—
+            // tapa en la suma a otro que está a cero, y la etapa aparenta el
+            // 100 % con casos enteros sin tocar. Es lo que escondió tres etapas.
+            $hechos = $grupo->filter->estaCompleto()->count();
 
             return [
                 "Etapa {$etapa}",
-                $grupo->count(),
+                "{$hechos} / {$grupo->count()}",
                 "{$completados} / {$total}",
                 $total > 0 ? round($completados / $total * 100) . ' %' : '—',
                 $fallidos ?: '',
             ];
         })->values()->all();
 
-        $this->table(['Etapa', 'Casos', 'Documentos', 'Avance', 'Fallidos'], $filas);
+        $this->table(['Etapa', 'Casos hechos', 'Documentos', 'Avance', 'Fallidos'], $filas);
 
         return self::SUCCESS;
     }
