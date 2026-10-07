@@ -29,5 +29,8 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <!-- El sistema operativo se prueba como una sola empresa; las pruebas
+             del arrendamiento lo encienden ellas mismas. -->
+        <env name="TENANCY_ENABLED" value="false"/>
     </php>
 </phpunit>

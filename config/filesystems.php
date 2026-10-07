@@ -37,10 +37,27 @@ return [
             'throw' => false,
         ],
 
+        // Documentos de empleados y de compras. El código ya escribía en este
+        // disco, pero no estaba declarado y cada subida terminaba en error.
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'throw' => false,
+        ],
+
+        // Archivos de la plataforma (comprobantes de pago, QR de cobro). No
+        // cambia de carpeta al entrar en una empresa.
+        'central' => [
+            'driver' => 'local',
+            'root' => storage_path('app/central'),
+            'throw' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Relativa: cada empresa entra por su propio subdominio.
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],

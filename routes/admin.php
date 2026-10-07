@@ -43,17 +43,21 @@ use App\Http\Controllers\Admin\TrainingController;
 use App\Http\Controllers\Admin\TrainingParticipantController;
 use App\Http\Controllers\Admin\SupplierEvaluationController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarrantyClaimController;
 use App\Http\Controllers\Admin\WarrantyController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+// «subscribed» corta el acceso cuando la renta venció; «plan» hace valer los
+// módulos y cupos del plan. Sin arrendamiento ninguno de los dos interviene.
+Route::middleware(['auth', 'subscribed', 'plan'])->prefix('admin')->name('admin.')->group(function () {
 
     // ── Solo admin ─────────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {
         Route::resource('stores', StoreController::class)->except(['show']);
         Route::resource('cash-registers', CashRegisterController::class)->except(['show']);
+        Route::resource('users', UserController::class)->except(['show']);
 
         // SIAT Bolivia v2 — Configuración
         Route::prefix('siat')->name('siat.')->group(function () {
