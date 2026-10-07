@@ -55,15 +55,15 @@ export default function EvaluationCreate({ supplier, purchases }: { supplier: Su
 
                 <form onSubmit={(e) => { e.preventDefault(); post(`/admin/suppliers/${supplier.id}/evaluations`); }} className="space-y-5">
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                         <div>
-                            <Label>Fecha de evaluación *</Label>
-                            <Input type="date" value={data.evaluated_at} onChange={(e) => setData('evaluated_at', e.target.value)} />
+                            <Label htmlFor="campo-fecha-de-evaluacion">Fecha de evaluación *</Label>
+                            <Input id="campo-fecha-de-evaluacion" type="date" value={data.evaluated_at} onChange={(e) => setData('evaluated_at', e.target.value)} />
                             {errors.evaluated_at && <p className="mt-1 text-xs text-red-500">{errors.evaluated_at}</p>}
                         </div>
                         <div>
-                            <Label>Compra de referencia (opcional)</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.purchase_id} onChange={(e) => setData('purchase_id', e.target.value)}>
+                            <Label htmlFor="campo-compra-de-referencia-opcional">Compra de referencia (opcional)</Label>
+                            <select id="campo-compra-de-referencia-opcional" className="w-full rounded-md border px-3 py-2 text-sm" value={data.purchase_id} onChange={(e) => setData('purchase_id', e.target.value)}>
                                 <option value="">— Sin compra asociada —</option>
                                 {purchases.map((p) => (
                                     <option key={p.id} value={p.id}>{p.folio} — {p.date} — ${parseFloat(p.total).toFixed(2)}</option>
@@ -72,7 +72,7 @@ export default function EvaluationCreate({ supplier, purchases }: { supplier: Su
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-5">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-5">
                         <h2 className="font-semibold text-gray-700">Calificaciones</h2>
                         <ScoreInput label="Calificación general *" name="overall_score" value={data.overall_score} onChange={(v) => setData('overall_score', v)} />
                         {errors.overall_score && <p className="text-xs text-red-500">{errors.overall_score}</p>}
@@ -81,8 +81,8 @@ export default function EvaluationCreate({ supplier, purchases }: { supplier: Su
                         <ScoreInput label="Relación precio-valor *" name="price_score" value={data.price_score} onChange={(v) => setData('price_score', v)} />
 
                         <div>
-                            <Label>Comentarios</Label>
-                            <textarea
+                            <Label htmlFor="campo-comentarios">Comentarios</Label>
+                            <textarea id="campo-comentarios"
                                 className="w-full rounded-md border px-3 py-2 text-sm"
                                 rows={4}
                                 placeholder="Descripción de la experiencia con el proveedor..."

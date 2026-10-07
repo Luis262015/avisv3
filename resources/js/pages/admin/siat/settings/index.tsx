@@ -71,7 +71,7 @@ export default function SiatSettingsIndex({ settings, stores }: { settings: Sett
                 ) : (
                     <div className="grid gap-4">
                         {settings.map((s) => (
-                            <div key={s.id} className="rounded-lg border bg-white p-5 shadow-sm">
+                            <div key={s.id} className="rounded-lg border bg-card p-5 shadow-sm">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className={`mt-0.5 rounded-full p-1 ${s.is_active ? 'bg-green-100' : 'bg-gray-100'}`}>

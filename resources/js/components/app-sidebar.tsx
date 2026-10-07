@@ -3,7 +3,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavQuickActions } from '@/components/nav-quick-actions';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavGroup, type NavItem } from '@/types';
+import { type NavGroup, type NavItem, type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import {
@@ -23,6 +23,7 @@ import {
     CloudOff,
     Coins,
     CreditCard,
+    BadgeCheck,
     FileText,
     Folder,
     GraduationCap,
@@ -45,6 +46,7 @@ import {
     Truck,
     Undo2,
     UserCog,
+    UserRound,
     Users,
     Wallet,
     Warehouse,
@@ -67,11 +69,13 @@ interface ActiveCashShift {
 }
 
 export function AppSidebar() {
-    const { auth, activeCashShift } = usePage<{
-        auth: { roles: string[] };
-        activeCashShift: ActiveCashShift | null;
-    }>().props;
+    const { auth, activeCashShift, tenant } = usePage<SharedData & { activeCashShift: ActiveCashShift | null }>().props;
     const roles = auth?.roles ?? [];
+
+    // Lo que el plan de la empresa no incluye no se ofrece en el menú: llevaría
+    // a una página que solo dice «cambia de plan». Sin arrendamiento no hay
+    // plan y se muestra todo.
+    const incluye = (modulo: string) => tenant === null || tenant.modules.includes(modulo);
 
     const isAdmin = roles.includes('admin');
     const isOperador = roles.includes('operador');
@@ -87,7 +91,7 @@ export function AppSidebar() {
             title: 'General',
             defaultOpen: true,
             items: [
-                { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
+                { title: 'Panel', url: '/dashboard', icon: LayoutGrid },
             ],
         },
         {
@@ -105,12 +109,14 @@ export function AppSidebar() {
             title: 'Ventas',
             items: [
                 { title: 'Clientes', url: '/admin/customers', icon: Users },
-                { title: 'Cotizaciones', url: '/admin/quotes', icon: FileText },
-                { title: 'Pedidos y envíos', url: '/admin/sales-orders', icon: PackageCheck },
-                { title: 'Promociones', url: '/admin/promotions', icon: Percent },
+                ...(incluye('comercial') ? [
+                    { title: 'Cotizaciones', url: '/admin/quotes', icon: FileText },
+                    { title: 'Pedidos y envíos', url: '/admin/sales-orders', icon: PackageCheck },
+                    { title: 'Promociones', url: '/admin/promotions', icon: Percent },
+                ] : []),
                 { title: 'Devoluciones', url: '/admin/returns', icon: Undo2 },
-                { title: 'Garantías', url: '/admin/warranties', icon: ShieldCheck },
-                { title: 'Reportes de ventas', url: '/admin/sales-reports', icon: TrendingUp },
+                ...(incluye('comercial') ? [{ title: 'Garantías', url: '/admin/warranties', icon: ShieldCheck }] : []),
+                ...(incluye('reportes') ? [{ title: 'Reportes de ventas', url: '/admin/sales-reports', icon: TrendingUp }] : []),
             ],
         }] : []),
         ...(canManagePurchases ? [{
@@ -119,10 +125,10 @@ export function AppSidebar() {
                 { title: 'Órdenes de compra', url: '/admin/purchase-orders', icon: ClipboardList },
                 { title: 'Compras', url: '/admin/purchases', icon: Truck },
                 { title: 'Proveedores', url: '/admin/suppliers', icon: Building2 },
-                { title: 'Reportes de compras', url: '/admin/purchases-reports', icon: ChartPie },
+                ...(incluye('reportes') ? [{ title: 'Reportes de compras', url: '/admin/purchases-reports', icon: ChartPie }] : []),
             ],
         }] : []),
-        ...(canManageFinances ? [{
+        ...(canManageFinances && incluye('finanzas') ? [{
             title: 'Finanzas',
             items: [
                 { title: 'Gastos', url: '/admin/expenses', icon: ArrowDownCircle },
@@ -130,7 +136,7 @@ export function AppSidebar() {
                 { title: 'Retiros', url: '/admin/withdrawals', icon: MinusCircle },
                 { title: 'Cuentas por cobrar', url: '/admin/receivables', icon: Coins },
                 { title: 'Cuentas por pagar', url: '/admin/payables', icon: CreditCard },
-                { title: 'Reporte financiero', url: '/admin/financial-reports', icon: ChartLine },
+                ...(incluye('reportes') ? [{ title: 'Reporte financiero', url: '/admin/financial-reports', icon: ChartLine }] : []),
             ],
         }] : []),
         ...(canManageProducts ? [{
@@ -142,10 +148,10 @@ export function AppSidebar() {
                 { title: 'Etiquetas', url: '/admin/tags', icon: Tags },
                 { title: 'Existencias por tienda', url: '/admin/inventory/stock', icon: Warehouse },
                 { title: 'Inventario', url: '/admin/inventory', icon: PackageSearch },
-                { title: 'Transferencias', url: '/admin/stock-transfers', icon: ArrowLeftRight },
+                ...(incluye('multitienda') ? [{ title: 'Transferencias', url: '/admin/stock-transfers', icon: ArrowLeftRight }] : []),
             ],
         }] : []),
-        ...(isAdmin ? [{
+        ...(isAdmin && incluye('rrhh') ? [{
             title: 'Recursos Humanos',
             items: [
                 { title: 'Empleados', url: '/admin/employees', icon: UserCog },
@@ -154,10 +160,10 @@ export function AppSidebar() {
                 { title: 'Ausencias', url: '/admin/leave-requests', icon: CalendarDays },
                 { title: 'Nómina', url: '/admin/payrolls', icon: Banknote },
                 { title: 'Capacitación', url: '/admin/trainings', icon: GraduationCap },
-                { title: 'Reportes RR.HH.', url: '/admin/hr-reports', icon: ChartColumn },
+                ...(incluye('reportes') ? [{ title: 'Reportes RR.HH.', url: '/admin/hr-reports', icon: ChartColumn }] : []),
             ],
         }] : []),
-        ...(isAdmin ? [{
+        ...(isAdmin && incluye('facturacion') ? [{
             title: 'Facturación SIAT',
             items: [
                 { title: 'Facturas Electrónicas', url: '/admin/siat/invoices', icon: FileText },
@@ -172,6 +178,8 @@ export function AppSidebar() {
             items: [
                 { title: 'Tiendas', url: '/admin/stores', icon: Store },
                 { title: 'Cajas', url: '/admin/cash-registers', icon: Wallet },
+                { title: 'Usuarios', url: '/admin/users', icon: UserRound },
+                ...(tenant ? [{ title: 'Plan y pagos', url: '/suscripcion', icon: BadgeCheck }] : []),
             ],
         }] : []),
     ];
@@ -185,7 +193,7 @@ export function AppSidebar() {
                             {/* Con el menú colapsado el nombre se oculta y el enlace se
                                 quedaría sin nombre accesible: solo el logo, que es
                                 decorativo. */}
-                            <Link href="/dashboard" prefetch aria-label="AvisV3 — ir al panel">
+                            <Link href="/dashboard" prefetch aria-label="AVIS — ir al panel">
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

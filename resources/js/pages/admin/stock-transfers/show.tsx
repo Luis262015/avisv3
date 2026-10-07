@@ -66,7 +66,7 @@ export default function StockTransferShow({ transfer }: { transfer: Transfer }) 
                 </div>
 
                 {/* Stores */}
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="flex-1 rounded-lg bg-gray-50 p-3 text-center">
                             <p className="text-xs text-gray-400 uppercase mb-1">Origen</p>
@@ -96,7 +96,7 @@ export default function StockTransferShow({ transfer }: { transfer: Transfer }) 
                 </div>
 
                 {/* Items */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Productos a transferir</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

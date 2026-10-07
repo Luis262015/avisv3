@@ -109,15 +109,15 @@ export default function PuntosVentaIndex({
                 </div>
 
                 {abriendo && (
-                    <div className="space-y-3 rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-sm text-gray-600">
                             El número lo asigna el SIN: no se puede elegir. El registro solo se deshace dando de baja
                             el punto.
                         </p>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                             <div>
-                                <label className="text-xs uppercase text-gray-400">Nombre</label>
-                                <Input
+                                <label className="text-xs uppercase text-gray-400" htmlFor="campo-nombre">Nombre</label>
+                                <Input id="campo-nombre"
                                     value={form.data.nombre}
                                     onChange={(e) => form.setData('nombre', e.target.value)}
                                     placeholder="Caja 2"
@@ -125,8 +125,8 @@ export default function PuntosVentaIndex({
                                 {form.errors.nombre && <p className="text-xs text-red-600">{form.errors.nombre}</p>}
                             </div>
                             <div>
-                                <label className="text-xs uppercase text-gray-400">Descripción</label>
-                                <Input
+                                <label className="text-xs uppercase text-gray-400" htmlFor="campo-descripcion">Descripción</label>
+                                <Input id="campo-descripcion"
                                     value={form.data.descripcion}
                                     onChange={(e) => form.setData('descripcion', e.target.value)}
                                     placeholder="Segundo punto de venta"
@@ -136,8 +136,8 @@ export default function PuntosVentaIndex({
                                 )}
                             </div>
                             <div>
-                                <label className="text-xs uppercase text-gray-400">Tipo</label>
-                                <select
+                                <label className="text-xs uppercase text-gray-400" htmlFor="campo-tipo">Tipo</label>
+                                <select id="campo-tipo"
                                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                                     value={form.data.tipo}
                                     onChange={(e) => form.setData('tipo', e.target.value)}
@@ -161,7 +161,7 @@ export default function PuntosVentaIndex({
                     </div>
                 )}
 
-                <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -256,7 +256,7 @@ export default function PuntosVentaIndex({
                                                     </Button>
                                                 )}
                                                 {!emitiendo && !punto.es_principal && punto.estado === 'activo' && (
-                                                    <Button
+                                                    <Button aria-label="Anular"
                                                         size="sm"
                                                         variant="destructive"
                                                         onClick={() =>
@@ -266,7 +266,7 @@ export default function PuntosVentaIndex({
                                                             )
                                                         }
                                                     >
-                                                        <Ban className="h-4 w-4" />
+                                                        <Ban aria-hidden="true" className="h-4 w-4" />
                                                     </Button>
                                                 )}
                                             </div>

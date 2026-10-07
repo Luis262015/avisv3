@@ -56,7 +56,7 @@ export default function EmployeeShow({ employee, stats }: { employee: any; stats
                         { label: 'Capacitaciones', value: stats.trainings, icon: GraduationCap, color: 'text-green-600' },
                         { label: 'Registros laborales', value: stats.incidents, icon: Award, color: 'text-amber-600' },
                     ].map((s) => (
-                        <div key={s.label} className="flex items-center gap-3 rounded-lg border bg-white p-4 shadow-sm">
+                        <div key={s.label} className="flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
                             <s.icon className={`h-7 w-7 ${s.color}`} />
                             <div>
                                 <p className="text-xs uppercase text-gray-500">{s.label}</p>
@@ -96,7 +96,7 @@ function Row({ label, value }: { label: string; value: any }) {
 function InfoTab({ employee }: { employee: any }) {
     return (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-2">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-2">
                 <h2 className="mb-1 font-semibold text-gray-700">Personal</h2>
                 <Row label="Documento" value={`${(employee.document_type ?? '').toUpperCase()} ${employee.document_number ?? ''}`} />
                 <Row label="Nacimiento" value={date(employee.birth_date)} />
@@ -106,7 +106,7 @@ function InfoTab({ employee }: { employee: any }) {
                 <Row label="Dirección" value={employee.address} />
                 <Row label="Emergencia" value={employee.emergency_contact_name ? `${employee.emergency_contact_name} (${employee.emergency_contact_phone ?? '—'})` : null} />
             </div>
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-2">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-2">
                 <h2 className="mb-1 font-semibold text-gray-700">Laboral</h2>
                 <Row label="Cargo" value={employee.position} />
                 <Row label="Área" value={employee.department?.name} />
@@ -116,7 +116,7 @@ function InfoTab({ employee }: { employee: any }) {
                 <Row label="Salario base" value={fmt(employee.base_salary)} />
                 <Row label="Acceso al sistema" value={employee.user?.name} />
             </div>
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-2">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-2">
                 <h2 className="mb-1 font-semibold text-gray-700">Nómina</h2>
                 <Row label="Banco" value={employee.bank_name} />
                 <Row label="Cuenta" value={employee.bank_account} />
@@ -125,7 +125,7 @@ function InfoTab({ employee }: { employee: any }) {
                 <Row label="CNS (CUNS)" value={employee.cuns} />
             </div>
             {employee.notes && (
-                <div className="md:col-span-3 rounded-lg border bg-white p-4 shadow-sm">
+                <div className="md:col-span-3 rounded-lg border bg-card p-4 shadow-sm">
                     <h2 className="mb-1 font-semibold text-gray-700">Notas</h2>
                     <p className="text-sm text-gray-600">{employee.notes}</p>
                 </div>
@@ -232,10 +232,10 @@ function DocumentsTab({ employee }: { employee: any }) {
                                             <div className="flex justify-end gap-1">
                                                 {d.file_path && (
                                                     <a href={`/admin/employees/${employee.id}/documents/${d.id}/download`}>
-                                                        <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                                        <Button aria-label="Descargar" variant="ghost" size="sm"><Download aria-hidden="true" className="h-4 w-4" /></Button>
                                                     </a>
                                                 )}
-                                                <Button variant="ghost" size="sm" onClick={() => remove(d.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => remove(d.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -245,27 +245,27 @@ function DocumentsTab({ employee }: { employee: any }) {
                     )}
                 </Card>
             </div>
-            <form onSubmit={submit} className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+            <form onSubmit={submit} className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                 <h2 className="font-semibold text-gray-700">Agregar documento</h2>
                 <div>
-                    <Label>Tipo</Label>
-                    <select className={selectClass} value={data.type} onChange={(e) => setData('type', e.target.value)}>
+                    <Label htmlFor="campo-tipo">Tipo</Label>
+                    <select id="campo-tipo" className={selectClass} value={data.type} onChange={(e) => setData('type', e.target.value)}>
                         {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                 </div>
                 <div>
-                    <Label>Nombre *</Label>
-                    <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                    <Label htmlFor="campo-nombre">Nombre *</Label>
+                    <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                     {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                 </div>
                 <div>
-                    <Label>Archivo (PDF/imagen)</Label>
-                    <input type="file" className="w-full text-sm" onChange={(e) => setData('file', e.target.files?.[0] ?? null)} />
+                    <Label htmlFor="campo-archivo-pdf-imagen">Archivo (PDF/imagen)</Label>
+                    <input id="campo-archivo-pdf-imagen" type="file" className="w-full text-sm" onChange={(e) => setData('file', e.target.files?.[0] ?? null)} />
                     {errors.file && <p className="mt-1 text-xs text-red-500">{errors.file}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                    <div><Label>Emisión</Label><Input type="date" value={data.issued_at} onChange={(e) => setData('issued_at', e.target.value)} /></div>
-                    <div><Label>Vence</Label><Input type="date" value={data.expires_at} onChange={(e) => setData('expires_at', e.target.value)} /></div>
+                    <div><Label htmlFor="campo-emision">Emisión</Label><Input id="campo-emision" type="date" value={data.issued_at} onChange={(e) => setData('issued_at', e.target.value)} /></div>
+                    <div><Label htmlFor="campo-vence">Vence</Label><Input id="campo-vence" type="date" value={data.expires_at} onChange={(e) => setData('expires_at', e.target.value)} /></div>
                 </div>
                 <Button type="submit" disabled={processing} className="w-full"><Plus className="mr-2 h-4 w-4" /> Agregar</Button>
             </form>
@@ -300,7 +300,7 @@ function IncidentsTab({ employee }: { employee: any }) {
                                     <td className="px-4 py-2">{i.severity}</td>
                                     <td className="px-4 py-2 font-medium">{i.title}</td>
                                     <td className="px-4 py-2 text-right">
-                                        <Button variant="ghost" size="sm" onClick={() => remove(i.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                        <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => remove(i.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                     </td>
                                 </tr>
                             ))}
@@ -308,39 +308,39 @@ function IncidentsTab({ employee }: { employee: any }) {
                     )}
                 </Card>
             </div>
-            <form onSubmit={submit} className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+            <form onSubmit={submit} className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                 <h2 className="font-semibold text-gray-700">Nuevo registro</h2>
                 <div>
-                    <Label>Tipo</Label>
-                    <select className={selectClass} value={data.type} onChange={(e) => setData('type', e.target.value)}>
+                    <Label htmlFor="campo-tipo-2">Tipo</Label>
+                    <select id="campo-tipo-2" className={selectClass} value={data.type} onChange={(e) => setData('type', e.target.value)}>
                         {Object.entries(incidentTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                 </div>
                 <div>
-                    <Label>Gravedad</Label>
-                    <select className={selectClass} value={data.severity} onChange={(e) => setData('severity', e.target.value)}>
+                    <Label htmlFor="campo-gravedad">Gravedad</Label>
+                    <select id="campo-gravedad" className={selectClass} value={data.severity} onChange={(e) => setData('severity', e.target.value)}>
                         <option value="low">Baja</option>
                         <option value="medium">Media</option>
                         <option value="high">Alta</option>
                     </select>
                 </div>
                 <div>
-                    <Label>Título *</Label>
-                    <Input value={data.title} onChange={(e) => setData('title', e.target.value)} />
+                    <Label htmlFor="campo-titulo">Título *</Label>
+                    <Input id="campo-titulo" value={data.title} onChange={(e) => setData('title', e.target.value)} />
                     {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
                 </div>
                 <div>
-                    <Label>Fecha *</Label>
-                    <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                    <Label htmlFor="campo-fecha">Fecha *</Label>
+                    <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                     {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                 </div>
                 <div>
-                    <Label>Descripción</Label>
-                    <textarea className={selectClass} rows={2} value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                    <Label htmlFor="campo-descripcion">Descripción</Label>
+                    <textarea id="campo-descripcion" className={selectClass} rows={2} value={data.description} onChange={(e) => setData('description', e.target.value)} />
                 </div>
                 <div>
-                    <Label>Acción tomada</Label>
-                    <Input value={data.action_taken} onChange={(e) => setData('action_taken', e.target.value)} />
+                    <Label htmlFor="campo-accion-tomada">Acción tomada</Label>
+                    <Input id="campo-accion-tomada" value={data.action_taken} onChange={(e) => setData('action_taken', e.target.value)} />
                 </div>
                 <Button type="submit" disabled={processing} className="w-full"><Plus className="mr-2 h-4 w-4" /> Registrar</Button>
             </form>
@@ -350,7 +350,7 @@ function IncidentsTab({ employee }: { employee: any }) {
 
 function Card({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
     return (
-        <div className="rounded-lg border bg-white shadow-sm">
+        <div className="rounded-lg border bg-card shadow-sm">
             <div className="flex items-center gap-2 border-b px-4 py-3">
                 <Icon className="h-4 w-4 text-gray-500" />
                 <h2 className="font-semibold text-gray-700">{title}</h2>

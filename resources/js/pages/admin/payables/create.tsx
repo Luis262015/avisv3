@@ -22,37 +22,37 @@ export default function PayableCreate({ suppliers }: { suppliers: Supplier[] }) 
             <div className="mx-auto max-w-2xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Nueva Cuenta por Pagar</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/payables'); }} className="space-y-5">
-                    <div className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <div>
-                            <Label>Proveedor</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.supplier_id} onChange={(e) => setData('supplier_id', e.target.value)}>
+                            <Label htmlFor="campo-proveedor">Proveedor</Label>
+                            <select id="campo-proveedor" className="w-full rounded-md border px-3 py-2 text-sm" value={data.supplier_id} onChange={(e) => setData('supplier_id', e.target.value)}>
                                 <option value="">— Sin proveedor —</option>
                                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
 
                         <div>
-                            <Label>Descripción *</Label>
-                            <Input value={data.description} onChange={(e) => setData('description', e.target.value)} placeholder="Ej. Factura #1234 productos varios" />
+                            <Label htmlFor="campo-descripcion">Descripción *</Label>
+                            <Input id="campo-descripcion" value={data.description} onChange={(e) => setData('description', e.target.value)} placeholder="Ej. Factura #1234 productos varios" />
                             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Monto total *</Label>
-                                <Input type="number" step="0.01" min="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} placeholder="0.00" />
+                                <Label htmlFor="campo-monto-total">Monto total *</Label>
+                                <Input id="campo-monto-total" type="number" step="0.01" min="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} placeholder="0.00" />
                                 {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount}</p>}
                             </div>
                             <div>
-                                <Label>Fecha de vencimiento *</Label>
-                                <Input type="date" value={data.due_date} onChange={(e) => setData('due_date', e.target.value)} />
+                                <Label htmlFor="campo-fecha-de-vencimiento">Fecha de vencimiento *</Label>
+                                <Input id="campo-fecha-de-vencimiento" type="date" value={data.due_date} onChange={(e) => setData('due_date', e.target.value)} />
                                 {errors.due_date && <p className="mt-1 text-xs text-red-500">{errors.due_date}</p>}
                             </div>
                         </div>
 
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                     </div>
 

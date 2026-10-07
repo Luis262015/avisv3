@@ -42,7 +42,7 @@ export default function StockTransfersIndex({ transfers }: { transfers: Paginate
                     </Link>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -98,13 +98,13 @@ export default function StockTransfersIndex({ transfers }: { transfers: Paginate
                                 <Link
                                     key={i}
                                     href={link.url}
-                                    className={`rounded px-3 py-1 text-sm border ${link.active ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                                    className={`rounded px-3 py-1 text-sm border ${link.active ? 'bg-gray-900 text-white' : 'bg-card text-gray-700 hover:bg-gray-50'}`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ) : (
                                 <span
                                     key={i}
-                                    className="rounded px-3 py-1 text-sm border bg-white text-gray-300"
+                                    className="rounded px-3 py-1 text-sm border bg-card text-gray-300"
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             )

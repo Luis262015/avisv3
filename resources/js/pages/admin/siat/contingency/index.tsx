@@ -65,7 +65,7 @@ function AbrirCorte({ settingId, motivos }: { settingId: number; motivos: Props[
     });
 
     return (
-        <div className="rounded-lg border bg-white p-5 shadow-sm">
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
             <h2 className="mb-1 font-semibold text-gray-700">Abrir un corte</h2>
             <p className="mb-4 text-xs text-gray-500">
                 A partir de aquí las ventas se facturan fuera de línea y quedan esperando al paquete.
@@ -239,7 +239,7 @@ export default function SiatContingencyIndex({ eventos, paquetes, motivos, masiv
                         )}
 
                         {/* Eventos */}
-                        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                             <h2 className="border-b px-5 py-3 font-semibold text-gray-700">Cortes registrados</h2>
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
@@ -309,7 +309,7 @@ export default function SiatContingencyIndex({ eventos, paquetes, motivos, masiv
                         </div>
 
                         {/* Paquetes */}
-                        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                             <h2 className="border-b px-5 py-3 font-semibold text-gray-700">Paquetes enviados</h2>
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">

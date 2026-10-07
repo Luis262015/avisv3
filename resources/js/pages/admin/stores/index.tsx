@@ -31,7 +31,7 @@ export default function StoresIndex({ stores }: { stores: PaginatedData<Store> }
                         <Link href="/admin/stores/create"><Plus className="mr-2 h-4 w-4" /> Nueva Tienda</Link>
                     </Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -55,10 +55,10 @@ export default function StoresIndex({ stores }: { stores: PaginatedData<Store> }
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <Button variant="ghost" size="sm" asChild>
-                                            <Link href={`/admin/stores/${s.id}/edit`}><Pencil className="h-4 w-4" /></Link>
+                                            <Link aria-label="Editar" href={`/admin/stores/${s.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link>
                                         </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => destroy(s.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                        <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroy(s.id)}>
+                                            <Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" />
                                         </Button>
                                     </td>
                                 </tr>

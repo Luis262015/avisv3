@@ -36,7 +36,7 @@ export default function CustomersIndex({ customers }: { customers: PaginatedData
                         <Link href="/admin/customers/create"><Plus className="mr-2 h-4 w-4" /> Nuevo Cliente</Link>
                     </Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -65,13 +65,13 @@ export default function CustomersIndex({ customers }: { customers: PaginatedData
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
                                             <Button variant="ghost" size="sm" asChild>
-                                                <Link href={`/admin/customers/${c.id}`}><Eye className="h-4 w-4" /></Link>
+                                                <Link aria-label="Ver detalle" href={`/admin/customers/${c.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link>
                                             </Button>
                                             <Button variant="ghost" size="sm" asChild>
-                                                <Link href={`/admin/customers/${c.id}/edit`}><Pencil className="h-4 w-4" /></Link>
+                                                <Link aria-label="Editar" href={`/admin/customers/${c.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link>
                                             </Button>
-                                            <Button variant="ghost" size="sm" onClick={() => destroy(c.id)}>
-                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroy(c.id)}>
+                                                <Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" />
                                             </Button>
                                         </div>
                                     </td>

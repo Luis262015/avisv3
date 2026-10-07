@@ -80,7 +80,7 @@ function CancelModal({ invoiceId, saleStatus, onClose }: {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl space-y-4">
+            <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl space-y-4">
                 <h3 className="font-semibold text-gray-800">Anular Factura</h3>
                 <div>
                     <p className="mb-2 text-sm text-gray-500">Ingrese el motivo de anulación:</p>
@@ -174,7 +174,7 @@ function AnexosPanel({ invoice, anexos }: { invoice: SiatInvoice; anexos: Anexos
     };
 
     return (
-        <div className="rounded-lg border bg-white shadow-sm">
+        <div className="rounded-lg border bg-card shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
                 <div>
                     <h2 className="font-semibold text-gray-700">Anexos: números de serie e IMEI</h2>
@@ -358,7 +358,7 @@ export default function SiatInvoiceShow({ invoice, anexos }: { invoice: SiatInvo
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* CUF y datos técnicos */}
                     <div className="lg:col-span-2 space-y-4">
-                        <div className="rounded-lg border bg-white p-5 shadow-sm">
+                        <div className="rounded-lg border bg-card p-5 shadow-sm">
                             <h2 className="mb-3 font-semibold text-gray-700">Datos de la Factura</h2>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between border-b pb-2">
@@ -409,7 +409,7 @@ export default function SiatInvoiceShow({ invoice, anexos }: { invoice: SiatInvo
                         </div>
 
                         {/* Detalle de la venta */}
-                        <div className="rounded-lg border bg-white shadow-sm">
+                        <div className="rounded-lg border bg-card shadow-sm">
                             <div className="flex items-center justify-between border-b px-5 py-3">
                                 <h2 className="font-semibold text-gray-700">Detalle de Venta</h2>
                                 <Link href={`/admin/sales/${invoice.sale.id}`} className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
@@ -448,7 +448,7 @@ export default function SiatInvoiceShow({ invoice, anexos }: { invoice: SiatInvo
                     {/* Panel lateral */}
                     <div className="space-y-4">
                         {/* Comprador */}
-                        <div className="rounded-lg border bg-white p-5 shadow-sm">
+                        <div className="rounded-lg border bg-card p-5 shadow-sm">
                             <h2 className="mb-3 font-semibold text-gray-700">Datos del Comprador</h2>
                             <div className="space-y-2 text-sm">
                                 <div>
@@ -463,7 +463,7 @@ export default function SiatInvoiceShow({ invoice, anexos }: { invoice: SiatInvo
                         </div>
 
                         {/* Montos */}
-                        <div className="rounded-lg border bg-white p-5 shadow-sm">
+                        <div className="rounded-lg border bg-card p-5 shadow-sm">
                             <h2 className="mb-3 font-semibold text-gray-700">Montos (Bs.)</h2>
                             <div className="space-y-2 text-sm">
                                 {parseFloat(invoice.descuento) > 0 && (
@@ -485,7 +485,7 @@ export default function SiatInvoiceShow({ invoice, anexos }: { invoice: SiatInvo
 
                         {/* QR */}
                         {invoice.codigo_qr && (
-                            <div className="rounded-lg border bg-white p-5 shadow-sm">
+                            <div className="rounded-lg border bg-card p-5 shadow-sm">
                                 <h2 className="mb-3 font-semibold text-gray-700">Verificación SIN</h2>
                                 <a
                                     href={invoice.codigo_qr}

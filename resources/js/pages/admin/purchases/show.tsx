@@ -112,7 +112,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                 {/* Info grid */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {purchase.supplier && (
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                             <h2 className="font-semibold text-gray-700">Proveedor</h2>
                             <p className="font-medium">
                                 <Link href={`/admin/suppliers/${purchase.supplier.id}`} className="text-blue-600 hover:underline">{purchase.supplier.name}</Link>
@@ -122,7 +122,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                             {purchase.supplier.payment_terms && <p className="text-sm text-gray-500">Plazo: {purchase.supplier.payment_terms}</p>}
                         </div>
                     )}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                         <h2 className="font-semibold text-gray-700">Factura</h2>
                         {purchase.invoice_number ? (
                             <>
@@ -132,7 +132,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                         ) : <p className="text-sm text-gray-400">Sin número de factura.</p>}
                         {purchase.store && <p className="mt-2 text-sm text-gray-500">Tienda: {purchase.store.name}</p>}
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-2 font-semibold text-gray-700">Documento adjunto</h2>
                         {purchase.document_path ? (
                             <p className="flex items-center gap-2 text-sm text-green-600"><FileText className="h-4 w-4" /> Documento cargado</p>
@@ -178,7 +178,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                 )}
 
                 {/* Items table */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -222,7 +222,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
 
                 {/* Payable */}
                 {purchase.payable && (
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="flex items-center justify-between border-b px-4 py-3">
                             <h2 className="font-semibold text-gray-700">Cuenta por pagar</h2>
                             <Link href={`/admin/payables/${purchase.payable.id}`} className="text-sm text-blue-600 hover:underline">Ver detalle →</Link>
@@ -270,13 +270,13 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                 {(purchase.notes || purchase.audit_notes) && (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         {purchase.notes && (
-                            <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className="rounded-lg border bg-card p-4 shadow-sm">
                                 <h2 className="mb-2 font-semibold text-gray-700">Notas</h2>
                                 <p className="text-sm text-gray-600">{purchase.notes}</p>
                             </div>
                         )}
                         {purchase.audit_notes && (
-                            <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className="rounded-lg border bg-card p-4 shadow-sm">
                                 <h2 className="mb-2 font-semibold text-gray-700">Notas de auditoría</h2>
                                 <p className="text-sm text-gray-600">{purchase.audit_notes}</p>
                             </div>
@@ -286,7 +286,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
 
                 {/* Audit log */}
                 {purchase.auditLogs.length > 0 && (
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Historial de auditoría</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

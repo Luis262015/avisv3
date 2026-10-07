@@ -161,18 +161,18 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                 </div>
 
                 {stores.length === 0 ? (
-                    <div className="rounded-lg border bg-white p-10 text-center text-neutral-500 dark:bg-neutral-900">
+                    <div className="rounded-lg border bg-card p-10 text-center text-neutral-500">
                         No hay tiendas activas.
                     </div>
                 ) : (
                     <>
                         {/* ── Filtros ────────────────────────────────────────── */}
-                        <div className="rounded-lg border bg-white p-4 shadow-sm dark:bg-neutral-900">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                                 <div>
-                                    <Label className="text-xs">Tienda</Label>
-                                    <select
-                                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:bg-neutral-800"
+                                    <Label className="text-xs" htmlFor="campo-tienda">Tienda</Label>
+                                    <select id="campo-tienda"
+                                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                                         value={storeId ?? ''}
                                         onChange={(e) => aplicar({ ...f, store_id: Number(e.target.value) })}
                                     >
@@ -198,9 +198,9 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                                     </div>
                                 </div>
                                 <div>
-                                    <Label className="text-xs">Categoría</Label>
-                                    <select
-                                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:bg-neutral-800"
+                                    <Label className="text-xs" htmlFor="campo-categoria">Categoría</Label>
+                                    <select id="campo-categoria"
+                                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                                         value={f.category_id ?? ''}
                                         onChange={(e) =>
                                             aplicar({ ...f, category_id: e.target.value === '' ? null : Number(e.target.value) })
@@ -213,9 +213,9 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                                     </select>
                                 </div>
                                 <div>
-                                    <Label className="text-xs">Estado</Label>
-                                    <select
-                                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:bg-neutral-800"
+                                    <Label className="text-xs" htmlFor="campo-estado">Estado</Label>
+                                    <select id="campo-estado"
+                                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                                         value={f.estado ?? ''}
                                         onChange={(e) => aplicar({ ...f, estado: e.target.value })}
                                     >
@@ -238,7 +238,7 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                                     { t: 'Unidades', v: resumen.unidades.toLocaleString('es-BO'), sub: tienda?.name ?? '' },
                                     { t: 'Valor a costo', v: bs(resumen.valor), sub: 'lo que cuesta reponerlo' },
                                 ].map((k) => (
-                                    <div key={k.t} className="rounded-lg border bg-white p-4 shadow-sm dark:bg-neutral-900">
+                                    <div key={k.t} className="rounded-lg border bg-card p-4 shadow-sm">
                                         <p className="text-xs text-neutral-500">{k.t}</p>
                                         <p className={`text-xl font-bold ${k.c ?? ''}`}>{k.v}</p>
                                         <p className="text-xs text-neutral-400">{k.sub}</p>
@@ -248,10 +248,10 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                         )}
 
                         {/* ── Tabla ──────────────────────────────────────────── */}
-                        <div className="overflow-hidden rounded-lg border bg-white shadow-sm dark:bg-neutral-900">
+                        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="border-b bg-neutral-50 text-xs uppercase text-neutral-500 dark:bg-neutral-800">
+                                    <thead className="border-b bg-neutral-50 text-xs uppercase text-neutral-500">
                                         <tr>
                                             <th className="px-4 py-3 text-left">Producto</th>
                                             <th className="px-4 py-3 text-left">Categoría</th>
@@ -271,7 +271,7 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                                             const enOtras = r.stock_total - r.stock_tienda;
 
                                             return (
-                                                <tr key={r.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                                                <tr key={r.id} className="hover:bg-neutral-50">
                                                     <td className="px-4 py-2.5">
                                                         <p className="font-medium">{r.name}</p>
                                                         <p className="text-xs text-neutral-400">
@@ -387,15 +387,15 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
             {/* ── Ajuste ─────────────────────────────────────────────────── */}
             {ajustando && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-900">
+                    <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl">
                         <h2 className="mb-1 text-lg font-bold">Ajustar existencias</h2>
                         <p className="mb-4 text-sm text-neutral-500">
                             {ajustando.name} — {tienda?.name} · actual: {ajustando.stock_tienda}
                         </p>
                         <form onSubmit={guardarAjuste} className="space-y-4">
                             <div>
-                                <Label>Nuevo stock *</Label>
-                                <Input
+                                <Label htmlFor="campo-nuevo-stock">Nuevo stock *</Label>
+                                <Input id="campo-nuevo-stock"
                                     type="number"
                                     min="0"
                                     value={ajuste.data.new_stock}
@@ -404,8 +404,8 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
                                 {ajuste.errors.new_stock && <p className="mt-1 text-xs text-red-500">{ajuste.errors.new_stock}</p>}
                             </div>
                             <div>
-                                <Label>Motivo *</Label>
-                                <Input
+                                <Label htmlFor="campo-motivo">Motivo *</Label>
+                                <Input id="campo-motivo"
                                     value={ajuste.data.reason}
                                     onChange={(e) => ajuste.setData('reason', e.target.value)}
                                     placeholder="Conteo físico, merma, rotura…"
@@ -425,15 +425,15 @@ export default function InventoryStock({ rows, resumen, stores, categories, filt
             {/* ── Mínimo por tienda ──────────────────────────────────────── */}
             {minimo && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-900">
+                    <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl">
                         <h2 className="mb-1 text-lg font-bold">Mínimo de esta tienda</h2>
                         <p className="mb-4 text-sm text-neutral-500">
                             {minimo.name} — {tienda?.name}
                         </p>
                         <form onSubmit={guardarMinimo} className="space-y-4">
                             <div>
-                                <Label>Mínimo propio</Label>
-                                <Input
+                                <Label htmlFor="campo-minimo-propio">Mínimo propio</Label>
+                                <Input id="campo-minimo-propio"
                                     type="number"
                                     min="0"
                                     value={min.data.min_stock}

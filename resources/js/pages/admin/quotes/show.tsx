@@ -89,21 +89,21 @@ export default function QuoteShow({ quote, isExpired, openShifts }: { quote: Quo
                 )}
 
                 {showConvert && canConvert && (
-                    <form onSubmit={submitConvert} className="rounded-lg border bg-white p-4 shadow-sm">
+                    <form onSubmit={submitConvert} className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-3 font-semibold text-gray-700">Convertir en venta</h2>
                         {openShifts.length === 0 ? (
                             <p className="text-sm text-red-500">No hay turnos de caja abiertos. Abre una caja para registrar la venta.</p>
                         ) : (
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <div>
-                                    <Label>Turno de caja</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={convertForm.data.cash_shift_id} onChange={(e) => convertForm.setData('cash_shift_id', e.target.value)}>
+                                    <Label htmlFor="campo-turno-de-caja">Turno de caja</Label>
+                                    <select id="campo-turno-de-caja" className="w-full rounded-md border px-3 py-2 text-sm" value={convertForm.data.cash_shift_id} onChange={(e) => convertForm.setData('cash_shift_id', e.target.value)}>
                                         {openShifts.map((s) => <option key={s.id} value={s.id}>{s.cash_register.store.name} · {s.cash_register.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>Método de pago</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={convertForm.data.payment_method} onChange={(e) => convertForm.setData('payment_method', e.target.value)}>
+                                    <Label htmlFor="campo-metodo-de-pago">Método de pago</Label>
+                                    <select id="campo-metodo-de-pago" className="w-full rounded-md border px-3 py-2 text-sm" value={convertForm.data.payment_method} onChange={(e) => convertForm.setData('payment_method', e.target.value)}>
                                         <option value="cash">Efectivo</option>
                                         <option value="card">Tarjeta</option>
                                         <option value="transfer">Transferencia</option>
@@ -111,8 +111,8 @@ export default function QuoteShow({ quote, isExpired, openShifts }: { quote: Quo
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>Monto pagado</Label>
-                                    <Input type="number" step="0.01" min="0" value={convertForm.data.amount_paid} onChange={(e) => convertForm.setData('amount_paid', e.target.value)} />
+                                    <Label htmlFor="campo-monto-pagado">Monto pagado</Label>
+                                    <Input id="campo-monto-pagado" type="number" step="0.01" min="0" value={convertForm.data.amount_paid} onChange={(e) => convertForm.setData('amount_paid', e.target.value)} />
                                 </div>
                                 <div className="md:col-span-3">
                                     <Button type="submit" disabled={convertForm.processing}>Generar venta</Button>
@@ -123,7 +123,7 @@ export default function QuoteShow({ quote, isExpired, openShifts }: { quote: Quo
                 )}
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                         <h2 className="font-semibold text-gray-700">Cliente</h2>
                         {quote.customer ? (
                             <>
@@ -135,13 +135,13 @@ export default function QuoteShow({ quote, isExpired, openShifts }: { quote: Quo
                             </>
                         ) : <p className="text-sm text-gray-400">Sin cliente</p>}
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                         <h2 className="font-semibold text-gray-700">Detalles</h2>
                         {quote.notes && <p className="text-sm text-gray-600"><span className="font-medium">Notas:</span> {quote.notes}</p>}
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

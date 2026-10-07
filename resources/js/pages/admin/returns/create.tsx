@@ -43,9 +43,9 @@ export default function ReturnCreate({ sale, recentSales }: { sale: Sale | null;
                 {errors.status && <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{errors.status}</p>}
 
                 {!sale ? (
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <Label>Selecciona la venta a devolver</Label>
-                        <select className="mt-1 w-full rounded-md border px-3 py-2 text-sm" defaultValue="" onChange={(e) => pickSale(e.target.value)}>
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
+                        <Label htmlFor="campo-selecciona-la-venta-a-devolver">Selecciona la venta a devolver</Label>
+                        <select id="campo-selecciona-la-venta-a-devolver" className="mt-1 w-full rounded-md border px-3 py-2 text-sm" defaultValue="" onChange={(e) => pickSale(e.target.value)}>
                             <option value="">— Seleccionar venta —</option>
                             {recentSales.map((s) => (
                                 <option key={s.id} value={s.id}>
@@ -56,11 +56,11 @@ export default function ReturnCreate({ sale, recentSales }: { sale: Sale | null;
                     </div>
                 ) : (
                     <form onSubmit={(e) => { e.preventDefault(); post('/admin/returns'); }} className="space-y-6">
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <p className="text-sm text-gray-500">Venta <span className="font-mono font-semibold text-gray-800">{sale.folio}</span> · {sale.customer?.name ?? 'Consumidor final'}</p>
                         </div>
 
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <h2 className="mb-3 font-semibold text-gray-700">Productos a devolver</h2>
                             {errors.items && <p className="mb-2 text-xs text-red-500">{errors.items}</p>}
                             <table className="w-full text-sm">
@@ -89,15 +89,15 @@ export default function ReturnCreate({ sale, recentSales }: { sale: Sale | null;
                             <p className="mt-3 text-right text-lg font-bold">Reembolso estimado: ${refund.toFixed(2)}</p>
                         </div>
 
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>Fecha *</Label>
-                                    <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                    <Label htmlFor="campo-fecha">Fecha *</Label>
+                                    <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 </div>
                                 <div>
-                                    <Label>Método de reembolso</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.refund_method} onChange={(e) => setData('refund_method', e.target.value)}>
+                                    <Label htmlFor="campo-metodo-de-reembolso">Método de reembolso</Label>
+                                    <select id="campo-metodo-de-reembolso" className="w-full rounded-md border px-3 py-2 text-sm" value={data.refund_method} onChange={(e) => setData('refund_method', e.target.value)}>
                                         <option value="cash">Efectivo</option>
                                         <option value="card">Tarjeta</option>
                                         <option value="transfer">Transferencia</option>
@@ -106,12 +106,12 @@ export default function ReturnCreate({ sale, recentSales }: { sale: Sale | null;
                                 </div>
                             </div>
                             <div>
-                                <Label>Motivo</Label>
-                                <Input value={data.reason} onChange={(e) => setData('reason', e.target.value)} />
+                                <Label htmlFor="campo-motivo">Motivo</Label>
+                                <Input id="campo-motivo" value={data.reason} onChange={(e) => setData('reason', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Notas</Label>
-                                <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                                <Label htmlFor="campo-notas">Notas</Label>
+                                <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                             </div>
                             <div className="flex items-center gap-2">
                                 <input type="checkbox" id="restock" checked={data.restock} onChange={(e) => setData('restock', e.target.checked)} className="h-4 w-4" />

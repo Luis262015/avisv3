@@ -101,7 +101,7 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                     {/* Columna izquierda: buscador + artículos */}
                     <div className="lg:col-span-2 space-y-4">
                         {/* Buscador de productos */}
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <Label>Agregar producto</Label>
                             <div className="relative mt-1">
                                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -113,7 +113,7 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                                 />
                             </div>
                             {search && (
-                                <div className="mt-2 rounded-md border divide-y bg-white shadow-md">
+                                <div className="mt-2 rounded-md border divide-y bg-card shadow-md">
                                     {filtered.map((p) => (
                                         <button key={p.id} type="button" onClick={() => addProduct(p)}
                                             className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50">
@@ -134,7 +134,7 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                         </div>
 
                         {/* Tabla de artículos */}
-                        <div className="rounded-lg border bg-white shadow-sm">
+                        <div className="rounded-lg border bg-card shadow-sm">
                             <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos ({data.items.length})</div>
                             {data.items.length === 0 ? (
                                 <div className="px-4 py-10 text-center text-gray-400">
@@ -170,7 +170,7 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                                                     ${((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0) - (parseFloat(item.discount) || 0)).toFixed(2)}
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-red-400" /></Button>
+                                                    <Button aria-label="Eliminar" type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-400" /></Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -183,7 +183,7 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
 
                     {/* Columna derecha: resumen y pago */}
                     <div className="space-y-4">
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-700">Resumen</h2>
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
                             <div className="flex items-center justify-between text-sm">
@@ -197,11 +197,11 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                             <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>${total.toFixed(2)}</span></div>
                         </div>
 
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-700">Pago</h2>
                             <div>
-                                <Label>Método de pago</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
+                                <Label htmlFor="campo-metodo-de-pago">Método de pago</Label>
+                                <select id="campo-metodo-de-pago" className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
                                     <option value="cash">Efectivo</option>
                                     <option value="card">Tarjeta</option>
                                     <option value="transfer">Transferencia</option>
@@ -209,8 +209,8 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                                 </select>
                             </div>
                             <div>
-                                <Label>Monto recibido *</Label>
-                                <Input type="number" step="0.01" min="0" value={data.amount_paid} onChange={(e) => setData('amount_paid', e.target.value)} className="text-xl font-bold" />
+                                <Label htmlFor="campo-monto-recibido">Monto recibido *</Label>
+                                <Input id="campo-monto-recibido" type="number" step="0.01" min="0" value={data.amount_paid} onChange={(e) => setData('amount_paid', e.target.value)} className="text-xl font-bold" />
                                 {errors.amount_paid && <p className="mt-1 text-xs text-red-500">{errors.amount_paid}</p>}
                             </div>
                             {data.amount_paid && (
@@ -220,8 +220,8 @@ export default function SaleEdit({ sale, products }: { sale: Sale; products: Pro
                                 </div>
                             )}
                             <div>
-                                <Label>Notas</Label>
-                                <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                                <Label htmlFor="campo-notas">Notas</Label>
+                                <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                             </div>
                         </div>
 

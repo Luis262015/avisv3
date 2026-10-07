@@ -32,7 +32,7 @@ export default function PromotionsIndex({ promotions }: { promotions: PaginatedD
                     <h1 className="text-2xl font-bold">Descuentos y Promociones</h1>
                     <Button asChild><Link href="/admin/promotions/create"><Plus className="mr-2 h-4 w-4" /> Nueva Promoción</Link></Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -69,8 +69,8 @@ export default function PromotionsIndex({ promotions }: { promotions: PaginatedD
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
                                             <Button variant="ghost" size="sm" title="Activar/Desactivar" onClick={() => toggle(p.id)}><Power className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="sm" asChild><Link href={`/admin/promotions/${p.id}/edit`}><Pencil className="h-4 w-4" /></Link></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => destroy(p.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button variant="ghost" size="sm" asChild><Link aria-label="Editar" href={`/admin/promotions/${p.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link></Button>
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroy(p.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </td>
                                 </tr>

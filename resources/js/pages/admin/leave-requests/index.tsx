@@ -53,25 +53,25 @@ export default function LeaveRequestsIndex({ leaves, employees, filters }: Props
             <div className="p-6 space-y-6">
                 <h1 className="text-2xl font-bold">Ausencias, permisos y vacaciones</h1>
 
-                <form onSubmit={submit} className="rounded-lg border bg-white p-4 shadow-sm">
+                <form onSubmit={submit} className="rounded-lg border bg-card p-4 shadow-sm">
                     <h2 className="mb-3 font-semibold text-gray-700">Nueva solicitud</h2>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
                         <div>
-                            <Label>Empleado *</Label>
-                            <select className="w-full rounded-md border px-2 py-2 text-sm" value={data.employee_id} onChange={(e) => setData('employee_id', e.target.value)}>
+                            <Label htmlFor="campo-empleado">Empleado *</Label>
+                            <select id="campo-empleado" className="w-full rounded-md border px-2 py-2 text-sm" value={data.employee_id} onChange={(e) => setData('employee_id', e.target.value)}>
                                 <option value="">—</option>
                                 {employees.map((m) => <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>)}
                             </select>
                             {errors.employee_id && <p className="mt-1 text-xs text-red-500">{errors.employee_id}</p>}
                         </div>
                         <div>
-                            <Label>Tipo</Label>
-                            <select className="w-full rounded-md border px-2 py-2 text-sm" value={data.type} onChange={(e) => setData('type', e.target.value)}>
+                            <Label htmlFor="campo-tipo">Tipo</Label>
+                            <select id="campo-tipo" className="w-full rounded-md border px-2 py-2 text-sm" value={data.type} onChange={(e) => setData('type', e.target.value)}>
                                 {Object.entries(typeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                             </select>
                         </div>
-                        <div><Label>Desde *</Label><Input type="date" value={data.start_date} onChange={(e) => setData('start_date', e.target.value)} /></div>
-                        <div><Label>Hasta *</Label><Input type="date" value={data.end_date} onChange={(e) => setData('end_date', e.target.value)} /></div>
+                        <div><Label htmlFor="campo-desde">Desde *</Label><Input id="campo-desde" type="date" value={data.start_date} onChange={(e) => setData('start_date', e.target.value)} /></div>
+                        <div><Label htmlFor="campo-hasta">Hasta *</Label><Input id="campo-hasta" type="date" value={data.end_date} onChange={(e) => setData('end_date', e.target.value)} /></div>
                         <div className="flex items-end"><Button type="submit" disabled={processing} className="w-full">Registrar</Button></div>
                     </div>
                 </form>
@@ -86,7 +86,7 @@ export default function LeaveRequestsIndex({ leaves, employees, filters }: Props
                     </select>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -112,11 +112,11 @@ export default function LeaveRequestsIndex({ leaves, employees, filters }: Props
                                         <div className="flex justify-end gap-1">
                                             {l.status === 'pending' && (
                                                 <>
-                                                    <Button variant="ghost" size="sm" onClick={() => approve(l.id)}><Check className="h-4 w-4 text-green-600" /></Button>
-                                                    <Button variant="ghost" size="sm" onClick={() => reject(l.id)}><X className="h-4 w-4 text-red-500" /></Button>
+                                                    <Button aria-label="Confirmar" variant="ghost" size="sm" onClick={() => approve(l.id)}><Check aria-hidden="true" className="h-4 w-4 text-green-600" /></Button>
+                                                    <Button aria-label="Quitar" variant="ghost" size="sm" onClick={() => reject(l.id)}><X aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                                 </>
                                             )}
-                                            <Button variant="ghost" size="sm" onClick={() => remove(l.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => remove(l.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </td>
                                 </tr>

@@ -159,7 +159,7 @@ export default function CashShiftsIndex({ shifts, myOpenShift }: Props) {
                 )}
 
                 {/* Tabla */}
-                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -233,8 +233,8 @@ export default function CashShiftsIndex({ shifts, myOpenShift }: Props) {
                                                         </Button>
                                                     )}
                                                     <Button variant="ghost" size="sm" asChild>
-                                                        <Link href={`/admin/cash-shifts/${s.id}`}>
-                                                            <Eye className="h-4 w-4" />
+                                                        <Link aria-label="Ver detalle" href={`/admin/cash-shifts/${s.id}`}>
+                                                            <Eye aria-hidden="true" className="h-4 w-4" />
                                                         </Link>
                                                     </Button>
                                                     <button
@@ -346,7 +346,7 @@ export default function CashShiftsIndex({ shifts, myOpenShift }: Props) {
             {/* Modal de cierre rápido */}
             {closingShift && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+                    <div className="w-full max-w-md rounded-lg bg-card shadow-xl">
                         <div className="flex items-start justify-between border-b px-6 py-4">
                             <div>
                                 <h2 className="text-lg font-bold">Cierre de Caja</h2>
@@ -355,12 +355,12 @@ export default function CashShiftsIndex({ shifts, myOpenShift }: Props) {
                                     {closingShift.cash_register.store.name}
                                 </p>
                             </div>
-                            <button
+                            <button aria-label="Quitar"
                                 type="button"
                                 onClick={() => setClosingShift(null)}
                                 className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                             >
-                                <X className="h-5 w-5" />
+                                <X aria-hidden="true" className="h-5 w-5" />
                             </button>
                         </div>
 
@@ -490,7 +490,7 @@ function DetailCell({
     valueClass?: string;
 }) {
     return (
-        <div className="rounded-md border bg-white px-3 py-2 shadow-sm">
+        <div className="rounded-md border bg-card px-3 py-2 shadow-sm">
             <p className="text-xs text-gray-400">{label}</p>
             <p className={`mt-0.5 text-sm font-semibold ${valueClass}`}>{value}</p>
         </div>

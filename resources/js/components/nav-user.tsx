@@ -17,7 +17,7 @@ export function NavUser() {
             <SidebarMenuItem>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton size="lg" className="text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent group">
+                        <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent group text-white" aria-label="Cuenta y sesión">
                             <UserInfo user={auth.user} />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export type Appearance = 'light' | 'dark' | 'system';
 
@@ -27,7 +27,9 @@ export function initializeTheme() {
 }
 
 export function useAppearance() {
-    const [appearance, setAppearance] = useState<Appearance>('system');
+    // Se lee al montar, no en un efecto: así el primer pintado ya sabe el tema
+    // y el botón no parpadea entre un icono y otro.
+    const [appearance, setAppearance] = useState<Appearance>(() => (localStorage.getItem('appearance') as Appearance | null) || 'system');
 
     const updateAppearance = (mode: Appearance) => {
         setAppearance(mode);
@@ -35,12 +37,8 @@ export function useAppearance() {
         applyTheme(mode);
     };
 
-    useEffect(() => {
-        const savedAppearance = localStorage.getItem('appearance') as Appearance | null;
-        updateAppearance(savedAppearance || 'system');
-
-        return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    }, []);
-
+    // El aviso de cambio de tema del sistema lo registra `initializeTheme` una
+    // sola vez y no se retira aquí: este hook vive en la cabecera, que se
+    // desmonta en cada navegación.
     return { appearance, updateAppearance };
 }

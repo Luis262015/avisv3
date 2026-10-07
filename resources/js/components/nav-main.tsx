@@ -131,7 +131,7 @@ export function NavMain({ items = [] }: { items: NavGroup[] }) {
                                 grupo y no como una entrada más. Antes pesaba casi lo
                                 mismo que los enlaces y la lista salía plana. */}
                             <SidebarGroupLabel asChild className="h-auto pt-4 pb-1">
-                                <CollapsibleTrigger className="text-sidebar-foreground/50 hover:text-sidebar-foreground/80 focus-visible:ring-sidebar-ring w-full cursor-pointer rounded-md text-[11px] font-semibold tracking-wider uppercase focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default">
+                                <CollapsibleTrigger className="text-sidebar-foreground/75 hover:text-white focus-visible:ring-sidebar-ring w-full cursor-pointer rounded-md text-[11px] font-semibold tracking-wider uppercase focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default">
                                     <span className="truncate">{group.title}</span>
                                     <ChevronRight
                                         aria-hidden="true"
@@ -169,7 +169,7 @@ function EntradaMenu({ item, activo }: { item: NavItem; activo: boolean }) {
                 // `h-9` y no `h-8`: esto se usa de pie y a veces con el dedo, y un
                 // objetivo de 32 px se falla. Los iconos inactivos van atenuados
                 // para que el activo destaque sin gritar.
-                className="relative h-9 [&>svg]:opacity-70 data-[active=true]:font-semibold data-[active=true]:before:bg-sidebar-primary data-[active=true]:before:absolute data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-0.5 data-[active=true]:before:rounded-full data-[active=true]:[&>svg]:text-sidebar-primary data-[active=true]:[&>svg]:opacity-100 group-data-[collapsible=icon]:data-[active=true]:before:hidden"
+                className="relative h-9 [&>svg]:opacity-80 data-[active=true]:font-semibold data-[active=true]:before:bg-sidebar-primary data-[active=true]:before:absolute data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:[&>svg]:text-sidebar-primary data-[active=true]:[&>svg]:opacity-100 group-data-[collapsible=icon]:data-[active=true]:before:hidden"
             >
                 <Link href={item.url} prefetch aria-current={activo ? 'page' : undefined}>
                     {/* Decorativo: la etiqueta de al lado ya lo nombra. */}

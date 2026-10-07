@@ -53,7 +53,7 @@ export default function HrReportsIndex(props: Props) {
                 {/* KPIs */}
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                     {cards.map((c) => (
-                        <div key={c.label} className="flex items-center gap-3 rounded-lg border bg-white p-4 shadow-sm">
+                        <div key={c.label} className="flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
                             <c.icon className={`h-7 w-7 ${c.color}`} />
                             <div>
                                 <p className="text-xs uppercase text-gray-500">{c.label}</p>
@@ -65,7 +65,7 @@ export default function HrReportsIndex(props: Props) {
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {/* Headcount por área */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <h2 className="border-b px-4 py-3 font-semibold text-gray-700">Plantilla por área</h2>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -81,7 +81,7 @@ export default function HrReportsIndex(props: Props) {
                     </div>
 
                     {/* Distribución por contrato */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <h2 className="border-b px-4 py-3 font-semibold text-gray-700">Tipos de contrato</h2>
                         <div className="space-y-3 p-4">
                             {props.contractDistribution.map((c) => {
@@ -102,7 +102,7 @@ export default function HrReportsIndex(props: Props) {
                 </div>
 
                 {/* Evolución de nómina */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <h2 className="border-b px-4 py-3 font-semibold text-gray-700">Costo de nómina {year}</h2>
                     {props.payrollEvolution.length === 0 ? (
                         <p className="px-4 py-8 text-center text-sm text-gray-400">Sin planillas registradas este año.</p>
@@ -121,7 +121,7 @@ export default function HrReportsIndex(props: Props) {
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {/* Documentos por vencer */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <h2 className="border-b px-4 py-3 font-semibold text-gray-700">Documentos por vencer (60 días)</h2>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -137,7 +137,7 @@ export default function HrReportsIndex(props: Props) {
                     </div>
 
                     {/* Contratos a finalizar */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <h2 className="border-b px-4 py-3 font-semibold text-gray-700">Contratos por finalizar (60 días)</h2>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -154,7 +154,7 @@ export default function HrReportsIndex(props: Props) {
                 </div>
 
                 {/* Capacitaciones del año */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <h2 className="border-b px-4 py-3 font-semibold text-gray-700">Capacitaciones {year}</h2>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

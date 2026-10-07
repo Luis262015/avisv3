@@ -10,10 +10,11 @@ declare global {
     const route: typeof routeFn;
 }
 
-const appName = import.meta.env.VITE_APP_NAME || 'AvisV3';
+const appName = import.meta.env.VITE_APP_NAME || 'AVIS';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    // Muchas pantallas no declaran título: sin esto la pestaña decía « - AVIS».
+    title: (title) => (title ? `${title} · ${appName}` : appName),
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
         const root = createRoot(el);
@@ -21,7 +22,7 @@ createInertiaApp({
         root.render(<App {...props} />);
     },
     progress: {
-        color: '#4B5563',
+        color: '#00ada4',
     },
 });
 

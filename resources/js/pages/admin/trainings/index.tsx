@@ -30,7 +30,7 @@ export default function TrainingsIndex({ trainings }: { trainings: PaginatedData
                     <h1 className="text-2xl font-bold">Capacitación y formación</h1>
                     <Button asChild><Link href="/admin/trainings/create"><Plus className="mr-2 h-4 w-4" /> Nueva capacitación</Link></Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -56,9 +56,9 @@ export default function TrainingsIndex({ trainings }: { trainings: PaginatedData
                                     <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge[t.status].cls}`}>{statusBadge[t.status].label}</span></td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="sm" asChild><Link href={`/admin/trainings/${t.id}`}><Eye className="h-4 w-4" /></Link></Button>
-                                            <Button variant="ghost" size="sm" asChild><Link href={`/admin/trainings/${t.id}/edit`}><Pencil className="h-4 w-4" /></Link></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button variant="ghost" size="sm" asChild><Link aria-label="Ver detalle" href={`/admin/trainings/${t.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link></Button>
+                                            <Button variant="ghost" size="sm" asChild><Link aria-label="Editar" href={`/admin/trainings/${t.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link></Button>
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => remove(t.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </td>
                                 </tr>

@@ -27,7 +27,7 @@ export function NavQuickActions({ cashShift }: { cashShift: CashShift | null }) 
                 <SidebarMenuButton
                     asChild
                     tooltip="Nueva Venta"
-                    className="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground active:bg-sidebar-primary/90 active:text-sidebar-primary-foreground h-9 font-semibold shadow-sm"
+                    className="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground active:bg-sidebar-primary/90 active:text-sidebar-primary-foreground h-10 font-semibold shadow-sm"
                 >
                     <Link href="/admin/sales/create" prefetch>
                         <ShoppingCart aria-hidden="true" />
@@ -42,8 +42,8 @@ export function NavQuickActions({ cashShift }: { cashShift: CashShift | null }) 
                     tooltip={abierta ? `Caja abierta en ${cashShift.register_name}` : 'Abrir caja'}
                     className={
                         abierta
-                            ? 'h-9 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-400'
-                            : 'border-sidebar-border h-9 border border-dashed'
+                            ? 'bg-sidebar-accent h-9 text-white hover:bg-sidebar-accent hover:text-white [&>svg]:text-sidebar-primary'
+                            : 'border-sidebar-foreground/40 h-9 border border-dashed'
                     }
                 >
                     <Link

@@ -27,45 +27,45 @@ export default function WithdrawalEdit({ withdrawal, openShifts }: { withdrawal:
             <div className="mx-auto max-w-2xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Editar Retiro de Caja</h1>
                 <form onSubmit={(e) => { e.preventDefault(); patch(`/admin/withdrawals/${withdrawal.id}`); }} className="space-y-5">
-                    <div className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Monto *</Label>
-                                <Input type="number" step="0.01" min="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} />
+                                <Label htmlFor="campo-monto">Monto *</Label>
+                                <Input id="campo-monto" type="number" step="0.01" min="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} />
                                 {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount}</p>}
                             </div>
                             <div>
-                                <Label>Fecha *</Label>
-                                <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                <Label htmlFor="campo-fecha">Fecha *</Label>
+                                <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                             </div>
                         </div>
 
                         <div>
-                            <Label>Motivo del retiro *</Label>
-                            <Input value={data.reason} onChange={(e) => setData('reason', e.target.value)} />
+                            <Label htmlFor="campo-motivo-del-retiro">Motivo del retiro *</Label>
+                            <Input id="campo-motivo-del-retiro" value={data.reason} onChange={(e) => setData('reason', e.target.value)} />
                             {errors.reason && <p className="mt-1 text-xs text-red-500">{errors.reason}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {openShifts.length > 0 && (
                                 <div>
-                                    <Label>Turno de caja</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.cash_shift_id} onChange={(e) => setData('cash_shift_id', e.target.value)}>
+                                    <Label htmlFor="campo-turno-de-caja">Turno de caja</Label>
+                                    <select id="campo-turno-de-caja" className="w-full rounded-md border px-3 py-2 text-sm" value={data.cash_shift_id} onChange={(e) => setData('cash_shift_id', e.target.value)}>
                                         <option value="">— Sin turno —</option>
                                         {openShifts.map((s) => <option key={s.id} value={s.id}>{s.cash_register.name}</option>)}
                                     </select>
                                 </div>
                             )}
                             <div>
-                                <Label>Autorizado por</Label>
-                                <Input value={data.authorized_by} onChange={(e) => setData('authorized_by', e.target.value)} placeholder="Nombre del autorizante" />
+                                <Label htmlFor="campo-autorizado-por">Autorizado por</Label>
+                                <Input id="campo-autorizado-por" value={data.authorized_by} onChange={(e) => setData('authorized_by', e.target.value)} placeholder="Nombre del autorizante" />
                             </div>
                         </div>
 
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                     </div>
 

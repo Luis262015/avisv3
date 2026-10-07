@@ -139,20 +139,20 @@ export default function SiatNotaShow({ nota }: { nota: Nota }) {
                 )}
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Total original</p>
                         <p className="text-xl font-bold">{fmt(nota.monto_total_original)}</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Devuelto</p>
                         <p className="text-xl font-bold">{fmt(nota.monto_total_devuelto)}</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Crédito fiscal revertido</p>
                         <p className="text-xl font-bold">{fmt(nota.monto_efectivo)}</p>
                         <p className="mt-1 text-xs text-gray-400">13 % de lo devuelto</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Descuento prorrateado</p>
                         <p className="text-xl font-bold">{fmt(nota.monto_descuento)}</p>
                         {nota.descuento_adicional && (
@@ -164,7 +164,7 @@ export default function SiatNotaShow({ nota }: { nota: Nota }) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <div className="space-y-1 rounded-lg border bg-white p-4 text-sm shadow-sm">
+                    <div className="space-y-1 rounded-lg border bg-card p-4 text-sm shadow-sm">
                         <p className="mb-2 font-semibold text-gray-700">Documento</p>
                         <p className="break-all">
                             <span className="text-gray-400">CUF:</span> {nota.cuf}
@@ -186,7 +186,7 @@ export default function SiatNotaShow({ nota }: { nota: Nota }) {
                         )}
                     </div>
 
-                    <div className="space-y-1 rounded-lg border bg-white p-4 text-sm shadow-sm">
+                    <div className="space-y-1 rounded-lg border bg-card p-4 text-sm shadow-sm">
                         <p className="mb-2 font-semibold text-gray-700">Origen</p>
                         <p>
                             <span className="text-gray-400">Cliente:</span> {nota.nombre_razon_social} ({nota.nit_ci})
@@ -225,7 +225,7 @@ export default function SiatNotaShow({ nota }: { nota: Nota }) {
                 </div>
 
                 {nota.sale_return && (
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Productos devueltos</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

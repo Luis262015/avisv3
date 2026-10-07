@@ -55,12 +55,12 @@ export default function PurchaseOrderCreate({ suppliers, stores, products }: {
                 <h1 className="mb-6 text-2xl font-bold">Nueva Orden de Compra</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/purchase-orders'); }} className="space-y-6">
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Datos generales</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Proveedor</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.supplier_id} onChange={(e) => handleSupplierChange(e.target.value)}>
+                                <Label htmlFor="campo-proveedor">Proveedor</Label>
+                                <select id="campo-proveedor" className="w-full rounded-md border px-3 py-2 text-sm" value={data.supplier_id} onChange={(e) => handleSupplierChange(e.target.value)}>
                                     <option value="">— Sin proveedor —</option>
                                     {suppliers.map((s) => (
                                         <option key={s.id} value={s.id}>
@@ -70,8 +70,8 @@ export default function PurchaseOrderCreate({ suppliers, stores, products }: {
                                 </select>
                             </div>
                             <div>
-                                <Label>Tienda destino</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
+                                <Label htmlFor="campo-tienda-destino">Tienda destino</Label>
+                                <select id="campo-tienda-destino" className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
                                     <option value="">— Sin tienda —</option>
                                     {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
@@ -79,27 +79,27 @@ export default function PurchaseOrderCreate({ suppliers, stores, products }: {
                         </div>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <Label>Fecha *</Label>
-                                <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                <Label htmlFor="campo-fecha">Fecha *</Label>
+                                <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                             </div>
                             <div>
-                                <Label>Fecha de entrega esperada</Label>
-                                <Input type="date" value={data.expected_date} onChange={(e) => setData('expected_date', e.target.value)} />
+                                <Label htmlFor="campo-fecha-de-entrega-esperada">Fecha de entrega esperada</Label>
+                                <Input id="campo-fecha-de-entrega-esperada" type="date" value={data.expected_date} onChange={(e) => setData('expected_date', e.target.value)} />
                                 {errors.expected_date && <p className="mt-1 text-xs text-red-500">{errors.expected_date}</p>}
                             </div>
                             <div>
-                                <Label>IVA ($)</Label>
-                                <Input type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />
+                                <Label htmlFor="campo-iva">IVA ($)</Label>
+                                <Input id="campo-iva" type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />
                             </div>
                         </div>
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="font-semibold text-gray-700">Productos</h2>
                             <Button type="button" variant="outline" size="sm" onClick={addItem}><Plus className="mr-1 h-4 w-4" /> Agregar</Button>
@@ -132,7 +132,7 @@ export default function PurchaseOrderCreate({ suppliers, stores, products }: {
                                     </div>
                                     <div className="col-span-1 text-right">
                                         {data.items.length > 1 && (
-                                            <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button aria-label="Eliminar" type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         )}
                                     </div>
                                 </div>

@@ -34,7 +34,7 @@ export default function QuotesIndex({ quotes }: { quotes: PaginatedData<Quote> }
                         <Link href="/admin/quotes/create"><Plus className="mr-2 h-4 w-4" /> Nueva Cotización</Link>
                     </Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -64,7 +64,7 @@ export default function QuotesIndex({ quotes }: { quotes: PaginatedData<Quote> }
                                     <td className="px-4 py-3 text-gray-500">{q.user.name}</td>
                                     <td className="px-4 py-3 text-right">
                                         <Button variant="ghost" size="sm" asChild>
-                                            <Link href={`/admin/quotes/${q.id}`}><Eye className="h-4 w-4" /></Link>
+                                            <Link aria-label="Ver detalle" href={`/admin/quotes/${q.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link>
                                         </Button>
                                     </td>
                                 </tr>

@@ -16,8 +16,8 @@ export default function TagEdit({ tag }: { tag: Tag }) {
                 <h1 className="mb-6 text-2xl font-bold">Editar Etiqueta</h1>
                 <form onSubmit={(e) => { e.preventDefault(); put(`/admin/tags/${tag.id}`); }} className="space-y-4">
                     <div>
-                        <Label>Nombre *</Label>
-                        <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        <Label htmlFor="campo-nombre">Nombre *</Label>
+                        <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                     </div>
                     <div className="flex gap-2 pt-2">

@@ -16,16 +16,16 @@ export default function CashRegisterCreate({ stores }: { stores: Store[] }) {
                 <h1 className="mb-6 text-2xl font-bold">Nueva Caja</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/cash-registers'); }} className="space-y-4">
                     <div>
-                        <Label>Tienda *</Label>
-                        <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
+                        <Label htmlFor="campo-tienda">Tienda *</Label>
+                        <select id="campo-tienda" className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
                             <option value="">— Seleccionar —</option>
                             {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                         {errors.store_id && <p className="mt-1 text-xs text-red-500">{errors.store_id}</p>}
                     </div>
                     <div>
-                        <Label>Nombre de la caja *</Label>
-                        <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Ej: Caja 1, Caja Principal" />
+                        <Label htmlFor="campo-nombre-de-la-caja">Nombre de la caja *</Label>
+                        <Input id="campo-nombre-de-la-caja" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Ej: Caja 1, Caja Principal" />
                         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                     </div>
                     <div className="flex items-center gap-2">

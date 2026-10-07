@@ -89,7 +89,7 @@ export default function PurchaseOrderShow({ order }: { order: PurchaseOrder }) {
                 {/* Info */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {order.supplier && (
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                             <h2 className="font-semibold text-gray-700">Proveedor</h2>
                             <p className="font-medium">
                                 <Link href={`/admin/suppliers/${order.supplier.id}`} className="text-blue-600 hover:underline">{order.supplier.name}</Link>
@@ -99,7 +99,7 @@ export default function PurchaseOrderShow({ order }: { order: PurchaseOrder }) {
                             {order.supplier.payment_terms && <p className="text-sm text-gray-500">Plazo: {order.supplier.payment_terms}</p>}
                         </div>
                     )}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                         <h2 className="font-semibold text-gray-700">Detalles</h2>
                         {order.store && <p className="text-sm text-gray-600"><span className="font-medium">Tienda destino:</span> {order.store.name}</p>}
                         {order.expected_date && <p className="text-sm text-gray-600"><span className="font-medium">Fecha estimada:</span> {order.expected_date}</p>}
@@ -108,7 +108,7 @@ export default function PurchaseOrderShow({ order }: { order: PurchaseOrder }) {
                 </div>
 
                 {/* Items */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -152,7 +152,7 @@ export default function PurchaseOrderShow({ order }: { order: PurchaseOrder }) {
 
                 {/* Related purchases */}
                 {order.purchases.length > 0 && (
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Compras generadas</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

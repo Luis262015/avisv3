@@ -34,7 +34,7 @@ export default function SalesOrdersIndex({ orders }: { orders: PaginatedData<Sal
                         <Link href="/admin/sales-orders/create"><Plus className="mr-2 h-4 w-4" /> Nuevo Pedido</Link>
                     </Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -66,7 +66,7 @@ export default function SalesOrdersIndex({ orders }: { orders: PaginatedData<Sal
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <Button variant="ghost" size="sm" asChild>
-                                            <Link href={`/admin/sales-orders/${o.id}`}><Eye className="h-4 w-4" /></Link>
+                                            <Link aria-label="Ver detalle" href={`/admin/sales-orders/${o.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link>
                                         </Button>
                                     </td>
                                 </tr>

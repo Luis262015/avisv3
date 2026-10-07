@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Password settings',
+        title: 'Contraseña',
         href: '/settings/password',
     },
 ];
@@ -50,15 +50,15 @@ export default function Password() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
+            <Head title="Contraseña" />
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Update password" description="Ensure your account is using a long, random password to stay secure" />
+                    <HeadingSmall title="Cambiar contraseña" description="Usa una contraseña larga que no repitas en otro sitio." />
 
                     <form onSubmit={updatePassword} className="space-y-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="current_password">Current password</Label>
+                            <Label htmlFor="current_password">Contraseña actual</Label>
 
                             <Input
                                 id="current_password"
@@ -68,14 +68,14 @@ export default function Password() {
                                 type="password"
                                 className="mt-1 block w-full"
                                 autoComplete="current-password"
-                                placeholder="Current password"
+                                
                             />
 
                             <InputError message={errors.current_password} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password">New password</Label>
+                            <Label htmlFor="password">Contraseña nueva</Label>
 
                             <Input
                                 id="password"
@@ -85,14 +85,14 @@ export default function Password() {
                                 type="password"
                                 className="mt-1 block w-full"
                                 autoComplete="new-password"
-                                placeholder="New password"
+                                
                             />
 
                             <InputError message={errors.password} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">Confirm password</Label>
+                            <Label htmlFor="password_confirmation">Repite la contraseña nueva</Label>
 
                             <Input
                                 id="password_confirmation"
@@ -101,14 +101,14 @@ export default function Password() {
                                 type="password"
                                 className="mt-1 block w-full"
                                 autoComplete="new-password"
-                                placeholder="Confirm password"
+                                
                             />
 
                             <InputError message={errors.password_confirmation} />
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save password</Button>
+                            <Button disabled={processing}>Guardar contraseña</Button>
 
                             <Transition
                                 show={recentlySuccessful}
@@ -117,7 +117,7 @@ export default function Password() {
                                 leave="transition ease-in-out"
                                 leaveTo="opacity-0"
                             >
-                                <p className="text-sm text-neutral-600">Saved</p>
+                                <p role="status" className="text-sm font-medium text-green-700">Contraseña guardada</p>
                             </Transition>
                         </div>
                     </form>

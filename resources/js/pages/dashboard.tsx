@@ -15,7 +15,7 @@ import {
     Wallet,
 } from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Panel', href: '/dashboard' }];
 
 interface Ventas {
     hoy_total: number;
@@ -117,11 +117,11 @@ function Tarjeta({
     const clases =
         tono === 'alerta'
             ? 'border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30'
-            : 'border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900';
+            : 'border-border dark:border-border bg-card';
 
     const contenido = (
         <div className={`h-full rounded-xl border p-4 transition-shadow ${clases} ${href ? 'hover:shadow-md' : ''}`}>
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">
                 {icono}
                 {titulo}
             </div>
@@ -156,7 +156,7 @@ function Serie({ datos }: { datos: Ventas['serie'] }) {
                             width={ancho}
                             height={alto || 0.4}
                             rx={0.6}
-                            className={d.total > 0 ? 'fill-indigo-500' : 'fill-neutral-300 dark:fill-neutral-700'}
+                            className={d.total > 0 ? 'fill-indigo-500' : 'fill-neutral-300'}
                         >
                             <title>{`${d.fecha}: ${bs(d.total)} (${d.cantidad} ventas)`}</title>
                         </rect>
@@ -254,7 +254,7 @@ export default function Dashboard({ puede, filtros, tiendas, ventas, caja, inven
                             value={filtros.store_id ?? ''}
                             onChange={(e) => cambiarTienda(e.target.value)}
                             aria-label="Filtrar por tienda"
-                            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                            className="rounded-md border border-neutral-300 bg-card px-3 py-2 text-sm"
                         >
                             <option value="">Todas las tiendas</option>
                             {tiendas.map((t) => (
@@ -389,7 +389,7 @@ export default function Dashboard({ puede, filtros, tiendas, ventas, caja, inven
 
                 {/* ── Atención + gráfico ──────────────────────────────────── */}
                 <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border bg-white p-4 dark:bg-neutral-900">
+                    <div className="border-border dark:border-border rounded-xl border bg-card p-4">
                         <h2 className="mb-3 flex items-center gap-2 font-semibold">
                             <AlertTriangle className="size-4 text-amber-500" />
                             Requiere atención
@@ -400,7 +400,7 @@ export default function Dashboard({ puede, filtros, tiendas, ventas, caja, inven
                                 Nada pendiente. Todo en orden por ahora.
                             </p>
                         ) : (
-                            <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                            <ul className="divide-y divide-neutral-100">
                                 {alertas.map((a) => (
                                     <li key={a.texto}>
                                         <Link
@@ -418,7 +418,7 @@ export default function Dashboard({ puede, filtros, tiendas, ventas, caja, inven
                         )}
 
                         {siat && siat.ultimas_rechazadas.length > 0 && (
-                            <div className="mt-4 border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                            <div className="mt-4 border-t border-neutral-100 pt-3">
                                 <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500 uppercase">
                                     <FileWarning className="size-3.5" /> Últimos rechazos del SIN
                                 </p>
@@ -437,14 +437,14 @@ export default function Dashboard({ puede, filtros, tiendas, ventas, caja, inven
                         )}
                     </div>
 
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border bg-white p-4 dark:bg-neutral-900">
+                    <div className="border-border dark:border-border rounded-xl border bg-card p-4">
                         {ventas ? (
                             <>
                                 <h2 className="mb-3 font-semibold">Ventas de los últimos 14 días</h2>
                                 <Serie datos={ventas.serie} />
 
                                 {inventario && inventario.productos.length > 0 && (
-                                    <div className="mt-4 border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                                    <div className="mt-4 border-t border-neutral-100 pt-3">
                                         <p className="mb-2 text-xs font-medium text-neutral-500 uppercase">
                                             Reponer primero
                                         </p>

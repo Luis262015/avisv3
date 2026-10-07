@@ -57,23 +57,23 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
             <div className="mx-auto max-w-2xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Editar Promoción</h1>
                 <form onSubmit={(e) => { e.preventDefault(); put(`/admin/promotions/${promotion.id}`); }} className="space-y-5">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Nombre *</Label>
-                                <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                                <Label htmlFor="campo-nombre">Nombre *</Label>
+                                <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                                 {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                             </div>
                             <div>
-                                <Label>Código de cupón (opcional)</Label>
-                                <Input value={data.code} onChange={(e) => setData('code', e.target.value)} />
+                                <Label htmlFor="campo-codigo-de-cupon-opcional">Código de cupón (opcional)</Label>
+                                <Input id="campo-codigo-de-cupon-opcional" value={data.code} onChange={(e) => setData('code', e.target.value)} />
                                 {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code}</p>}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Tipo *</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.type} onChange={(e) => setData('type', e.target.value)}>
+                                <Label htmlFor="campo-tipo">Tipo *</Label>
+                                <select id="campo-tipo" className="w-full rounded-md border px-3 py-2 text-sm" value={data.type} onChange={(e) => setData('type', e.target.value)}>
                                     <option value="percentage">Porcentaje (%)</option>
                                     <option value="fixed">Monto fijo ($)</option>
                                     <option value="buy_x_get_y">Lleva X paga Y</option>
@@ -82,8 +82,8 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
                             </div>
                             {isCombo ? (
                                 <div>
-                                    <Label>Precio del combo * ($)</Label>
-                                    <Input type="number" step="0.01" min="0" value={data.combo_price} onChange={(e) => setData('combo_price', e.target.value)} />
+                                    <Label htmlFor="campo-precio-del-combo">Precio del combo * ($)</Label>
+                                    <Input id="campo-precio-del-combo" type="number" step="0.01" min="0" value={data.combo_price} onChange={(e) => setData('combo_price', e.target.value)} />
                                     {errors.combo_price && <p className="mt-1 text-xs text-red-500">{errors.combo_price}</p>}
                                 </div>
                             ) : data.type !== 'buy_x_get_y' ? (
@@ -95,13 +95,13 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
                             ) : (
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <Label>Lleva</Label>
-                                        <Input type="number" min="1" value={data.buy_qty} onChange={(e) => setData('buy_qty', e.target.value)} />
+                                        <Label htmlFor="campo-lleva">Lleva</Label>
+                                        <Input id="campo-lleva" type="number" min="1" value={data.buy_qty} onChange={(e) => setData('buy_qty', e.target.value)} />
                                         {errors.buy_qty && <p className="mt-1 text-xs text-red-500">{errors.buy_qty}</p>}
                                     </div>
                                     <div>
-                                        <Label>Gratis</Label>
-                                        <Input type="number" min="1" value={data.get_qty} onChange={(e) => setData('get_qty', e.target.value)} />
+                                        <Label htmlFor="campo-gratis">Gratis</Label>
+                                        <Input id="campo-gratis" type="number" min="1" value={data.get_qty} onChange={(e) => setData('get_qty', e.target.value)} />
                                         {errors.get_qty && <p className="mt-1 text-xs text-red-500">{errors.get_qty}</p>}
                                     </div>
                                 </div>
@@ -111,16 +111,16 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
                         {!isCombo && (
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>Alcance *</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.scope} onChange={(e) => setData('scope', e.target.value)}>
+                                    <Label htmlFor="campo-alcance">Alcance *</Label>
+                                    <select id="campo-alcance" className="w-full rounded-md border px-3 py-2 text-sm" value={data.scope} onChange={(e) => setData('scope', e.target.value)}>
                                         <option value="all">Toda la venta</option>
                                         <option value="product">Productos específicos</option>
                                         <option value="category">Categorías específicas</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>Compra mínima ($)</Label>
-                                    <Input type="number" step="0.01" min="0" value={data.min_purchase} onChange={(e) => setData('min_purchase', e.target.value)} />
+                                    <Label htmlFor="campo-compra-minima">Compra mínima ($)</Label>
+                                    <Input id="campo-compra-minima" type="number" step="0.01" min="0" value={data.min_purchase} onChange={(e) => setData('min_purchase', e.target.value)} />
                                 </div>
                             </div>
                         )}
@@ -175,7 +175,7 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
                                 </select>
 
                                 {(data.combo_items as ComboItemRow[]).length > 0 && (
-                                    <div className="overflow-hidden rounded-md border bg-white">
+                                    <div className="overflow-hidden rounded-md border bg-card">
                                         <table className="w-full text-sm">
                                             <thead className="border-b bg-gray-50 text-xs uppercase text-gray-400">
                                                 <tr>
@@ -199,7 +199,7 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
                                                             </td>
                                                             <td className="px-3 py-2 text-right">${line.toFixed(2)}</td>
                                                             <td className="px-3 py-2 text-right">
-                                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeComboItem(c.product_id)}><Trash2 className="h-4 w-4 text-red-400" /></Button>
+                                                                <Button aria-label="Eliminar" type="button" variant="ghost" size="sm" onClick={() => removeComboItem(c.product_id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-400" /></Button>
                                                             </td>
                                                         </tr>
                                                     );
@@ -219,17 +219,17 @@ export default function PromotionEdit({ promotion, products, categories }: { pro
                         )}
 
                         <div className="grid grid-cols-3 gap-4">
-                            <div><Label>Inicio</Label><Input type="date" value={data.starts_at} onChange={(e) => setData('starts_at', e.target.value)} /></div>
+                            <div><Label htmlFor="campo-inicio">Inicio</Label><Input id="campo-inicio" type="date" value={data.starts_at} onChange={(e) => setData('starts_at', e.target.value)} /></div>
                             <div>
-                                <Label>Fin</Label>
-                                <Input type="date" value={data.ends_at} onChange={(e) => setData('ends_at', e.target.value)} />
+                                <Label htmlFor="campo-fin">Fin</Label>
+                                <Input id="campo-fin" type="date" value={data.ends_at} onChange={(e) => setData('ends_at', e.target.value)} />
                                 {errors.ends_at && <p className="mt-1 text-xs text-red-500">{errors.ends_at}</p>}
                             </div>
-                            <div><Label>Límite de usos</Label><Input type="number" min="1" value={data.usage_limit} onChange={(e) => setData('usage_limit', e.target.value)} /></div>
+                            <div><Label htmlFor="campo-limite-de-usos">Límite de usos</Label><Input id="campo-limite-de-usos" type="number" min="1" value={data.usage_limit} onChange={(e) => setData('usage_limit', e.target.value)} /></div>
                         </div>
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="active" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} className="h-4 w-4" />

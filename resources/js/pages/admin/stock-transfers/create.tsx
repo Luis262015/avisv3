@@ -42,12 +42,12 @@ export default function StockTransferCreate({ stores, products }: { stores: Stor
 
                 <form onSubmit={submit} className="space-y-6">
                     {/* Stores */}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-4 font-semibold text-gray-700">Tiendas</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Tienda origen *</Label>
-                                <select
+                                <Label htmlFor="campo-tienda-origen">Tienda origen *</Label>
+                                <select id="campo-tienda-origen"
                                     className="w-full rounded-md border px-3 py-2 text-sm"
                                     value={data.from_store_id}
                                     onChange={(e) => setData('from_store_id', e.target.value)}
@@ -58,8 +58,8 @@ export default function StockTransferCreate({ stores, products }: { stores: Stor
                                 {errors.from_store_id && <p className="mt-1 text-xs text-red-500">{errors.from_store_id}</p>}
                             </div>
                             <div>
-                                <Label>Tienda destino *</Label>
-                                <select
+                                <Label htmlFor="campo-tienda-destino">Tienda destino *</Label>
+                                <select id="campo-tienda-destino"
                                     className="w-full rounded-md border px-3 py-2 text-sm"
                                     value={data.to_store_id}
                                     onChange={(e) => setData('to_store_id', e.target.value)}
@@ -73,8 +73,8 @@ export default function StockTransferCreate({ stores, products }: { stores: Stor
                             </div>
                         </div>
                         <div className="mt-4">
-                            <Label>Notas</Label>
-                            <textarea
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas"
                                 className="w-full rounded-md border px-3 py-2 text-sm"
                                 rows={2}
                                 value={data.notes}
@@ -85,7 +85,7 @@ export default function StockTransferCreate({ stores, products }: { stores: Stor
                     </div>
 
                     {/* Items */}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="font-semibold text-gray-700">Productos</h2>
                             <Button type="button" variant="outline" size="sm" onClick={addItem}>
@@ -126,13 +126,13 @@ export default function StockTransferCreate({ stores, products }: { stores: Stor
                                     </div>
                                     <div className="col-span-1 text-right">
                                         {data.items.length > 1 && (
-                                            <Button
+                                            <Button aria-label="Eliminar"
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => removeItem(i)}
                                             >
-                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                                <Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" />
                                             </Button>
                                         )}
                                     </div>

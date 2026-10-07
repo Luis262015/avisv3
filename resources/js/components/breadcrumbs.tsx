@@ -1,5 +1,6 @@
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
+import { Link } from '@inertiajs/react';
 import { Fragment } from 'react';
 
 export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[] }) {
@@ -13,10 +14,15 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
                             return (
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
-                                        {isLast ? (
+                                        {/* La última miga es la página en la que se está, y
+                                            una sin destino no es un enlace. Las demás
+                                            navegan con Inertia: un <a> recargaba todo. */}
+                                        {isLast || !item.href ? (
                                             <BreadcrumbPage>{item.title}</BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink href={item.href}>{item.title}</BreadcrumbLink>
+                                            <BreadcrumbLink asChild>
+                                                <Link href={item.href}>{item.title}</Link>
+                                            </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>
                                     {!isLast && <BreadcrumbSeparator />}

@@ -49,7 +49,7 @@ export default function EvaluationsIndex({ supplier, evaluations }: { supplier: 
                     </Button>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -80,8 +80,8 @@ export default function EvaluationsIndex({ supplier, evaluations }: { supplier: 
                                     <td className="px-4 py-3 text-gray-500">{e.user.name}</td>
                                     <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{e.comments ?? '—'}</td>
                                     <td className="px-4 py-3">
-                                        <Button variant="ghost" size="sm" onClick={() => destroy(e.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                        <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroy(e.id)}>
+                                            <Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" />
                                         </Button>
                                     </td>
                                 </tr>

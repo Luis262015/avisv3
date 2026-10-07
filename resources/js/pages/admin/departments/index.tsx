@@ -51,21 +51,21 @@ export default function DepartmentsIndex({ departments, employees }: { departmen
             <div className="p-6 space-y-6">
                 <h1 className="text-2xl font-bold">Áreas / Departamentos</h1>
 
-                <form onSubmit={submitCreate} className="rounded-lg border bg-white p-4 shadow-sm">
+                <form onSubmit={submitCreate} className="rounded-lg border bg-card p-4 shadow-sm">
                     <h2 className="mb-3 font-semibold text-gray-700">Nueva área</h2>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                         <div>
-                            <Label>Nombre *</Label>
-                            <Input value={create.data.name} onChange={(e) => create.setData('name', e.target.value)} />
+                            <Label htmlFor="campo-nombre">Nombre *</Label>
+                            <Input id="campo-nombre" value={create.data.name} onChange={(e) => create.setData('name', e.target.value)} />
                             {create.errors.name && <p className="mt-1 text-xs text-red-500">{create.errors.name}</p>}
                         </div>
                         <div>
-                            <Label>Código</Label>
-                            <Input value={create.data.code} onChange={(e) => create.setData('code', e.target.value)} />
+                            <Label htmlFor="campo-codigo">Código</Label>
+                            <Input id="campo-codigo" value={create.data.code} onChange={(e) => create.setData('code', e.target.value)} />
                         </div>
                         <div>
-                            <Label>Responsable</Label>
-                            <select className={selectClass} value={create.data.manager_id ?? ''} onChange={(e) => create.setData('manager_id', e.target.value || null)}>
+                            <Label htmlFor="campo-responsable">Responsable</Label>
+                            <select id="campo-responsable" className={selectClass} value={create.data.manager_id ?? ''} onChange={(e) => create.setData('manager_id', e.target.value || null)}>
                                 <option value="">—</option>
                                 {employees.map((m) => <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>)}
                             </select>
@@ -76,7 +76,7 @@ export default function DepartmentsIndex({ departments, employees }: { departmen
                     </div>
                 </form>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -107,8 +107,8 @@ export default function DepartmentsIndex({ departments, employees }: { departmen
                                     </td>
                                     <td className="px-4 py-2 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="sm" onClick={() => submitEdit(d.id)}><Check className="h-4 w-4 text-green-600" /></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}><X className="h-4 w-4" /></Button>
+                                            <Button aria-label="Confirmar" variant="ghost" size="sm" onClick={() => submitEdit(d.id)}><Check aria-hidden="true" className="h-4 w-4 text-green-600" /></Button>
+                                            <Button aria-label="Quitar" variant="ghost" size="sm" onClick={() => setEditingId(null)}><X aria-hidden="true" className="h-4 w-4" /></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -125,8 +125,8 @@ export default function DepartmentsIndex({ departments, employees }: { departmen
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="sm" onClick={() => startEdit(d)}><Pencil className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => remove(d.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button aria-label="Editar" variant="ghost" size="sm" onClick={() => startEdit(d)}><Pencil aria-hidden="true" className="h-4 w-4" /></Button>
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => remove(d.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </td>
                                 </tr>

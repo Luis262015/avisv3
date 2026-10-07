@@ -42,7 +42,7 @@ export default function CufdHistory({ setting, codes }: { setting: Setting; code
                     <p className="text-sm text-gray-500">NIT: {setting.nit} — {setting.store.name}</p>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
+                <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>

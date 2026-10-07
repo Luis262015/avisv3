@@ -20,46 +20,46 @@ export function TrainingFormFields({ data, setData, errors, employees }: Props) 
 
     return (
         <div className="space-y-5">
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                 <div>
-                    <Label>Título *</Label>
-                    <Input value={data.title} onChange={(e) => setData('title', e.target.value)} />
+                    <Label htmlFor="campo-titulo">Título *</Label>
+                    <Input id="campo-titulo" value={data.title} onChange={(e) => setData('title', e.target.value)} />
                     {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
                 </div>
                 <div>
-                    <Label>Descripción</Label>
-                    <textarea className={selectClass} rows={2} value={data.description ?? ''} onChange={(e) => setData('description', e.target.value)} />
+                    <Label htmlFor="campo-descripcion">Descripción</Label>
+                    <textarea id="campo-descripcion" className={selectClass} rows={2} value={data.description ?? ''} onChange={(e) => setData('description', e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                     <div>
-                        <Label>Proveedor</Label>
-                        <Input value={data.provider ?? ''} onChange={(e) => setData('provider', e.target.value)} />
+                        <Label htmlFor="campo-proveedor">Proveedor</Label>
+                        <Input id="campo-proveedor" value={data.provider ?? ''} onChange={(e) => setData('provider', e.target.value)} />
                     </div>
                     <div>
-                        <Label>Modalidad</Label>
-                        <select className={selectClass} value={data.modality} onChange={(e) => setData('modality', e.target.value)}>
+                        <Label htmlFor="campo-modalidad">Modalidad</Label>
+                        <select id="campo-modalidad" className={selectClass} value={data.modality} onChange={(e) => setData('modality', e.target.value)}>
                             <option value="internal">Interna</option>
                             <option value="external">Externa</option>
                             <option value="online">En línea</option>
                         </select>
                     </div>
                     <div>
-                        <Label>Estado</Label>
-                        <select className={selectClass} value={data.status} onChange={(e) => setData('status', e.target.value)}>
+                        <Label htmlFor="campo-estado">Estado</Label>
+                        <select id="campo-estado" className={selectClass} value={data.status} onChange={(e) => setData('status', e.target.value)}>
                             <option value="planned">Planificada</option>
                             <option value="in_progress">En curso</option>
                             <option value="completed">Completada</option>
                             <option value="cancelled">Cancelada</option>
                         </select>
                     </div>
-                    <div><Label>Inicio</Label><Input type="date" value={data.start_date ?? ''} onChange={(e) => setData('start_date', e.target.value)} /></div>
-                    <div><Label>Fin</Label><Input type="date" value={data.end_date ?? ''} onChange={(e) => setData('end_date', e.target.value)} /></div>
-                    <div><Label>Horas</Label><Input type="number" step="0.5" value={data.hours} onChange={(e) => setData('hours', e.target.value)} /></div>
-                    <div><Label>Costo (Bs)</Label><Input type="number" step="0.01" value={data.cost} onChange={(e) => setData('cost', e.target.value)} /></div>
+                    <div><Label htmlFor="campo-inicio">Inicio</Label><Input id="campo-inicio" type="date" value={data.start_date ?? ''} onChange={(e) => setData('start_date', e.target.value)} /></div>
+                    <div><Label htmlFor="campo-fin">Fin</Label><Input id="campo-fin" type="date" value={data.end_date ?? ''} onChange={(e) => setData('end_date', e.target.value)} /></div>
+                    <div><Label htmlFor="campo-horas">Horas</Label><Input id="campo-horas" type="number" step="0.5" value={data.hours} onChange={(e) => setData('hours', e.target.value)} /></div>
+                    <div><Label htmlFor="campo-costo-bs">Costo (Bs)</Label><Input id="campo-costo-bs" type="number" step="0.01" value={data.cost} onChange={(e) => setData('cost', e.target.value)} /></div>
                 </div>
             </div>
 
-            <div className="rounded-lg border bg-white p-4 shadow-sm">
+            <div className="rounded-lg border bg-card p-4 shadow-sm">
                 <Label>Participantes</Label>
                 <div className="mt-2 grid max-h-64 grid-cols-2 gap-2 overflow-y-auto md:grid-cols-3">
                     {employees.map((e) => {

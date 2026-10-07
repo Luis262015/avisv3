@@ -46,20 +46,20 @@ export default function SalesReports({
             <div className="space-y-6 p-6">
                 <h1 className="text-2xl font-bold">Reportes y Análisis de Ventas</h1>
 
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <form onSubmit={apply} className="grid grid-cols-2 gap-4 md:grid-cols-5">
-                        <div><Label>Desde</Label><Input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} /></div>
-                        <div><Label>Hasta</Label><Input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} /></div>
+                        <div><Label htmlFor="campo-desde">Desde</Label><Input id="campo-desde" type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} /></div>
+                        <div><Label htmlFor="campo-hasta">Hasta</Label><Input id="campo-hasta" type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} /></div>
                         <div>
-                            <Label>Tienda</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={form.store_id} onChange={(e) => setForm({ ...form, store_id: e.target.value })}>
+                            <Label htmlFor="campo-tienda">Tienda</Label>
+                            <select id="campo-tienda" className="w-full rounded-md border px-3 py-2 text-sm" value={form.store_id} onChange={(e) => setForm({ ...form, store_id: e.target.value })}>
                                 <option value="">Todas</option>
                                 {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <Label>Vendedor</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={form.user_id} onChange={(e) => setForm({ ...form, user_id: e.target.value })}>
+                            <Label htmlFor="campo-vendedor">Vendedor</Label>
+                            <select id="campo-vendedor" className="w-full rounded-md border px-3 py-2 text-sm" value={form.user_id} onChange={(e) => setForm({ ...form, user_id: e.target.value })}>
                                 <option value="">Todos</option>
                                 {sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
@@ -80,7 +80,7 @@ export default function SalesReports({
                         { label: 'IVA total', value: fmt(summary.total_tax), color: 'text-gray-600' },
                         { label: 'Canceladas', value: summary.cancelled.toString(), color: 'text-red-600' },
                     ].map((c) => (
-                        <div key={c.label} className="rounded-lg border bg-white p-4 shadow-sm text-center">
+                        <div key={c.label} className="rounded-lg border bg-card p-4 shadow-sm text-center">
                             <p className="text-xs uppercase text-gray-500">{c.label}</p>
                             <p className={`mt-1 text-lg font-bold ${c.color}`}>{c.value}</p>
                         </div>
@@ -88,7 +88,7 @@ export default function SalesReports({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Ventas por vendedor</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -107,7 +107,7 @@ export default function SalesReports({
                         </table>
                     </div>
 
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Ventas por método de pago</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -127,7 +127,7 @@ export default function SalesReports({
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Productos más vendidos (top 50)</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -153,7 +153,7 @@ export default function SalesReports({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Ventas por categoría</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -172,7 +172,7 @@ export default function SalesReports({
                         </table>
                     </div>
 
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Mejores clientes (top 20)</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -192,7 +192,7 @@ export default function SalesReports({
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Evolución mensual de ventas</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

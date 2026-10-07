@@ -30,7 +30,7 @@ export default function IncomesIndex({ incomes }: { incomes: PaginatedData<Incom
                     </div>
                     <Button asChild><Link href="/admin/incomes/create"><Plus className="mr-2 h-4 w-4" /> Registrar Ingreso</Link></Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -57,7 +57,7 @@ export default function IncomesIndex({ incomes }: { incomes: PaginatedData<Incom
                                     {canEdit && (
                                         <td className="px-4 py-3 text-right">
                                             <Button variant="ghost" size="sm" asChild>
-                                                <Link href={`/admin/incomes/${i.id}/edit`}><Pencil className="h-4 w-4" /></Link>
+                                                <Link aria-label="Editar" href={`/admin/incomes/${i.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link>
                                             </Button>
                                         </td>
                                     )}

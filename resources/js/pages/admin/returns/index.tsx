@@ -32,7 +32,7 @@ export default function ReturnsIndex({ returns }: { returns: PaginatedData<SaleR
                     <h1 className="text-2xl font-bold">Devoluciones</h1>
                     <Button asChild><Link href="/admin/returns/create"><Plus className="mr-2 h-4 w-4" /> Nueva Devolución</Link></Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -61,7 +61,7 @@ export default function ReturnsIndex({ returns }: { returns: PaginatedData<SaleR
                                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[r.status]}`}>{statusLabels[r.status]}</span>
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <Button variant="ghost" size="sm" asChild><Link href={`/admin/returns/${r.id}`}><Eye className="h-4 w-4" /></Link></Button>
+                                        <Button variant="ghost" size="sm" asChild><Link aria-label="Ver detalle" href={`/admin/returns/${r.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link></Button>
                                     </td>
                                 </tr>
                             ))}

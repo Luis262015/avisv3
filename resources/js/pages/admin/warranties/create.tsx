@@ -21,10 +21,10 @@ export default function WarrantyCreate({ products, customers, sales }: { product
             <div className="mx-auto max-w-2xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Nueva Garantía</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/warranties'); }} className="space-y-5">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                         <div>
-                            <Label>Producto *</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.product_id} onChange={(e) => setData('product_id', e.target.value)}>
+                            <Label htmlFor="campo-producto">Producto *</Label>
+                            <select id="campo-producto" className="w-full rounded-md border px-3 py-2 text-sm" value={data.product_id} onChange={(e) => setData('product_id', e.target.value)}>
                                 <option value="">— Seleccionar —</option>
                                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}{p.sku ? ` (${p.sku})` : ''}</option>)}
                             </select>
@@ -32,39 +32,39 @@ export default function WarrantyCreate({ products, customers, sales }: { product
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Cliente</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
+                                <Label htmlFor="campo-cliente">Cliente</Label>
+                                <select id="campo-cliente" className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
                                     <option value="">— Sin cliente —</option>
                                     {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <Label>Venta asociada</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.sale_id} onChange={(e) => setData('sale_id', e.target.value)}>
+                                <Label htmlFor="campo-venta-asociada">Venta asociada</Label>
+                                <select id="campo-venta-asociada" className="w-full rounded-md border px-3 py-2 text-sm" value={data.sale_id} onChange={(e) => setData('sale_id', e.target.value)}>
                                     <option value="">— Sin venta —</option>
                                     {sales.map((s) => <option key={s.id} value={s.id}>{s.folio}</option>)}
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <Label>Número de serie</Label>
-                            <Input value={data.serial_number} onChange={(e) => setData('serial_number', e.target.value)} />
+                            <Label htmlFor="campo-numero-de-serie">Número de serie</Label>
+                            <Input id="campo-numero-de-serie" value={data.serial_number} onChange={(e) => setData('serial_number', e.target.value)} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Inicio *</Label>
-                                <Input type="date" value={data.start_date} onChange={(e) => setData('start_date', e.target.value)} />
+                                <Label htmlFor="campo-inicio">Inicio *</Label>
+                                <Input id="campo-inicio" type="date" value={data.start_date} onChange={(e) => setData('start_date', e.target.value)} />
                                 {errors.start_date && <p className="mt-1 text-xs text-red-500">{errors.start_date}</p>}
                             </div>
                             <div>
-                                <Label>Fin *</Label>
-                                <Input type="date" value={data.end_date} onChange={(e) => setData('end_date', e.target.value)} />
+                                <Label htmlFor="campo-fin">Fin *</Label>
+                                <Input id="campo-fin" type="date" value={data.end_date} onChange={(e) => setData('end_date', e.target.value)} />
                                 {errors.end_date && <p className="mt-1 text-xs text-red-500">{errors.end_date}</p>}
                             </div>
                         </div>
                         <div>
-                            <Label>Términos / cobertura</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={3} value={data.terms} onChange={(e) => setData('terms', e.target.value)} />
+                            <Label htmlFor="campo-terminos-cobertura">Términos / cobertura</Label>
+                            <textarea id="campo-terminos-cobertura" className="w-full rounded-md border px-3 py-2 text-sm" rows={3} value={data.terms} onChange={(e) => setData('terms', e.target.value)} />
                         </div>
                     </div>
                     <div className="flex gap-2">

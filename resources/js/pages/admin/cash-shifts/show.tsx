@@ -301,24 +301,24 @@ export default function CashShiftShow({
 
                 {/* Tarjetas resumen */}
                 <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs text-gray-500">Fondo inicial</p>
                         <p className="mt-1 text-xl font-bold">{fmt(shift.opening_amount)}</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs text-gray-500">Ventas totales</p>
                         <p className="mt-1 text-xl font-bold">{fmt(totalSales)}</p>
                         <p className="text-xs text-gray-400">
                             {salesCount} completada{salesCount !== 1 ? 's' : ''}
                         </p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs text-gray-500">Movimientos</p>
                         <p className="text-sm font-semibold text-green-600">+{fmt(totalIncomes)} ingresos</p>
                         <p className="text-sm font-semibold text-red-600">-{fmt(totalExpenses)} gastos</p>
                         <p className="text-sm font-semibold text-orange-600">-{fmt(withdrawalsTotal)} retiros</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs text-gray-500">Estado</p>
                         <p className={`mt-1 text-xl font-bold ${shift.status === 'open' ? 'text-amber-600' : 'text-gray-500'}`}>
                             {shift.status === 'open' ? 'Abierto' : 'Cerrado'}
@@ -328,7 +328,7 @@ export default function CashShiftShow({
 
                 {/* Arqueo del turno abierto: cuánto debe haber y de dónde sale. */}
                 {shift.status === 'open' && (
-                    <div className="mb-6 overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm">
+                    <div className="mb-6 overflow-hidden rounded-lg border border-blue-200 bg-card shadow-sm">
                         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-blue-100 bg-blue-50 p-4">
                             <div>
                                 <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
@@ -361,7 +361,7 @@ export default function CashShiftShow({
 
                 {/* Cierre del turno (turno cerrado) */}
                 {shift.status === 'closed' && (
-                    <div className="mb-6 overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="mb-6 overflow-hidden rounded-lg border bg-card shadow-sm">
                         <div className="grid grid-cols-1 divide-y border-b sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                             <div className="p-4">
                                 <p className="text-xs text-gray-500">Contado al cerrar</p>
@@ -587,7 +587,7 @@ export default function CashShiftShow({
             {/* Modal de cierre */}
             {showClose && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+                    <div className="w-full max-w-md rounded-lg bg-card shadow-xl">
                         <div className="flex items-start justify-between border-b px-6 py-4">
                             <div>
                                 <h2 className="text-lg font-bold">Cierre de Turno #{shift.id}</h2>
@@ -595,12 +595,12 @@ export default function CashShiftShow({
                                     {shift.cash_register.name} — {shift.cash_register.store.name}
                                 </p>
                             </div>
-                            <button
+                            <button aria-label="Quitar"
                                 type="button"
                                 onClick={() => setShowClose(false)}
                                 className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                             >
-                                <X className="h-5 w-5" />
+                                <X aria-hidden="true" className="h-5 w-5" />
                             </button>
                         </div>
 
@@ -772,7 +772,7 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <div className="rounded-lg border bg-white shadow-sm">
+        <div className="rounded-lg border bg-card shadow-sm">
             <div className={`flex items-center justify-between border-b px-4 py-3 ${accentColor ?? ''}`}>
                 <h2 className="font-semibold">
                     {title}

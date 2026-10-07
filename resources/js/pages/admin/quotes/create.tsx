@@ -39,34 +39,34 @@ export default function QuoteCreate({ customers, products }: { customers: Custom
             <div className="mx-auto max-w-4xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Nueva Cotización</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/quotes'); }} className="space-y-6">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Datos generales</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <Label>Cliente</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
+                                <Label htmlFor="campo-cliente">Cliente</Label>
+                                <select id="campo-cliente" className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
                                     <option value="">— Sin cliente —</option>
                                     {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <Label>Fecha *</Label>
-                                <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                <Label htmlFor="campo-fecha">Fecha *</Label>
+                                <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                             </div>
                             <div>
-                                <Label>Válida hasta</Label>
-                                <Input type="date" value={data.valid_until} onChange={(e) => setData('valid_until', e.target.value)} />
+                                <Label htmlFor="campo-valida-hasta">Válida hasta</Label>
+                                <Input id="campo-valida-hasta" type="date" value={data.valid_until} onChange={(e) => setData('valid_until', e.target.value)} />
                                 {errors.valid_until && <p className="mt-1 text-xs text-red-500">{errors.valid_until}</p>}
                             </div>
                         </div>
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="font-semibold text-gray-700">Productos</h2>
                             <Button type="button" variant="outline" size="sm" onClick={addItem}><Plus className="mr-1 h-4 w-4" /> Agregar</Button>
@@ -101,7 +101,7 @@ export default function QuoteCreate({ customers, products }: { customers: Custom
                                     <div className="col-span-1 text-right text-sm font-medium">${lineTotal(item).toFixed(2)}</div>
                                     <div className="col-span-1 text-right">
                                         {data.items.length > 1 && (
-                                            <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button aria-label="Eliminar" type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         )}
                                     </div>
                                 </div>
@@ -110,12 +110,12 @@ export default function QuoteCreate({ customers, products }: { customers: Custom
                         <div className="mt-4 grid grid-cols-2 gap-4 border-t pt-4">
                             <div className="space-y-2">
                                 <div>
-                                    <Label>Descuento global ($)</Label>
-                                    <Input type="number" step="0.01" min="0" value={data.discount} onChange={(e) => setData('discount', e.target.value)} />
+                                    <Label htmlFor="campo-descuento-global">Descuento global ($)</Label>
+                                    <Input id="campo-descuento-global" type="number" step="0.01" min="0" value={data.discount} onChange={(e) => setData('discount', e.target.value)} />
                                 </div>
                                 <div>
-                                    <Label>IVA ($)</Label>
-                                    <Input type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />
+                                    <Label htmlFor="campo-iva">IVA ($)</Label>
+                                    <Input id="campo-iva" type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} />
                                 </div>
                             </div>
                             <div className="text-right text-sm">

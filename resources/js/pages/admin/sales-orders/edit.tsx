@@ -49,38 +49,38 @@ export default function SalesOrderEdit({ order, customers, products }: { order: 
             <div className="mx-auto max-w-4xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Editar Pedido</h1>
                 <form onSubmit={(e) => { e.preventDefault(); put(`/admin/sales-orders/${order.id}`); }} className="space-y-6">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Datos generales</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <Label>Cliente</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
+                                <Label htmlFor="campo-cliente">Cliente</Label>
+                                <select id="campo-cliente" className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
                                     <option value="">— Sin cliente —</option>
                                     {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <Label>Fecha *</Label>
-                                <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                <Label htmlFor="campo-fecha">Fecha *</Label>
+                                <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                             </div>
                             <div>
-                                <Label>Entrega esperada</Label>
-                                <Input type="date" value={data.expected_date} onChange={(e) => setData('expected_date', e.target.value)} />
+                                <Label htmlFor="campo-entrega-esperada">Entrega esperada</Label>
+                                <Input id="campo-entrega-esperada" type="date" value={data.expected_date} onChange={(e) => setData('expected_date', e.target.value)} />
                                 {errors.expected_date && <p className="mt-1 text-xs text-red-500">{errors.expected_date}</p>}
                             </div>
                         </div>
                         <div>
-                            <Label>Dirección de envío</Label>
-                            <Input value={data.shipping_address} onChange={(e) => setData('shipping_address', e.target.value)} />
+                            <Label htmlFor="campo-direccion-de-envio">Dirección de envío</Label>
+                            <Input id="campo-direccion-de-envio" value={data.shipping_address} onChange={(e) => setData('shipping_address', e.target.value)} />
                         </div>
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="font-semibold text-gray-700">Productos</h2>
                             <Button type="button" variant="outline" size="sm" onClick={addItem}><Plus className="mr-1 h-4 w-4" /> Agregar</Button>
@@ -109,7 +109,7 @@ export default function SalesOrderEdit({ order, customers, products }: { order: 
                                     <div className="col-span-1 text-right text-sm font-medium">${lineTotal(item).toFixed(2)}</div>
                                     <div className="col-span-1 text-right">
                                         {data.items.length > 1 && (
-                                            <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button aria-label="Eliminar" type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         )}
                                     </div>
                                 </div>
@@ -117,8 +117,8 @@ export default function SalesOrderEdit({ order, customers, products }: { order: 
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-4 border-t pt-4">
                             <div className="space-y-2">
-                                <div><Label>Descuento global ($)</Label><Input type="number" step="0.01" min="0" value={data.discount} onChange={(e) => setData('discount', e.target.value)} /></div>
-                                <div><Label>IVA ($)</Label><Input type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} /></div>
+                                <div><Label htmlFor="campo-descuento-global">Descuento global ($)</Label><Input id="campo-descuento-global" type="number" step="0.01" min="0" value={data.discount} onChange={(e) => setData('discount', e.target.value)} /></div>
+                                <div><Label htmlFor="campo-iva">IVA ($)</Label><Input id="campo-iva" type="number" step="0.01" min="0" value={data.tax} onChange={(e) => setData('tax', e.target.value)} /></div>
                             </div>
                             <div className="text-right text-sm">
                                 <p className="text-gray-500">Subtotal: <span className="font-medium">${subtotal.toFixed(2)}</span></p>

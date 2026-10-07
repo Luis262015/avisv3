@@ -98,7 +98,7 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
 
                 <form onSubmit={submit} className="space-y-6">
                     {/* Tienda */}
-                    <section className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <section className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Tienda</h2>
                         <div>
                             <Label>Tienda <span className="text-red-500">*</span></Label>
@@ -115,7 +115,7 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
                     </section>
 
                     {/* Datos fiscales del emisor */}
-                    <section className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <section className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Datos del Emisor (SIN Bolivia)</h2>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             {field('NIT Emisor', 'nit', { hint: '13 dígitos registrados en el SIN', required: true })}
@@ -132,7 +132,7 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
                     </section>
 
                     {/* Punto de venta */}
-                    <section className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <section className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Punto de Venta</h2>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                             {field('Código Sucursal', 'codigo_sucursal', { type: 'number', hint: '0 = Casa matriz' })}
@@ -142,7 +142,7 @@ export default function SiatSettingForm({ setting, stores }: { setting: Setting 
                     </section>
 
                     {/* Configuración SIN */}
-                    <section className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <section className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <h2 className="font-semibold text-gray-700">Configuración SIN</h2>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                             <div>

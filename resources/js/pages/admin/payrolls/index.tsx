@@ -41,7 +41,7 @@ export default function PayrollsIndex({ payrolls }: { payrolls: PaginatedData<Pa
                         <Link href="/admin/payrolls/create"><Plus className="mr-2 h-4 w-4" /> Generar planilla</Link>
                     </Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -67,9 +67,9 @@ export default function PayrollsIndex({ payrolls }: { payrolls: PaginatedData<Pa
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="sm" asChild><Link href={`/admin/payrolls/${p.id}`}><Eye className="h-4 w-4" /></Link></Button>
+                                            <Button variant="ghost" size="sm" asChild><Link aria-label="Ver detalle" href={`/admin/payrolls/${p.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link></Button>
                                             {p.status !== 'paid' && (
-                                                <Button variant="ghost" size="sm" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => remove(p.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                             )}
                                         </div>
                                     </td>

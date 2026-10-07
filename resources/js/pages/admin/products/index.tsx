@@ -30,7 +30,7 @@ export default function ProductsIndex({ products }: { products: PaginatedData<Pr
                     <h1 className="text-2xl font-bold">Productos</h1>
                     <Button asChild><Link href="/admin/products/create"><Plus className="mr-2 h-4 w-4" /> Nuevo Producto</Link></Button>
                 </div>
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -76,8 +76,8 @@ export default function ProductsIndex({ products }: { products: PaginatedData<Pr
                                     <td className="px-4 py-3 text-right">
                                         {!p.deleted_at && (
                                             <>
-                                                <Button variant="ghost" size="sm" asChild><Link href={`/admin/products/${p.id}/edit`}><Pencil className="h-4 w-4" /></Link></Button>
-                                                <Button variant="ghost" size="sm" onClick={() => destroy(p.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                <Button variant="ghost" size="sm" asChild><Link aria-label="Editar" href={`/admin/products/${p.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link></Button>
+                                                <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroy(p.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                             </>
                                         )}
                                     </td>

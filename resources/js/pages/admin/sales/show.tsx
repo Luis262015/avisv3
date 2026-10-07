@@ -36,7 +36,7 @@ function CancelSaleModal({ sale, siatInvoice, onClose }: {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl space-y-4">
+            <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl space-y-4">
                 <h3 className="font-semibold text-gray-800">Cancelar Venta {sale.folio}</h3>
 
                 {hasActiveInvoice && (
@@ -50,8 +50,8 @@ function CancelSaleModal({ sale, siatInvoice, onClose }: {
                 )}
 
                 <div>
-                    <Label>Motivo de cancelación</Label>
-                    <textarea
+                    <Label htmlFor="campo-motivo-de-cancelacion">Motivo de cancelación</Label>
+                    <textarea id="campo-motivo-de-cancelacion"
                         className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                         rows={3}
                         value={data.motivo}
@@ -93,18 +93,18 @@ function EmitirFacturaModal({ saleId, pagoConTarjeta, onClose }: {
     });
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl space-y-4">
+            <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl space-y-4">
                 <h3 className="font-semibold text-gray-800">Emitir Factura SIAT Bolivia</h3>
                 <div>
-                    <Label>Tipo de Factura</Label>
-                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.tipo_factura} onChange={(e) => setData('tipo_factura', e.target.value)}>
+                    <Label htmlFor="campo-tipo-de-factura">Tipo de Factura</Label>
+                    <select id="campo-tipo-de-factura" className="w-full rounded-md border px-3 py-2 text-sm" value={data.tipo_factura} onChange={(e) => setData('tipo_factura', e.target.value)}>
                         <option value="1">Con crédito fiscal</option>
                         <option value="2">Sin crédito fiscal</option>
                     </select>
                 </div>
                 <div>
-                    <Label>Tipo de Documento</Label>
-                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.tipo_doc} onChange={(e) => setData('tipo_doc', e.target.value)}>
+                    <Label htmlFor="campo-tipo-de-documento">Tipo de Documento</Label>
+                    <select id="campo-tipo-de-documento" className="w-full rounded-md border px-3 py-2 text-sm" value={data.tipo_doc} onChange={(e) => setData('tipo_doc', e.target.value)}>
                         <option value="5">NIT</option>
                         <option value="1">CI Bolivia</option>
                         <option value="2">Pasaporte</option>
@@ -118,16 +118,16 @@ function EmitirFacturaModal({ saleId, pagoConTarjeta, onClose }: {
                     {errors.nit_ci && <p className="text-xs text-red-500">{errors.nit_ci}</p>}
                 </div>
                 <div>
-                    <Label>Nombre / Razón Social</Label>
-                    <Input value={data.nombre} onChange={(e) => setData('nombre', e.target.value)} />
+                    <Label htmlFor="campo-nombre-razon-social">Nombre / Razón Social</Label>
+                    <Input id="campo-nombre-razon-social" value={data.nombre} onChange={(e) => setData('nombre', e.target.value)} />
                     {errors.nombre && <p className="text-xs text-red-500">{errors.nombre}</p>}
                 </div>
                 {/* Obligatorio cuando el pago fue con tarjeta; sin él el SIN
                     rechaza la factura con 1012. */}
                 {pagoConTarjeta && (
                     <div>
-                        <Label>Número de tarjeta</Label>
-                        <Input value={data.numero_tarjeta} inputMode="numeric" maxLength={16}
+                        <Label htmlFor="campo-numero-de-tarjeta">Número de tarjeta</Label>
+                        <Input id="campo-numero-de-tarjeta" value={data.numero_tarjeta} inputMode="numeric" maxLength={16}
                             onChange={(e) => setData('numero_tarjeta', e.target.value.replace(/\D/g, ''))}
                             placeholder="Lo exige el SIN al pagar con tarjeta" />
                         {errors.numero_tarjeta && <p className="text-xs text-red-500">{errors.numero_tarjeta}</p>}
@@ -259,14 +259,14 @@ export default function SaleShow({ sale, siatInvoice }: { sale: Sale; siatInvoic
                         { label: 'Cambio', value: fmt(sale.change_amount) },
                         { label: 'Método', value: paymentLabels[sale.payment_method] },
                     ].map((item) => (
-                        <div key={item.label} className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div key={item.label} className="rounded-lg border bg-card p-4 shadow-sm">
                             <p className="text-xs text-gray-500">{item.label}</p>
                             <p className={`mt-1 text-xl ${item.bold ? 'font-bold' : 'font-medium'}`}>{item.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -299,7 +299,7 @@ export default function SaleShow({ sale, siatInvoice }: { sale: Sale; siatInvoic
                         </tfoot>
                     </table>
                 </div>
-                {sale.notes && <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm"><p className="text-sm font-semibold text-gray-600">Notas:</p><p className="text-sm text-gray-500">{sale.notes}</p></div>}
+                {sale.notes && <div className="mt-4 rounded-lg border bg-card p-4 shadow-sm"><p className="text-sm font-semibold text-gray-600">Notas:</p><p className="text-sm text-gray-500">{sale.notes}</p></div>}
             </div>
         </AppLayout>
     );

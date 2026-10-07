@@ -84,7 +84,7 @@ export default function SupplierShow({ supplier, stats }: { supplier: Supplier; 
                         { label: 'Monto comprado', value: fmt(stats.total_amount), icon: CreditCard, color: 'text-green-600' },
                         { label: 'Saldo pendiente', value: fmt(stats.pending_payables), icon: Clock, color: 'text-red-600' },
                     ].map((s) => (
-                        <div key={s.label} className="rounded-lg border bg-white p-4 shadow-sm flex items-center gap-4">
+                        <div key={s.label} className="rounded-lg border bg-card p-4 shadow-sm flex items-center gap-4">
                             <s.icon className={`h-8 w-8 ${s.color}`} />
                             <div>
                                 <p className="text-xs text-gray-500 uppercase">{s.label}</p>
@@ -96,7 +96,7 @@ export default function SupplierShow({ supplier, stats }: { supplier: Supplier; 
 
                 {/* Info cards */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-2">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-2">
                         <h2 className="font-semibold text-gray-700">Contacto</h2>
                         {supplier.email && <p className="text-sm text-gray-600">✉ {supplier.email}</p>}
                         {supplier.phone && <p className="text-sm text-gray-600">📞 {supplier.phone}</p>}
@@ -110,7 +110,7 @@ export default function SupplierShow({ supplier, stats }: { supplier: Supplier; 
                             <p className="text-sm text-gray-400">Sin datos de contacto.</p>
                         )}
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-2">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-2">
                         <h2 className="font-semibold text-gray-700">Condiciones comerciales</h2>
                         {supplier.payment_terms && <p className="text-sm text-gray-600"><span className="font-medium">Plazo de pago:</span> {supplier.payment_terms}</p>}
                         {supplier.lead_time_days != null && <p className="text-sm text-gray-600"><span className="font-medium">Tiempo de entrega:</span> {supplier.lead_time_days} días</p>}
@@ -122,7 +122,7 @@ export default function SupplierShow({ supplier, stats }: { supplier: Supplier; 
                 </div>
 
                 {/* Evaluations */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="flex items-center justify-between border-b px-4 py-3">
                         <h2 className="font-semibold text-gray-700">Evaluaciones</h2>
                         <Button variant="outline" size="sm" asChild>
@@ -162,8 +162,8 @@ export default function SupplierShow({ supplier, stats }: { supplier: Supplier; 
                                         <td className="px-4 py-3 text-gray-500">{e.user.name}</td>
                                         <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{e.comments ?? '—'}</td>
                                         <td className="px-4 py-3">
-                                            <Button variant="ghost" size="sm" onClick={() => destroyEval(e.id)}>
-                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroyEval(e.id)}>
+                                                <Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" />
                                             </Button>
                                         </td>
                                     </tr>
@@ -174,7 +174,7 @@ export default function SupplierShow({ supplier, stats }: { supplier: Supplier; 
                 </div>
 
                 {supplier.notes && (
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-2 font-semibold text-gray-700">Notas</h2>
                         <p className="text-sm text-gray-600">{supplier.notes}</p>
                     </div>

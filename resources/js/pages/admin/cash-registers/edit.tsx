@@ -18,14 +18,14 @@ export default function CashRegisterEdit({ register, stores }: { register: Regis
                 <p className="mb-6 font-mono text-sm text-gray-400">ID: #{register.id}</p>
                 <form onSubmit={(e) => { e.preventDefault(); put(`/admin/cash-registers/${register.id}`); }} className="space-y-4">
                     <div>
-                        <Label>Tienda *</Label>
-                        <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
+                        <Label htmlFor="campo-tienda">Tienda *</Label>
+                        <select id="campo-tienda" className="w-full rounded-md border px-3 py-2 text-sm" value={data.store_id} onChange={(e) => setData('store_id', e.target.value)}>
                             {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                     </div>
                     <div>
-                        <Label>Nombre *</Label>
-                        <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        <Label htmlFor="campo-nombre">Nombre *</Label>
+                        <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                     </div>
                     <div className="flex items-center gap-2">

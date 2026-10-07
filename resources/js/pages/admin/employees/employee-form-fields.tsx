@@ -31,7 +31,7 @@ export function EmployeeFormFields({ data, setData, errors, departments, users }
     return (
         <div className="space-y-5">
             {/* Identificación */}
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                 <h2 className="font-semibold text-gray-700">Identificación</h2>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                     <Field label="Código de empleado *" error={errors.employee_code}>
@@ -81,7 +81,7 @@ export function EmployeeFormFields({ data, setData, errors, departments, users }
             </div>
 
             {/* Contacto */}
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                 <h2 className="font-semibold text-gray-700">Contacto</h2>
                 <div className="grid grid-cols-2 gap-4">
                     <Field label="Teléfono" error={errors.phone}>
@@ -105,7 +105,7 @@ export function EmployeeFormFields({ data, setData, errors, departments, users }
             </div>
 
             {/* Datos laborales */}
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                 <h2 className="font-semibold text-gray-700">Datos laborales</h2>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                     <Field label="Cargo *" error={errors.position}>
@@ -153,7 +153,7 @@ export function EmployeeFormFields({ data, setData, errors, departments, users }
             </div>
 
             {/* Nómina */}
-            <div className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+            <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                 <h2 className="font-semibold text-gray-700">Datos para nómina</h2>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                     <Field label="Banco" error={errors.bank_name}>
@@ -175,7 +175,7 @@ export function EmployeeFormFields({ data, setData, errors, departments, users }
             </div>
 
             {/* Notas */}
-            <div className="rounded-lg border bg-white p-4 shadow-sm">
+            <div className="rounded-lg border bg-card p-4 shadow-sm">
                 <Field label="Notas" error={errors.notes}>
                     <textarea className={selectClass} rows={3} value={data.notes ?? ''} onChange={(e) => setData('notes', e.target.value)} />
                 </Field>

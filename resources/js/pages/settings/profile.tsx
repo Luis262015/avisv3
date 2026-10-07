@@ -14,7 +14,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Profile settings',
+        title: 'Perfil',
         href: '/settings/profile',
     },
 ];
@@ -35,15 +35,15 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
+            <Head title="Perfil" />
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Profile information" description="Update your name and email address" />
+                    <HeadingSmall title="Tus datos" description="Tu nombre y el correo con el que entras al sistema." />
 
                     <form onSubmit={submit} className="space-y-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
+                            <Label htmlFor="name">Nombre</Label>
 
                             <Input
                                 id="name"
@@ -52,14 +52,14 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                 onChange={(e) => setData('name', e.target.value)}
                                 required
                                 autoComplete="name"
-                                placeholder="Full name"
+                                
                             />
 
                             <InputError className="mt-2" message={errors.name} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="email">Email address</Label>
+                            <Label htmlFor="email">Correo</Label>
 
                             <Input
                                 id="email"
@@ -69,7 +69,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                 onChange={(e) => setData('email', e.target.value)}
                                 required
                                 autoComplete="username"
-                                placeholder="Email address"
+                                
                             />
 
                             <InputError className="mt-2" message={errors.email} />
@@ -98,7 +98,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                         )}
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save</Button>
+                            <Button disabled={processing}>Guardar cambios</Button>
 
                             <Transition
                                 show={recentlySuccessful}
@@ -107,7 +107,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                 leave="transition ease-in-out"
                                 leaveTo="opacity-0"
                             >
-                                <p className="text-sm text-neutral-600">Saved</p>
+                                <p role="status" className="text-sm font-medium text-green-700">Cambios guardados</p>
                             </Transition>
                         </div>
                     </form>

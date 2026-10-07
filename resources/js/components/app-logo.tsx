@@ -1,30 +1,28 @@
+import { type SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
 import AppLogoIcon from './app-logo-icon';
 
 /**
- * Marca de la aplicación en la cabecera del menú.
- *
- * El nombre sale de `APP_NAME`, no escrito a mano: así el menú, el título de la
- * pestaña y el remitente de los correos no pueden discrepar. Antes decía
- * «Laravel Starter Kit», que era lo que traía la plantilla.
+ * Marca en la cabecera del menú: el monograma, «AVIS» y debajo la empresa en
+ * la que se está trabajando, que es lo que distingue una pestaña de otra
+ * cuando alguien lleva varias.
  */
 export default function AppLogo() {
-    const appName = import.meta.env.VITE_APP_NAME || 'AvisV3';
+    const { tenant } = usePage<SharedData>().props;
 
     return (
         <>
-            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-md">
-                <AppLogoIcon className="size-5" aria-hidden="true" />
-            </div>
+            <span className="flex size-9 shrink-0 items-center justify-center">
+                <AppLogoIcon className="size-9 text-white" aria-hidden="true" />
+            </span>
             {/* `min-w-0` para que el truncado funcione: sin él un nombre largo
                 estira el contenedor en vez de recortarse. */}
-            <div className="ml-1 grid min-w-0 flex-1 text-left">
+            <div className="ml-0.5 grid min-w-0 flex-1 text-left">
                 {/* `translate="no"`: es un nombre propio, no debe traducirse. */}
-                <span className="truncate text-sm leading-tight font-semibold" translate="no">
-                    {appName}
+                <span className="font-display truncate text-base leading-tight font-bold text-white" translate="no">
+                    AVIS
                 </span>
-                <span className="text-sidebar-foreground/60 truncate text-xs leading-tight">
-                    Punto de venta
-                </span>
+                <span className="text-sidebar-foreground/80 truncate text-xs leading-tight">{tenant?.name ?? 'Inventarios y facturación'}</span>
             </div>
         </>
     );

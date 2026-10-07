@@ -75,7 +75,7 @@ export default function PayableShow({ payable }: { payable: Payable }) {
                         { label: 'Saldo', value: fmt(payable.balance), color: 'text-red-600 font-bold' },
                         { label: 'Vencimiento', value: payable.due_date, color: '' },
                     ].map((item) => (
-                        <div key={item.label} className="rounded-lg border bg-white p-4 shadow-sm text-center">
+                        <div key={item.label} className="rounded-lg border bg-card p-4 shadow-sm text-center">
                             <p className="text-xs text-gray-500 uppercase">{item.label}</p>
                             <p className={`mt-1 text-lg font-semibold ${item.color}`}>{item.value}</p>
                         </div>
@@ -84,7 +84,7 @@ export default function PayableShow({ payable }: { payable: Payable }) {
 
                 <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     {payable.supplier && (
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <h2 className="mb-2 font-semibold text-gray-700">Proveedor</h2>
                             <p className="font-medium">{payable.supplier.name}</p>
                             {payable.supplier.contact_name && <p className="text-sm text-gray-500">{payable.supplier.contact_name}</p>}
@@ -93,7 +93,7 @@ export default function PayableShow({ payable }: { payable: Payable }) {
                         </div>
                     )}
                     {payable.notes && (
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <h2 className="mb-2 font-semibold text-gray-700">Notas</h2>
                             <p className="text-sm text-gray-600">{payable.notes}</p>
                         </div>
@@ -105,21 +105,21 @@ export default function PayableShow({ payable }: { payable: Payable }) {
                         <h2 className="mb-4 font-semibold text-blue-800">Registrar Pago</h2>
                         <form onSubmit={handlePayment} className="grid grid-cols-1 gap-4 md:grid-cols-4">
                             <div>
-                                <Label>Monto *</Label>
-                                <Input type="number" step="0.01" min="0.01" max={payable.balance} value={data.amount} onChange={(e) => setData('amount', e.target.value)} />
+                                <Label htmlFor="campo-monto">Monto *</Label>
+                                <Input id="campo-monto" type="number" step="0.01" min="0.01" max={payable.balance} value={data.amount} onChange={(e) => setData('amount', e.target.value)} />
                                 {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount}</p>}
                             </div>
                             <div>
-                                <Label>Método *</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
+                                <Label htmlFor="campo-metodo">Método *</Label>
+                                <select id="campo-metodo" className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
                                     <option value="cash">Efectivo</option>
                                     <option value="card">Tarjeta</option>
                                     <option value="transfer">Transferencia</option>
                                 </select>
                             </div>
                             <div>
-                                <Label>Fecha *</Label>
-                                <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                <Label htmlFor="campo-fecha">Fecha *</Label>
+                                <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                             </div>
                             <div className="flex items-end gap-2">
                                 <Button type="submit" disabled={processing}>Guardar</Button>
@@ -130,7 +130,7 @@ export default function PayableShow({ payable }: { payable: Payable }) {
                 )}
 
                 {payable.payments.length > 0 && (
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Historial de pagos</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

@@ -88,7 +88,7 @@ export default function SiatInvoicesIndex({ invoices, filters }: { invoices: Pag
                     <Button onClick={applyFilters} variant="outline">Filtrar</Button>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
+                <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>

@@ -122,7 +122,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
             `}</style>
 
             <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4">
-                <div className="w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-sm sm:rounded-2xl">
+                <div className="w-full overflow-hidden rounded-t-2xl bg-card shadow-2xl sm:max-w-sm sm:rounded-2xl">
 
                     {/* Header */}
                     <div className="flex items-center justify-between border-b px-4 py-3">
@@ -130,8 +130,8 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
                             <Camera className="h-5 w-5 text-blue-600" />
                             <span className="font-semibold text-gray-800">Escáner de código de barras</span>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-                            <X className="h-4 w-4" />
+                        <Button aria-label="Quitar" type="button" variant="ghost" size="icon" onClick={onClose}>
+                            <X aria-hidden="true" className="h-4 w-4" />
                         </Button>
                     </div>
 

@@ -51,7 +51,7 @@ export default function WarrantyShow({ warranty }: { warranty: Warranty }) {
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-white p-4 shadow-sm text-sm text-gray-600 space-y-1">
+                <div className="rounded-lg border bg-card p-4 shadow-sm text-sm text-gray-600 space-y-1">
                     <p><span className="text-gray-400">Producto:</span> {warranty.product?.name ?? '—'}</p>
                     <p><span className="text-gray-400">Serie:</span> {warranty.serial_number ?? '—'}</p>
                     <p><span className="text-gray-400">Cliente:</span> {warranty.customer ? <Link href={`/admin/customers/${warranty.customer.id}`} className="text-blue-600 hover:underline">{warranty.customer.name}</Link> : '—'}</p>
@@ -59,7 +59,7 @@ export default function WarrantyShow({ warranty }: { warranty: Warranty }) {
                     {warranty.terms && <p><span className="text-gray-400">Términos:</span> {warranty.terms}</p>}
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="flex items-center justify-between border-b px-4 py-3">
                         <span className="font-semibold text-gray-700">Reclamos</span>
                         <Button size="sm" variant="outline" onClick={() => setShowClaim((v) => !v)}>Nuevo reclamo</Button>
@@ -69,12 +69,12 @@ export default function WarrantyShow({ warranty }: { warranty: Warranty }) {
                         <form onSubmit={(e) => { e.preventDefault(); claimForm.post(`/admin/warranties/${warranty.id}/claims`, { onSuccess: () => { claimForm.reset('description'); setShowClaim(false); } }); }} className="border-b p-4">
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                                 <div>
-                                    <Label>Fecha</Label>
-                                    <Input type="date" value={claimForm.data.date} onChange={(e) => claimForm.setData('date', e.target.value)} />
+                                    <Label htmlFor="campo-fecha">Fecha</Label>
+                                    <Input id="campo-fecha" type="date" value={claimForm.data.date} onChange={(e) => claimForm.setData('date', e.target.value)} />
                                 </div>
                                 <div className="md:col-span-3">
-                                    <Label>Descripción</Label>
-                                    <Input value={claimForm.data.description} onChange={(e) => claimForm.setData('description', e.target.value)} />
+                                    <Label htmlFor="campo-descripcion">Descripción</Label>
+                                    <Input id="campo-descripcion" value={claimForm.data.description} onChange={(e) => claimForm.setData('description', e.target.value)} />
                                     {claimForm.errors.description && <p className="mt-1 text-xs text-red-500">{claimForm.errors.description}</p>}
                                 </div>
                             </div>

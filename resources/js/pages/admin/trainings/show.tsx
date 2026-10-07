@@ -61,12 +61,12 @@ export default function TrainingShow({ training, employees }: { training: Traini
                 </div>
 
                 {training.description && (
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-sm text-gray-600">{training.description}</p>
                     </div>
                 )}
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="flex items-center justify-between border-b px-4 py-3">
                         <h2 className="font-semibold text-gray-700">Participantes ({training.employees.length})</h2>
                         <div className="flex items-center gap-2">
@@ -106,7 +106,7 @@ export default function TrainingShow({ training, employees }: { training: Traini
                                             <input type="date" className="rounded-md border px-2 py-1 text-sm" defaultValue={d(e.pivot.completed_at) === '—' ? '' : d(e.pivot.completed_at)} onBlur={(ev) => updatePivot(e.id, 'completed_at', ev.target.value)} />
                                         </td>
                                         <td className="px-4 py-2 text-right">
-                                            <Button variant="ghost" size="sm" onClick={() => removeParticipant(e.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => removeParticipant(e.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         </td>
                                     </tr>
                                 ))}

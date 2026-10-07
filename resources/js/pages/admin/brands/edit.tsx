@@ -16,13 +16,13 @@ export default function BrandEdit({ brand }: { brand: Brand }) {
                 <h1 className="mb-6 text-2xl font-bold">Editar Marca</h1>
                 <form onSubmit={(e) => { e.preventDefault(); put(`/admin/brands/${brand.id}`); }} className="space-y-4">
                     <div>
-                        <Label>Nombre *</Label>
-                        <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        <Label htmlFor="campo-nombre">Nombre *</Label>
+                        <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                     </div>
                     <div>
-                        <Label>Descripción</Label>
-                        <Input value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                        <Label htmlFor="campo-descripcion">Descripción</Label>
+                        <Input id="campo-descripcion" value={data.description} onChange={(e) => setData('description', e.target.value)} />
                     </div>
                     <div className="flex items-center gap-2">
                         <input type="checkbox" id="active" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} className="h-4 w-4" />

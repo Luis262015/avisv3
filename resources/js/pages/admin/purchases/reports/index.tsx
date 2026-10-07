@@ -57,26 +57,26 @@ export default function PurchasesReports({
                 <h1 className="text-2xl font-bold">Reportes de Compras</h1>
 
                 {/* Filters */}
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <form onSubmit={apply} className="grid grid-cols-2 gap-4 md:grid-cols-5">
                         <div>
-                            <Label>Desde</Label>
-                            <Input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+                            <Label htmlFor="campo-desde">Desde</Label>
+                            <Input id="campo-desde" type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
                         </div>
                         <div>
-                            <Label>Hasta</Label>
-                            <Input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+                            <Label htmlFor="campo-hasta">Hasta</Label>
+                            <Input id="campo-hasta" type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
                         </div>
                         <div>
-                            <Label>Proveedor</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>
+                            <Label htmlFor="campo-proveedor">Proveedor</Label>
+                            <select id="campo-proveedor" className="w-full rounded-md border px-3 py-2 text-sm" value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>
                                 <option value="">Todos</option>
                                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <Label>Tienda</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={form.store_id} onChange={(e) => setForm({ ...form, store_id: e.target.value })}>
+                            <Label htmlFor="campo-tienda">Tienda</Label>
+                            <select id="campo-tienda" className="w-full rounded-md border px-3 py-2 text-sm" value={form.store_id} onChange={(e) => setForm({ ...form, store_id: e.target.value })}>
                                 <option value="">Todas</option>
                                 {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
@@ -98,7 +98,7 @@ export default function PurchasesReports({
                         { label: 'Sin pagar', value: fmt(summary.unpaid_amount), color: 'text-red-600' },
                         { label: 'Pago parcial', value: fmt(summary.partial_amount), color: 'text-yellow-600' },
                     ].map((c) => (
-                        <div key={c.label} className="rounded-lg border bg-white p-4 shadow-sm text-center">
+                        <div key={c.label} className="rounded-lg border bg-card p-4 shadow-sm text-center">
                             <p className="text-xs uppercase text-gray-500">{c.label}</p>
                             <p className={`mt-1 text-lg font-bold ${c.color}`}>{c.value}</p>
                         </div>
@@ -106,7 +106,7 @@ export default function PurchasesReports({
                 </div>
 
                 {/* By supplier */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Compras por proveedor</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -136,7 +136,7 @@ export default function PurchasesReports({
                 </div>
 
                 {/* By product */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Productos más comprados (top 50)</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -164,7 +164,7 @@ export default function PurchasesReports({
                 </div>
 
                 {/* Cost evolution */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Evolución mensual de compras</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -190,7 +190,7 @@ export default function PurchasesReports({
                 </div>
 
                 {/* Compliance */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Cumplimiento por proveedor</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

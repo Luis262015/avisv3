@@ -36,52 +36,52 @@ export default function IncomeEdit({ income, openShifts, stores }: { income: Inc
             <div className="mx-auto max-w-2xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Editar Ingreso</h1>
                 <form onSubmit={(e) => { e.preventDefault(); patch(`/admin/incomes/${income.id}`); }} className="space-y-5">
-                    <div className="rounded-lg border bg-white p-5 shadow-sm space-y-4">
+                    <div className="rounded-lg border bg-card p-5 shadow-sm space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <Label>Categoría *</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.category} onChange={(e) => setData('category', e.target.value)}>
+                                <Label htmlFor="campo-categoria">Categoría *</Label>
+                                <select id="campo-categoria" className="w-full rounded-md border px-3 py-2 text-sm" value={data.category} onChange={(e) => setData('category', e.target.value)}>
                                     <option value="">— Seleccionar —</option>
                                     {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                                 </select>
                                 {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
                             </div>
                             <div>
-                                <Label>Fecha *</Label>
-                                <Input type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
+                                <Label htmlFor="campo-fecha">Fecha *</Label>
+                                <Input id="campo-fecha" type="date" value={data.date} onChange={(e) => setData('date', e.target.value)} />
                                 {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
                             </div>
                         </div>
 
                         <div>
-                            <Label>Descripción *</Label>
-                            <Input value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                            <Label htmlFor="campo-descripcion">Descripción *</Label>
+                            <Input id="campo-descripcion" value={data.description} onChange={(e) => setData('description', e.target.value)} />
                             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <Label>Monto *</Label>
-                                <Input type="number" step="0.01" min="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} />
+                                <Label htmlFor="campo-monto">Monto *</Label>
+                                <Input id="campo-monto" type="number" step="0.01" min="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} />
                                 {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount}</p>}
                             </div>
                             <div>
-                                <Label>Método de pago *</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
+                                <Label htmlFor="campo-metodo-de-pago">Método de pago *</Label>
+                                <select id="campo-metodo-de-pago" className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
                                     <option value="cash">Efectivo</option>
                                     <option value="card">Tarjeta</option>
                                     <option value="transfer">Transferencia</option>
                                 </select>
                             </div>
                             <div>
-                                <Label>No. de referencia</Label>
-                                <Input value={data.reference} onChange={(e) => setData('reference', e.target.value)} placeholder="Opcional" />
+                                <Label htmlFor="campo-no-de-referencia">No. de referencia</Label>
+                                <Input id="campo-no-de-referencia" value={data.reference} onChange={(e) => setData('reference', e.target.value)} placeholder="Opcional" />
                             </div>
                         </div>
 
                         <div>
-                            <Label>Tienda *</Label>
-                            <select
+                            <Label htmlFor="campo-tienda">Tienda *</Label>
+                            <select id="campo-tienda"
                                 className="w-full rounded-md border px-3 py-2 text-sm disabled:bg-gray-100"
                                 value={data.store_id}
                                 disabled={!!data.cash_shift_id}
@@ -96,8 +96,8 @@ export default function IncomeEdit({ income, openShifts, stores }: { income: Inc
 
                         {openShifts.length > 0 && (
                             <div>
-                                <Label>Turno de caja (opcional)</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.cash_shift_id} onChange={(e) => setData('cash_shift_id', e.target.value)}>
+                                <Label htmlFor="campo-turno-de-caja-opcional">Turno de caja (opcional)</Label>
+                                <select id="campo-turno-de-caja-opcional" className="w-full rounded-md border px-3 py-2 text-sm" value={data.cash_shift_id} onChange={(e) => setData('cash_shift_id', e.target.value)}>
                                     <option value="">— Sin turno —</option>
                                     {openShifts.map((s) => <option key={s.id} value={s.id}>{s.cash_register.name}</option>)}
                                 </select>
@@ -105,8 +105,8 @@ export default function IncomeEdit({ income, openShifts, stores }: { income: Inc
                         )}
 
                         <div>
-                            <Label>Notas</Label>
-                            <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                            <Label htmlFor="campo-notas">Notas</Label>
+                            <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                         </div>
                     </div>
 

@@ -163,7 +163,7 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                             {lowStock.map((r) => (
                                 <div
                                     key={`${r.store_id}-${r.product_id}`}
-                                    className="rounded-lg border bg-white p-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                    className="rounded-lg border bg-card p-3 shadow-sm"
                                 >
                                     <p className="text-sm font-medium">{r.name}</p>
                                     <p className="text-xs text-neutral-500">{r.store_name}</p>
@@ -186,12 +186,12 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                 )}
 
                 {/* ── Historial ──────────────────────────────────────────── */}
-                <div className="rounded-lg border bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                    <div className="border-b px-4 py-3 dark:border-neutral-700">
+                <div className="rounded-lg border bg-card shadow-sm">
+                    <div className="border-b px-4 py-3">
                         <p className="mb-3 font-semibold">Historial de movimientos</p>
                         <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
                             <select
-                                className="rounded-md border px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                className="rounded-md border px-2 py-1.5 text-sm"
                                 value={f.store_id ?? ''}
                                 onChange={(e) => aplicarFiltros({ ...f, store_id: e.target.value })}
                                 aria-label="Tienda"
@@ -202,7 +202,7 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                                 ))}
                             </select>
                             <select
-                                className="rounded-md border px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                className="rounded-md border px-2 py-1.5 text-sm"
                                 value={f.product_id ?? ''}
                                 onChange={(e) => aplicarFiltros({ ...f, product_id: e.target.value })}
                                 aria-label="Producto"
@@ -213,7 +213,7 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                                 ))}
                             </select>
                             <select
-                                className="rounded-md border px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                className="rounded-md border px-2 py-1.5 text-sm"
                                 value={f.type ?? ''}
                                 onChange={(e) => aplicarFiltros({ ...f, type: e.target.value })}
                                 aria-label="Tipo de movimiento"
@@ -240,7 +240,7 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500 dark:border-neutral-700 dark:bg-neutral-800">
+                            <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                                 <tr>
                                     <th className="px-4 py-3">Producto</th>
                                     <th className="px-4 py-3">Tienda</th>
@@ -253,9 +253,9 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                                     <th className="px-4 py-3">Fecha</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y dark:divide-neutral-800">
+                            <tbody className="divide-y">
                                 {movements.data.map((m) => (
-                                    <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
+                                    <tr key={m.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3">
                                             <p className="font-medium">{m.product.name}</p>
                                             {m.product.sku && <p className="font-mono text-xs text-gray-400">{m.product.sku}</p>}
@@ -288,7 +288,7 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                     </div>
 
                     {movements.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t px-4 py-3 text-sm dark:border-neutral-700">
+                        <div className="flex items-center justify-between border-t px-4 py-3 text-sm">
                             <span className="text-neutral-500">
                                 Página {movements.current_page} de {movements.last_page} · {movements.total} movimientos
                             </span>
@@ -312,15 +312,15 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
             {/* ── Ajuste ─────────────────────────────────────────────────── */}
             {ajustando && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-900">
+                    <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl">
                         <h2 className="mb-1 text-lg font-bold">Ajustar existencias</h2>
                         <p className="mb-4 text-sm text-neutral-500">
                             {ajustando.name} — {ajustando.store_name} · actual: {ajustando.stock}
                         </p>
                         <form onSubmit={guardarAjuste} className="space-y-4">
                             <div>
-                                <Label>Nuevo stock *</Label>
-                                <Input
+                                <Label htmlFor="campo-nuevo-stock">Nuevo stock *</Label>
+                                <Input id="campo-nuevo-stock"
                                     type="number"
                                     min="0"
                                     value={ajuste.data.new_stock}
@@ -329,8 +329,8 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
                                 {ajuste.errors.new_stock && <p className="mt-1 text-xs text-red-500">{ajuste.errors.new_stock}</p>}
                             </div>
                             <div>
-                                <Label>Motivo *</Label>
-                                <Input
+                                <Label htmlFor="campo-motivo">Motivo *</Label>
+                                <Input id="campo-motivo"
                                     value={ajuste.data.reason}
                                     onChange={(e) => ajuste.setData('reason', e.target.value)}
                                     placeholder="Conteo físico, merma, rotura…"
@@ -350,15 +350,15 @@ export default function InventoryIndex({ movements, lowStock, stores, products, 
             {/* ── Mínimo por tienda ──────────────────────────────────────── */}
             {minimo && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-900">
+                    <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl">
                         <h2 className="mb-1 text-lg font-bold">Mínimo de esta tienda</h2>
                         <p className="mb-4 text-sm text-neutral-500">
                             {minimo.name} — {minimo.store_name}
                         </p>
                         <form onSubmit={guardarMinimo} className="space-y-4">
                             <div>
-                                <Label>Mínimo propio</Label>
-                                <Input
+                                <Label htmlFor="campo-minimo-propio">Mínimo propio</Label>
+                                <Input id="campo-minimo-propio"
                                     type="number"
                                     min="0"
                                     value={min.data.min_stock}

@@ -25,7 +25,7 @@ export function NavFooter({
                             <SidebarMenuButton
                                 asChild
                                 tooltip={item.title}
-                                className="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
+                                className="text-sidebar-foreground/85"
                             >
                                 <a
                                     href={item.url}

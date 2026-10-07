@@ -68,7 +68,7 @@ export default function AttendancesIndex({ date, employees }: { date: string; em
                         <Input type="date" value={date} onChange={(e) => changeDate(e.target.value)} className="w-44" />
                     </div>
                 </div>
-                <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>

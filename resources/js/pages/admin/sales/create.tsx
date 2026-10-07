@@ -251,7 +251,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/sales'); }} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Columna izquierda: buscador + carrito */}
                     <div className="lg:col-span-2 space-y-4">
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <Label>Buscar producto</Label>
                             <div className="mt-1 flex gap-2">
                                 <div className="relative flex-1">
@@ -282,7 +282,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                             </p>
 
                             {search && (
-                                <div className="mt-2 rounded-md border divide-y bg-white shadow-md">
+                                <div className="mt-2 rounded-md border divide-y bg-card shadow-md">
                                     {filtered.map((p) => (
                                         <button key={p.id} type="button" onClick={() => addProduct(p)}
                                             className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50">
@@ -306,7 +306,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                         </div>
 
                         {combos.length > 0 && (
-                            <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className="rounded-lg border bg-card p-4 shadow-sm">
                                 <Label>Combos disponibles</Label>
                                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                                     {combos.map((c) => {
@@ -333,7 +333,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                             </div>
                         )}
 
-                        <div className="rounded-lg border bg-white shadow-sm">
+                        <div className="rounded-lg border bg-card shadow-sm">
                             <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos ({data.items.length})</div>
                             {data.items.length === 0 ? (
                                 <div className="px-4 py-12 text-center text-gray-400">
@@ -369,7 +369,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                                                     ${((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0) - (parseFloat(item.discount) || 0)).toFixed(2)}
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-red-400" /></Button>
+                                                    <Button aria-label="Eliminar" type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-400" /></Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -382,7 +382,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
 
                     {/* Columna derecha: totales y pago */}
                     <div className="space-y-4">
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <h2 className="mb-3 font-semibold text-gray-700">Turno de caja</h2>
                             <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.cash_shift_id} onChange={(e) => setData('cash_shift_id', e.target.value)}>
                                 <option value="">— Seleccionar —</option>
@@ -391,18 +391,18 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                             {errors.cash_shift_id && <p className="mt-1 text-xs text-red-500">{errors.cash_shift_id}</p>}
                         </div>
 
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-700">Cliente y promoción</h2>
                             <div>
-                                <Label>Cliente</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
+                                <Label htmlFor="campo-cliente">Cliente</Label>
+                                <select id="campo-cliente" className="w-full rounded-md border px-3 py-2 text-sm" value={data.customer_id} onChange={(e) => setData('customer_id', e.target.value)}>
                                     <option value="">— Consumidor final —</option>
                                     {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <Label>Promoción / cupón</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.promotion_id} onChange={(e) => setData('promotion_id', e.target.value)}>
+                                <Label htmlFor="campo-promocion-cupon">Promoción / cupón</Label>
+                                <select id="campo-promocion-cupon" className="w-full rounded-md border px-3 py-2 text-sm" value={data.promotion_id} onChange={(e) => setData('promotion_id', e.target.value)}>
                                     <option value="">— Sin promoción —</option>
                                     {promotions.map((p) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (${p.code})` : ''}</option>)}
                                 </select>
@@ -416,7 +416,7 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                             </div>
                         </div>
 
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-700">Resumen</h2>
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
                             {selectedPromo ? (
@@ -437,11 +437,11 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                             <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>${total.toFixed(2)}</span></div>
                         </div>
 
-                        <div className="rounded-lg border bg-white p-4 shadow-sm space-y-3">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm space-y-3">
                             <h2 className="font-semibold text-gray-700">Pago</h2>
                             <div>
-                                <Label>Método de pago</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
+                                <Label htmlFor="campo-metodo-de-pago">Método de pago</Label>
+                                <select id="campo-metodo-de-pago" className="w-full rounded-md border px-3 py-2 text-sm" value={data.payment_method} onChange={(e) => setData('payment_method', e.target.value)}>
                                     <option value="cash">Efectivo</option>
                                     <option value="card">Tarjeta</option>
                                     <option value="transfer">Transferencia</option>
@@ -449,8 +449,8 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                                 </select>
                             </div>
                             <div>
-                                <Label>Monto recibido *</Label>
-                                <Input type="number" step="0.01" min="0" value={data.amount_paid} onChange={(e) => setData('amount_paid', e.target.value)} className="text-xl font-bold" />
+                                <Label htmlFor="campo-monto-recibido">Monto recibido *</Label>
+                                <Input id="campo-monto-recibido" type="number" step="0.01" min="0" value={data.amount_paid} onChange={(e) => setData('amount_paid', e.target.value)} className="text-xl font-bold" />
                                 {errors.amount_paid && <p className="mt-1 text-xs text-red-500">{errors.amount_paid}</p>}
                             </div>
                             {data.amount_paid && (
@@ -460,8 +460,8 @@ export default function SaleCreate({ activeShift, openShifts, products, customer
                                 </div>
                             )}
                             <div>
-                                <Label>Notas</Label>
-                                <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                                <Label htmlFor="campo-notas">Notas</Label>
+                                <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                             </div>
                         </div>
 

@@ -16,17 +16,17 @@ export default function CategoryCreate({ parents }: { parents: Parent[] }) {
                 <h1 className="mb-6 text-2xl font-bold">Nueva Categoría</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post('/admin/categories'); }} className="space-y-4">
                     <div>
-                        <Label>Nombre *</Label>
-                        <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        <Label htmlFor="campo-nombre">Nombre *</Label>
+                        <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                     </div>
                     <div>
-                        <Label>Descripción</Label>
-                        <Input value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                        <Label htmlFor="campo-descripcion">Descripción</Label>
+                        <Input id="campo-descripcion" value={data.description} onChange={(e) => setData('description', e.target.value)} />
                     </div>
                     <div>
-                        <Label>Categoría padre</Label>
-                        <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.parent_id} onChange={(e) => setData('parent_id', e.target.value)}>
+                        <Label htmlFor="campo-categoria-padre">Categoría padre</Label>
+                        <select id="campo-categoria-padre" className="w-full rounded-md border px-3 py-2 text-sm" value={data.parent_id} onChange={(e) => setData('parent_id', e.target.value)}>
                             <option value="">— Ninguna —</option>
                             {parents.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>

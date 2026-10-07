@@ -105,7 +105,7 @@ function CodigoSinSelect({
             </button>
 
             {open && (
-                <div className="absolute z-20 mt-1 w-[26rem] max-w-[80vw] rounded-md border bg-white shadow-lg">
+                <div className="absolute z-20 mt-1 w-[26rem] max-w-[80vw] rounded-md border bg-card shadow-lg">
                     <div className="border-b p-2">
                         <Input
                             autoFocus
@@ -394,7 +394,7 @@ export default function SiatHomologationIndex({ products, catalogo, setting, set
                 </div>
 
                 {/* Avance */}
-                <div className="mb-4 rounded-lg border bg-white p-4 shadow-sm">
+                <div className="mb-4 rounded-lg border bg-card p-4 shadow-sm">
                     <div className="mb-2 flex items-center justify-between text-sm">
                         <span className="text-gray-600">
                             {stats.homologados} de {stats.total} productos homologados
@@ -457,7 +457,7 @@ export default function SiatHomologationIndex({ products, catalogo, setting, set
                     <Button variant="outline" onClick={() => navigate()}>Filtrar</Button>
                 </div>
 
-                <div className="overflow-visible rounded-lg border bg-white shadow-sm">
+                <div className="overflow-visible rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>

@@ -97,7 +97,7 @@ export default function SiatNotasIndex({
                     <Button onClick={applyFilters}>Filtrar</Button>
                 </div>
 
-                <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -163,20 +163,20 @@ export default function SiatNotasIndex({
                                     <td className="px-4 py-3">
                                         <div className="flex justify-end gap-1">
                                             {['pendiente', 'rechazada'].includes(nota.estado) && (
-                                                <Button
+                                                <Button aria-label="Actualizar"
                                                     size="sm"
                                                     variant="outline"
                                                     disabled={reenviando === nota.id}
                                                     onClick={() => resend(nota.id)}
                                                 >
-                                                    <RefreshCw
+                                                    <RefreshCw aria-hidden="true"
                                                         className={`h-4 w-4 ${reenviando === nota.id ? 'animate-spin' : ''}`}
                                                     />
                                                 </Button>
                                             )}
                                             <Link href={`/admin/siat/notas/${nota.id}`}>
-                                                <Button size="sm" variant="outline">
-                                                    <Eye className="h-4 w-4" />
+                                                <Button aria-label="Ver detalle" size="sm" variant="outline">
+                                                    <Eye aria-hidden="true" className="h-4 w-4" />
                                                 </Button>
                                             </Link>
                                         </div>

@@ -114,23 +114,23 @@ function FilaCompra({ compra }: { compra: Compra }) {
                     <td colSpan={7} className="bg-gray-50 px-3 py-3">
                         <div className="grid gap-3 sm:grid-cols-5">
                             <div className="sm:col-span-2">
-                                <label className="mb-1 block text-xs text-gray-500">Código de autorización (CUF)</label>
-                                <Input value={data.codigo_autorizacion}
+                                <label className="mb-1 block text-xs text-gray-500" htmlFor="campo-codigo-de-autorizacion-cuf">Código de autorización (CUF)</label>
+                                <Input id="campo-codigo-de-autorizacion-cuf" value={data.codigo_autorizacion}
                                     onChange={(e) => setData('codigo_autorizacion', e.target.value)} />
                             </div>
                             <div>
-                                <label className="mb-1 block text-xs text-gray-500">Nº de factura</label>
-                                <Input value={data.invoice_number}
+                                <label className="mb-1 block text-xs text-gray-500" htmlFor="campo-no-de-factura">Nº de factura</label>
+                                <Input id="campo-no-de-factura" value={data.invoice_number}
                                     onChange={(e) => setData('invoice_number', e.target.value)} />
                             </div>
                             <div>
-                                <label className="mb-1 block text-xs text-gray-500">NIT del proveedor</label>
-                                <Input value={data.nit_proveedor}
+                                <label className="mb-1 block text-xs text-gray-500" htmlFor="campo-nit-del-proveedor">NIT del proveedor</label>
+                                <Input id="campo-nit-del-proveedor" value={data.nit_proveedor}
                                     onChange={(e) => setData('nit_proveedor', e.target.value)} />
                             </div>
                             <div>
-                                <label className="mb-1 block text-xs text-gray-500">Tipo de compra</label>
-                                <Input type="number" value={data.tipo_compra}
+                                <label className="mb-1 block text-xs text-gray-500" htmlFor="campo-tipo-de-compra">Tipo de compra</label>
+                                <Input id="campo-tipo-de-compra" type="number" value={data.tipo_compra}
                                     onChange={(e) => setData('tipo_compra', Number(e.target.value))} />
                             </div>
                         </div>
@@ -214,7 +214,7 @@ export default function SiatPurchaseRegistryIndex({ compras, paquetes, filtros, 
                             </div>
                         )}
 
-                        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card p-5 shadow-sm">
                             <div className="text-sm text-gray-600">
                                 <span className="font-semibold">{MESES[filtros.periodo - 1]} {filtros.gestion}</span>
                                 {' — '}{pendientes.length} sin declarar, {declarables} lista(s) para enviar.
@@ -234,7 +234,7 @@ export default function SiatPurchaseRegistryIndex({ compras, paquetes, filtros, 
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
                                     <tr>
@@ -258,7 +258,7 @@ export default function SiatPurchaseRegistryIndex({ compras, paquetes, filtros, 
                             </table>
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                             <h2 className="border-b px-5 py-3 font-semibold text-gray-700">Periodos declarados</h2>
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">

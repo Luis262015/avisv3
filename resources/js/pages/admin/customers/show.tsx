@@ -32,21 +32,21 @@ export default function CustomerShow({ customer, stats, sales, quotes }: {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Ventas completadas</p>
                         <p className="text-2xl font-bold">{stats.total_sales}</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Total comprado</p>
                         <p className="text-2xl font-bold">${parseFloat(stats.total_amount).toFixed(2)}</p>
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <p className="text-xs uppercase text-gray-400">Estado</p>
                         <p className="text-2xl font-bold">{customer.is_active ? 'Activo' : 'Inactivo'}</p>
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <h2 className="mb-3 font-semibold text-gray-700">Datos de contacto</h2>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                         <p><span className="text-gray-400">Documento:</span> {doc}</p>
@@ -57,7 +57,7 @@ export default function CustomerShow({ customer, stats, sales, quotes }: {
                     {customer.notes && <p className="mt-3 text-sm text-gray-500">{customer.notes}</p>}
                 </div>
 
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <h2 className="mb-3 font-semibold text-gray-700">Últimas ventas</h2>
                     <table className="w-full text-sm">
                         <thead className="border-b text-left text-xs uppercase text-gray-400">
@@ -79,7 +79,7 @@ export default function CustomerShow({ customer, stats, sales, quotes }: {
                     </table>
                 </div>
 
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <h2 className="mb-3 font-semibold text-gray-700">Cotizaciones</h2>
                     <table className="w-full text-sm">
                         <thead className="border-b text-left text-xs uppercase text-gray-400">

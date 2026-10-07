@@ -5,6 +5,7 @@ import { type User } from '@/types';
 import { Link } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
 
+
 interface UserMenuContentProps {
     user: User;
 }
@@ -23,16 +24,16 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                     <Link className="block w-full" href={route('profile.edit')} as="button" prefetch onClick={cleanup}>
-                        <Settings className="mr-2" />
-                        Settings
+                        <Settings className="mr-2" aria-hidden="true" />
+                        Mi cuenta
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link className="block w-full" method="post" href={route('logout')} as="button" onClick={cleanup}>
-                    <LogOut className="mr-2" />
-                    Log out
+                    <LogOut className="mr-2" aria-hidden="true" />
+                    Cerrar sesión
                 </Link>
             </DropdownMenuItem>
         </>

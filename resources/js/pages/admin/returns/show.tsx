@@ -73,18 +73,18 @@ export default function ReturnShow({ return: ret }: { return: SaleReturn }) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm"><p className="text-xs uppercase text-gray-400">Reembolso</p><p className="text-2xl font-bold">{fmt(ret.refund_amount)}</p></div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm"><p className="text-xs uppercase text-gray-400">Método</p><p className="text-lg font-semibold">{methodLabels[ret.refund_method]}</p></div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm"><p className="text-xs uppercase text-gray-400">Reintegro de stock</p><p className="text-lg font-semibold">{ret.restock ? 'Sí' : 'No'}</p></div>
+                    <div className="rounded-lg border bg-card p-4 shadow-sm"><p className="text-xs uppercase text-gray-400">Reembolso</p><p className="text-2xl font-bold">{fmt(ret.refund_amount)}</p></div>
+                    <div className="rounded-lg border bg-card p-4 shadow-sm"><p className="text-xs uppercase text-gray-400">Método</p><p className="text-lg font-semibold">{methodLabels[ret.refund_method]}</p></div>
+                    <div className="rounded-lg border bg-card p-4 shadow-sm"><p className="text-xs uppercase text-gray-400">Reintegro de stock</p><p className="text-lg font-semibold">{ret.restock ? 'Sí' : 'No'}</p></div>
                 </div>
 
-                <div className="rounded-lg border bg-white p-4 shadow-sm text-sm text-gray-600 space-y-1">
+                <div className="rounded-lg border bg-card p-4 shadow-sm text-sm text-gray-600 space-y-1">
                     <p><span className="text-gray-400">Cliente:</span> {ret.customer?.name ?? '—'}</p>
                     {ret.reason && <p><span className="text-gray-400">Motivo:</span> {ret.reason}</p>}
                     {ret.notes && <p><span className="text-gray-400">Notas:</span> {ret.notes}</p>}
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Productos devueltos</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

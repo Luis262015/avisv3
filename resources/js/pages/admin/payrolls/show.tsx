@@ -78,14 +78,14 @@ export default function PayrollShow({ payroll }: { payroll: Payroll }) {
                         { label: 'Deducciones', value: fmt(payroll.total_deductions), color: 'text-red-600' },
                         { label: 'Líquido pagable', value: fmt(payroll.total_net), color: 'text-green-700' },
                     ].map((s) => (
-                        <div key={s.label} className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div key={s.label} className="rounded-lg border bg-card p-4 shadow-sm">
                             <p className="text-xs uppercase text-gray-500">{s.label}</p>
                             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -119,8 +119,8 @@ export default function PayrollShow({ payroll }: { payroll: Payroll }) {
                                     <td className="px-3 py-2 text-right">—</td>
                                     <td className="px-3 py-2">
                                         <div className="flex gap-1">
-                                            <Button variant="ghost" size="sm" onClick={() => saveEdit(i.id)}><Check className="h-4 w-4 text-green-600" /></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}><X className="h-4 w-4" /></Button>
+                                            <Button aria-label="Confirmar" variant="ghost" size="sm" onClick={() => saveEdit(i.id)}><Check aria-hidden="true" className="h-4 w-4 text-green-600" /></Button>
+                                            <Button aria-label="Quitar" variant="ghost" size="sm" onClick={() => setEditingId(null)}><X aria-hidden="true" className="h-4 w-4" /></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -142,7 +142,7 @@ export default function PayrollShow({ payroll }: { payroll: Payroll }) {
                                     <td className="px-3 py-2 text-right font-semibold text-green-700">{fmt(i.net_salary)}</td>
                                     {isDraft && (
                                         <td className="px-3 py-2">
-                                            <Button variant="ghost" size="sm" onClick={() => startEdit(i)}><Pencil className="h-4 w-4" /></Button>
+                                            <Button aria-label="Editar" variant="ghost" size="sm" onClick={() => startEdit(i)}><Pencil aria-hidden="true" className="h-4 w-4" /></Button>
                                         </td>
                                     )}
                                 </tr>

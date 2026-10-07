@@ -42,57 +42,57 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
             <div className="mx-auto max-w-3xl p-6">
                 <h1 className="mb-6 text-2xl font-bold">Editar Producto</h1>
                 <form onSubmit={(e) => { e.preventDefault(); post(`/admin/products/${product.id}`, { forceFormData: true }); }} className="space-y-6">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-4 font-semibold text-gray-700">Información básica</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="md:col-span-2">
-                                <Label>Nombre *</Label>
-                                <Input value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                                <Label htmlFor="campo-nombre">Nombre *</Label>
+                                <Input id="campo-nombre" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                                 {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                             </div>
                             <div>
-                                <Label>SKU</Label>
-                                <Input value={data.sku} onChange={(e) => setData('sku', e.target.value)} />
+                                <Label htmlFor="campo-sku">SKU</Label>
+                                <Input id="campo-sku" value={data.sku} onChange={(e) => setData('sku', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Código de barras</Label>
-                                <Input value={data.barcode} onChange={(e) => setData('barcode', e.target.value)} />
+                                <Label htmlFor="campo-codigo-de-barras">Código de barras</Label>
+                                <Input id="campo-codigo-de-barras" value={data.barcode} onChange={(e) => setData('barcode', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Categoría</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
+                                <Label htmlFor="campo-categoria">Categoría</Label>
+                                <select id="campo-categoria" className="w-full rounded-md border px-3 py-2 text-sm" value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
                                     <option value="">— Ninguna —</option>
                                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <Label>Marca</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.brand_id} onChange={(e) => setData('brand_id', e.target.value)}>
+                                <Label htmlFor="campo-marca">Marca</Label>
+                                <select id="campo-marca" className="w-full rounded-md border px-3 py-2 text-sm" value={data.brand_id} onChange={(e) => setData('brand_id', e.target.value)}>
                                     <option value="">— Ninguna —</option>
                                     {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                                 </select>
                             </div>
                             <div className="md:col-span-2">
-                                <Label>Descripción</Label>
-                                <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={3} value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                                <Label htmlFor="campo-descripcion">Descripción</Label>
+                                <textarea id="campo-descripcion" className="w-full rounded-md border px-3 py-2 text-sm" rows={3} value={data.description} onChange={(e) => setData('description', e.target.value)} />
                             </div>
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-4 font-semibold text-gray-700">Precios e inventario</h2>
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                             <div>
-                                <Label>Precio venta *</Label>
-                                <Input type="number" step="0.01" min="0" value={data.price} onChange={(e) => setData('price', e.target.value)} />
+                                <Label htmlFor="campo-precio-venta">Precio venta *</Label>
+                                <Input id="campo-precio-venta" type="number" step="0.01" min="0" value={data.price} onChange={(e) => setData('price', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Costo</Label>
-                                <Input type="number" step="0.01" min="0" value={data.cost} onChange={(e) => setData('cost', e.target.value)} />
+                                <Label htmlFor="campo-costo">Costo</Label>
+                                <Input id="campo-costo" type="number" step="0.01" min="0" value={data.cost} onChange={(e) => setData('cost', e.target.value)} />
                             </div>
                             <div>
-                                <Label>Stock mínimo general</Label>
-                                <Input type="number" min="0" value={data.min_stock} onChange={(e) => setData('min_stock', e.target.value)} />
+                                <Label htmlFor="campo-stock-minimo-general">Stock mínimo general</Label>
+                                <Input id="campo-stock-minimo-general" type="number" min="0" value={data.min_stock} onChange={(e) => setData('min_stock', e.target.value)} />
                                 <p className="mt-1 text-xs text-neutral-500">
                                     Cada tienda puede fijar el suyo desde Inventario.
                                 </p>
@@ -108,14 +108,14 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
                                 </a>
                             </div>
                             <div>
-                                <Label>Unidad</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.unit} onChange={(e) => setData('unit', e.target.value)}>
+                                <Label htmlFor="campo-unidad">Unidad</Label>
+                                <select id="campo-unidad" className="w-full rounded-md border px-3 py-2 text-sm" value={data.unit} onChange={(e) => setData('unit', e.target.value)}>
                                     {['pza', 'kg', 'lt', 'mt', 'caja', 'paquete', 'par'].map((u) => <option key={u} value={u}>{u}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <Label>Estado</Label>
-                                <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.status} onChange={(e) => setData('status', e.target.value)}>
+                                <Label htmlFor="campo-estado">Estado</Label>
+                                <select id="campo-estado" className="w-full rounded-md border px-3 py-2 text-sm" value={data.status} onChange={(e) => setData('status', e.target.value)}>
                                     <option value="active">Activo</option>
                                     <option value="inactive">Inactivo</option>
                                     <option value="out_of_stock">Sin stock</option>
@@ -128,7 +128,7 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-3 font-semibold text-gray-700">Etiquetas</h2>
                         <div className="flex flex-wrap gap-2">
                             {tags.map((t) => (
@@ -142,23 +142,23 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
 
                     {/* Imágenes existentes */}
                     {product.images.length > 0 && (
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
                             <h2 className="mb-3 font-semibold text-gray-700">Imágenes actuales</h2>
                             <div className="flex flex-wrap gap-3">
                                 {product.images.map((img) => (
                                     <div key={img.id} className="relative">
                                         <img src={img.url} className="h-24 w-24 rounded-md object-cover" />
                                         {img.is_primary && (
-                                            <span className="absolute bottom-1 left-1 rounded bg-yellow-400 px-1 py-0.5 text-xs font-bold text-black">Principal</span>
+                                            <span className="absolute bottom-1 left-1 rounded bg-yellow-400 px-1 py-0.5 text-xs font-bold text-foreground">Principal</span>
                                         )}
                                         <div className="absolute right-1 top-1 flex flex-col gap-1">
                                             {!img.is_primary && (
-                                                <button type="button" onClick={() => setPrimary(img.id)} className="rounded bg-white p-0.5 shadow hover:bg-yellow-50">
+                                                <button type="button" onClick={() => setPrimary(img.id)} className="rounded bg-card p-0.5 shadow hover:bg-yellow-50">
                                                     <Star className="h-3 w-3 text-yellow-500" />
                                                 </button>
                                             )}
-                                            <button type="button" onClick={() => destroyImage(img.id)} className="rounded bg-white p-0.5 shadow hover:bg-red-50">
-                                                <Trash2 className="h-3 w-3 text-red-500" />
+                                            <button aria-label="Eliminar" type="button" onClick={() => destroyImage(img.id)} className="rounded bg-card p-0.5 shadow hover:bg-red-50">
+                                                <Trash2 aria-hidden="true" className="h-3 w-3 text-red-500" />
                                             </button>
                                         </div>
                                     </div>
@@ -167,7 +167,7 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
                         </div>
                     )}
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-3 font-semibold text-gray-700">Agregar imágenes</h2>
                         <input ref={fileRef} type="file" multiple accept="image/*" className="hidden"
                             onChange={(e) => setData('images', Array.from(e.target.files ?? []))} />
@@ -177,9 +177,9 @@ export default function ProductEdit({ product, categories, brands, tags }: { pro
                                 {data.images.map((f: File, i: number) => (
                                     <div key={i} className="relative">
                                         <img src={URL.createObjectURL(f)} className="h-20 w-20 rounded-md object-cover" />
-                                        <button type="button" onClick={() => setData('images', data.images.filter((_: File, j: number) => j !== i))}
+                                        <button aria-label="Quitar" type="button" onClick={() => setData('images', data.images.filter((_: File, j: number) => j !== i))}
                                             className="absolute -right-1 -top-1 rounded-full bg-red-500 p-0.5 text-white">
-                                            <X className="h-3 w-3" />
+                                            <X aria-hidden="true" className="h-3 w-3" />
                                         </button>
                                     </div>
                                 ))}

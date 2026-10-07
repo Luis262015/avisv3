@@ -79,7 +79,7 @@ export default function FinancialReports({
                 </div>
 
                 {/* Filtros */}
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
                     <div className="flex flex-wrap items-end gap-4">
                         <div>
                             <Label className="mb-1 block">Periodo</Label>
@@ -90,7 +90,7 @@ export default function FinancialReports({
                                         type="button"
                                         onClick={() => selectPeriod(p.value)}
                                         className={`rounded px-3 py-1.5 text-sm font-medium transition ${
-                                            form.period === p.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                            form.period === p.value ? 'bg-card text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                     >
                                         {p.label}
@@ -102,19 +102,19 @@ export default function FinancialReports({
                         {form.period === 'custom' && (
                             <>
                                 <div>
-                                    <Label>Desde</Label>
-                                    <Input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+                                    <Label htmlFor="campo-desde">Desde</Label>
+                                    <Input id="campo-desde" type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
                                 </div>
                                 <div>
-                                    <Label>Hasta</Label>
-                                    <Input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+                                    <Label htmlFor="campo-hasta">Hasta</Label>
+                                    <Input id="campo-hasta" type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
                                 </div>
                             </>
                         )}
 
                         <div>
-                            <Label>Tienda</Label>
-                            <select
+                            <Label htmlFor="campo-tienda">Tienda</Label>
+                            <select id="campo-tienda"
                                 className="w-full rounded-md border px-3 py-2 text-sm"
                                 value={form.store_id}
                                 onChange={(e) => setForm({ ...form, store_id: e.target.value })}
@@ -138,7 +138,7 @@ export default function FinancialReports({
                         { label: 'Retiros', value: fmt(summary.withdrawals), color: 'text-red-600' },
                         { label: 'Resultado neto', value: fmt(net), color: net >= 0 ? 'text-green-700' : 'text-red-700' },
                     ].map((c) => (
-                        <div key={c.label} className="rounded-lg border bg-white p-4 text-center shadow-sm">
+                        <div key={c.label} className="rounded-lg border bg-card p-4 text-center shadow-sm">
                             <p className="text-xs uppercase text-gray-500">{c.label}</p>
                             <p className={`mt-1 text-lg font-bold ${c.color}`}>{c.value}</p>
                         </div>
@@ -146,7 +146,7 @@ export default function FinancialReports({
                 </div>
 
                 {/* Estado de resultados */}
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Estado financiero del periodo</div>
                     <table className="w-full text-sm">
                         <tbody className="divide-y">
@@ -181,7 +181,7 @@ export default function FinancialReports({
 
                 {/* CxC y CxP */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Cuentas por cobrar</div>
                         <table className="w-full text-sm">
                             <tbody className="divide-y">
@@ -194,7 +194,7 @@ export default function FinancialReports({
                         </table>
                     </div>
 
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Cuentas por pagar</div>
                         <table className="w-full text-sm">
                             <tbody className="divide-y">
@@ -210,7 +210,7 @@ export default function FinancialReports({
 
                 {/* Desgloses por categoría */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Gastos por categoría</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -229,7 +229,7 @@ export default function FinancialReports({
                         </table>
                     </div>
 
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Ingresos por categoría</div>
                         <table className="w-full text-sm">
                             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -250,7 +250,7 @@ export default function FinancialReports({
                 </div>
 
                 {/* Evolución mensual */}
-                <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Evolución mensual</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">

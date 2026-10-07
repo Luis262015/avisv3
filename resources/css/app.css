@@ -7,8 +7,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-    --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    /* La del descriptor del logo: geométrica y abierta. Solo para títulos. */
+    --font-display: 'Lexend', 'Figtree', ui-sans-serif, system-ui, sans-serif;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -56,24 +57,55 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
-}
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+    /* Los dos colores del logo, disponibles como utilidades. */
+    --color-brand-navy: var(--brand-navy);
+    --color-brand-teal: var(--brand-teal);
+    --color-brand-teal-ink: var(--brand-teal-ink);
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
-    }
+    /*
+      Las pantallas administrativas usan `gray-*` a mano en más de mil sitios y
+      `neutral-*`/`slate-*` en otros tantos. Se redefinen aquí como una sola
+      escala teñida de azul marino que además se invierte en oscuro: así esas
+      pantallas toman la marca, respetan el tema y ganan contraste sin tocar
+      una por una. El 400 es más oscuro que el de Tailwind a propósito: se usa
+      como texto («Sin registros») y el original no llegaba a 4.5:1.
+    */
+    --color-gray-50: var(--n-50);
+    --color-gray-100: var(--n-100);
+    --color-gray-200: var(--n-200);
+    --color-gray-300: var(--n-300);
+    --color-gray-400: var(--n-400);
+    --color-gray-500: var(--n-500);
+    --color-gray-600: var(--n-600);
+    --color-gray-700: var(--n-700);
+    --color-gray-800: var(--n-800);
+    --color-gray-900: var(--n-900);
+    --color-gray-950: var(--n-950);
+
+    --color-neutral-50: var(--n-50);
+    --color-neutral-100: var(--n-100);
+    --color-neutral-200: var(--n-200);
+    --color-neutral-300: var(--n-300);
+    --color-neutral-400: var(--n-400);
+    --color-neutral-500: var(--n-500);
+    --color-neutral-600: var(--n-600);
+    --color-neutral-700: var(--n-700);
+    --color-neutral-800: var(--n-800);
+    --color-neutral-900: var(--n-900);
+    --color-neutral-950: var(--n-950);
+
+    --color-slate-50: var(--n-50);
+    --color-slate-100: var(--n-100);
+    --color-slate-200: var(--n-200);
+    --color-slate-300: var(--n-300);
+    --color-slate-400: var(--n-400);
+    --color-slate-500: var(--n-500);
+    --color-slate-600: var(--n-600);
+    --color-slate-700: var(--n-700);
+    --color-slate-800: var(--n-800);
+    --color-slate-900: var(--n-900);
+    --color-slate-950: var(--n-950);
 }
 
 :root {
@@ -81,83 +113,278 @@
        campos de fecha— sigan el tema. Sin esto salen siempre en claro y
        desentonan sobre el fondo oscuro. */
     color-scheme: light;
-    --background: hsl(0, 0%, 100%);
-    --foreground: hsl(0, 0%, 3.9%);
-    --card: hsl(0, 0%, 100%);
-    --card-foreground: hsl(0, 0%, 3.9%);
-    --popover: hsl(0, 0%, 100%);
-    --popover-foreground: hsl(0, 0%, 3.9%);
-    --primary: hsl(0, 0%, 9%);
-    --primary-foreground: hsl(0, 0%, 98%);
-    --secondary: hsl(0, 0%, 96.1%);
-    --secondary-foreground: hsl(0, 0%, 9%);
-    --muted: hsl(0, 0%, 96.1%);
-    --muted-foreground: hsl(0, 0%, 45.1%);
-    --accent: hsl(0, 0%, 96.1%);
-    --accent-foreground: hsl(0, 0%, 9%);
-    --destructive: hsl(0, 84.2%, 60.2%);
-    --destructive-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 92.8%);
-    --input: hsl(0, 0%, 89.8%);
-    --ring: hsl(0, 0%, 3.9%);
-    --chart-1: hsl(12, 76%, 61%);
-    --chart-2: hsl(173, 58%, 39%);
-    --chart-3: hsl(197, 37%, 24%);
-    --chart-4: hsl(43, 74%, 66%);
-    --chart-5: hsl(27, 87%, 67%);
-    --radius: 0.5rem;
-    --sidebar-background: hsl(0, 0%, 98%);
-    --sidebar-foreground: hsl(240, 5.3%, 30%);
-    --sidebar-primary: hsl(0, 0%, 10%);
-    --sidebar-primary-foreground: hsl(0, 0%, 98%);
-    --sidebar-accent: hsl(0, 0%, 94%);
-    --sidebar-accent-foreground: hsl(0, 0%, 30%);
-    --sidebar-border: hsl(0, 0%, 91%);
-    --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+
+    /* Muestreados de docs/logo1.jpeg. El turquesa no alcanza contraste como
+       texto sobre blanco (2.8:1): para eso está su versión «tinta». */
+    --brand-navy: #0a2550;
+    --brand-teal: #00ada4;
+    --brand-teal-ink: #00756f;
+
+    --background: #f5f7fa;
+    --foreground: #0b1d3a;
+    --card: #ffffff;
+    --card-foreground: #0b1d3a;
+    --popover: #ffffff;
+    --popover-foreground: #0b1d3a;
+    --primary: #0a2550;
+    --primary-foreground: #ffffff;
+    --secondary: #e8edf4;
+    --secondary-foreground: #0a2550;
+    --muted: #edf1f6;
+    --muted-foreground: #4e5d78;
+    --accent: #ddf4f2;
+    --accent-foreground: #06363f;
+    --destructive: #c0262d;
+    --destructive-foreground: #ffffff;
+    --border: #d9e0ea;
+    /* El borde de un campo es lo único que lo delimita: necesita 3:1. */
+    --input: #8793a8;
+    --ring: #008c85;
+    --chart-1: #0a2550;
+    --chart-2: #00ada4;
+    --chart-3: #e19a00;
+    --chart-4: #5b7fd6;
+    --chart-5: #d9502e;
+    --radius: 0.625rem;
+
+    /* El menú es el campo azul marino de la marca. */
+    --sidebar-background: #0a2550;
+    --sidebar-foreground: #d7dfec;
+    --sidebar-primary: #2bc7bd;
+    --sidebar-primary-foreground: #06203f;
+    --sidebar-accent: #17366a;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #1b3a6b;
+    --sidebar-ring: #5fe0d7;
+
+    --n-50: #f3f6fa;
+    --n-100: #e9eef4;
+    --n-200: #d9e0ea;
+    --n-300: #c2ccda;
+    --n-400: #66748c;
+    --n-500: #55637b;
+    --n-600: #414e66;
+    --n-700: #2f3b52;
+    --n-800: #1c2a44;
+    --n-900: #0b1d3a;
+    --n-950: #06142a;
 }
 
 .dark {
     color-scheme: dark;
-    --background: hsl(0, 0%, 3.9%);
-    --foreground: hsl(0, 0%, 98%);
-    --card: hsl(0, 0%, 3.9%);
-    --card-foreground: hsl(0, 0%, 98%);
-    --popover: hsl(0, 0%, 3.9%);
-    --popover-foreground: hsl(0, 0%, 98%);
-    --primary: hsl(0, 0%, 98%);
-    --primary-foreground: hsl(0, 0%, 9%);
-    --secondary: hsl(0, 0%, 14.9%);
-    --secondary-foreground: hsl(0, 0%, 98%);
-    --muted: hsl(0, 0%, 6.9%);
-    --muted-foreground: hsl(0, 0%, 63.9%);
-    --accent: hsl(0, 0%, 14.9%);
-    --accent-foreground: hsl(0, 0%, 98%);
-    --destructive: hsl(0, 84%, 60%);
-    --destructive-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 14.9%);
-    --input: hsl(0, 0%, 14.9%);
-    --ring: hsl(0, 0%, 83.1%);
-    --chart-1: hsl(220, 70%, 50%);
-    --chart-2: hsl(160, 60%, 45%);
-    --chart-3: hsl(30, 80%, 55%);
-    --chart-4: hsl(280, 65%, 60%);
-    --chart-5: hsl(340, 75%, 55%);
-    --sidebar-background: hsl(0, 0%, 7%);
-    --sidebar-foreground: hsl(0, 0%, 80%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0, 0%, 100%);
-    --sidebar-accent: hsl(0, 0%, 15.9%);
-    --sidebar-accent-foreground: hsl(240, 4.8%, 95.9%);
-    --sidebar-border: hsl(0, 0%, 15.9%);
-    --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+
+    --brand-teal-ink: #4fd6cd;
+
+    --background: #071224;
+    --foreground: #e6ecf5;
+    --card: #0c1c36;
+    --card-foreground: #e6ecf5;
+    --popover: #0c1c36;
+    --popover-foreground: #e6ecf5;
+    --primary: #2bc7bd;
+    --primary-foreground: #04182f;
+    --secondary: #162a4a;
+    --secondary-foreground: #e6ecf5;
+    --muted: #12233f;
+    --muted-foreground: #a3b2ca;
+    --accent: #123a4a;
+    --accent-foreground: #d7f5f2;
+    --destructive: #dc3e44;
+    --destructive-foreground: #ffffff;
+    --border: #1d3152;
+    --input: #5c6f8e;
+    --ring: #5fe0d7;
+    --chart-1: #7fa2ff;
+    --chart-2: #2bc7bd;
+    --chart-3: #f2b63c;
+    --chart-4: #b79cff;
+    --chart-5: #ff8a65;
+
+    --sidebar-background: #050d1b;
+    --sidebar-foreground: #c9d4e5;
+    --sidebar-primary: #2bc7bd;
+    --sidebar-primary-foreground: #04182f;
+    --sidebar-accent: #12233f;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #152744;
+    --sidebar-ring: #5fe0d7;
+
+    --n-50: #0f2140;
+    --n-100: #152a4d;
+    --n-200: #1d3152;
+    --n-300: #2c4369;
+    --n-400: #93a4bf;
+    --n-500: #a3b2ca;
+    --n-600: #bac6d9;
+    --n-700: #d0d9e6;
+    --n-800: #e1e7f0;
+    --n-900: #eef2f8;
+    --n-950: #ffffff;
+
+    /*
+      Los colores de estado están escritos para fondo claro: `bg-green-100
+      text-green-700`. En oscuro los fondos pasan a ser un velo del propio color
+      y el texto sube a su tono claro, con lo que la etiqueta sigue leyéndose
+      sin tener que añadir `dark:` en cada pantalla.
+    */
+    --color-red-50: color-mix(in oklab, var(--color-red-500) 12%, transparent);
+    --color-red-100: color-mix(in oklab, var(--color-red-500) 20%, transparent);
+    --color-red-200: color-mix(in oklab, var(--color-red-500) 34%, transparent);
+    --color-red-600: var(--color-red-400);
+    --color-red-700: var(--color-red-300);
+    --color-red-800: #fecaca;
+    --color-red-900: #fee2e2;
+
+    --color-green-50: color-mix(in oklab, var(--color-green-500) 12%, transparent);
+    --color-green-100: color-mix(in oklab, var(--color-green-500) 20%, transparent);
+    --color-green-200: color-mix(in oklab, var(--color-green-500) 34%, transparent);
+    --color-green-600: var(--color-green-400);
+    --color-green-700: var(--color-green-300);
+    --color-green-800: #bbf7d0;
+    --color-green-900: #dcfce7;
+
+    --color-emerald-50: color-mix(in oklab, var(--color-emerald-500) 12%, transparent);
+    --color-emerald-100: color-mix(in oklab, var(--color-emerald-500) 20%, transparent);
+    --color-emerald-200: color-mix(in oklab, var(--color-emerald-500) 34%, transparent);
+    --color-emerald-600: var(--color-emerald-400);
+    --color-emerald-700: var(--color-emerald-300);
+    --color-emerald-800: #a7f3d0;
+
+    --color-blue-50: color-mix(in oklab, var(--color-blue-500) 14%, transparent);
+    --color-blue-100: color-mix(in oklab, var(--color-blue-500) 22%, transparent);
+    --color-blue-200: color-mix(in oklab, var(--color-blue-500) 36%, transparent);
+    --color-blue-600: var(--color-blue-400);
+    --color-blue-700: var(--color-blue-300);
+    --color-blue-800: #bfdbfe;
+    --color-blue-900: #dbeafe;
+
+    --color-indigo-50: color-mix(in oklab, var(--color-indigo-500) 14%, transparent);
+    --color-indigo-100: color-mix(in oklab, var(--color-indigo-500) 22%, transparent);
+    --color-indigo-200: color-mix(in oklab, var(--color-indigo-500) 36%, transparent);
+    --color-indigo-600: var(--color-indigo-400);
+    --color-indigo-700: var(--color-indigo-300);
+    --color-indigo-800: #c7d2fe;
+
+    --color-purple-50: color-mix(in oklab, var(--color-purple-500) 14%, transparent);
+    --color-purple-100: color-mix(in oklab, var(--color-purple-500) 22%, transparent);
+    --color-purple-200: color-mix(in oklab, var(--color-purple-500) 36%, transparent);
+    --color-purple-600: var(--color-purple-400);
+    --color-purple-700: var(--color-purple-300);
+    --color-purple-800: #e9d5ff;
+
+    --color-amber-50: color-mix(in oklab, var(--color-amber-500) 12%, transparent);
+    --color-amber-100: color-mix(in oklab, var(--color-amber-500) 20%, transparent);
+    --color-amber-200: color-mix(in oklab, var(--color-amber-500) 34%, transparent);
+    --color-amber-600: var(--color-amber-400);
+    --color-amber-700: var(--color-amber-300);
+    --color-amber-800: #fde68a;
+    --color-amber-900: #fef3c7;
+
+    --color-yellow-50: color-mix(in oklab, var(--color-yellow-500) 12%, transparent);
+    --color-yellow-100: color-mix(in oklab, var(--color-yellow-500) 20%, transparent);
+    --color-yellow-200: color-mix(in oklab, var(--color-yellow-500) 34%, transparent);
+    --color-yellow-600: var(--color-yellow-400);
+    --color-yellow-700: var(--color-yellow-300);
+    --color-yellow-800: #fef08a;
+    --color-yellow-900: #fef9c3;
+
+    --color-orange-50: color-mix(in oklab, var(--color-orange-500) 12%, transparent);
+    --color-orange-100: color-mix(in oklab, var(--color-orange-500) 20%, transparent);
+    --color-orange-200: color-mix(in oklab, var(--color-orange-500) 34%, transparent);
+    --color-orange-600: var(--color-orange-400);
+    --color-orange-700: var(--color-orange-300);
+    --color-orange-800: #fed7aa;
 }
 
 @layer base {
-    * {
-        @apply border-border;
+    /*
+      Tailwind v4 dejó el borde por defecto en `currentColor`; aquí se fija al
+      del tema para cualquier `border` sin color explícito.
+    */
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--border);
+    }
+
+    html {
+        scrollbar-color: var(--n-300) transparent;
+        -webkit-text-size-adjust: 100%;
     }
 
     body {
         @apply bg-background text-foreground;
+        caret-color: var(--ring);
+    }
+
+    ::selection {
+        background: color-mix(in oklab, var(--brand-teal) 32%, transparent);
+    }
+
+    h1,
+    h2,
+    h3 {
+        font-family: var(--font-display);
+        letter-spacing: -0.015em;
+        text-wrap: balance;
+    }
+
+    /* Cifras alineadas en columnas: importes, existencias, folios. */
+    table {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /*
+      Foco visible para todo lo que no trae el suyo. Va con `:where()` para no
+      ganarle en especificidad a los componentes que ya dibujan un anillo.
+    */
+    :where(a, button, summary, input, select, textarea, [role='button'], [tabindex]):focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    :where(a, button, summary, [role='button']) {
+        border-radius: var(--radius-sm);
+    }
+
+    :where(button:not(:disabled), summary, [role='button'], label[for], select) {
+        cursor: pointer;
+    }
+
+    /* Casillas, radios y barras nativas con el color de la marca. */
+    :where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) {
+        accent-color: var(--primary);
+    }
+
+    :where(input, select, textarea)::placeholder {
+        color: var(--n-400);
+        opacity: 1;
+    }
+
+    /* Portada: las dos consecuencias de la venta entran una tras otra. */
+    .mock-paso {
+        animation: mock-paso 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes mock-paso {
+        from {
+            opacity: 0;
+            transform: translateY(-14px) scale(0.97);
+            filter: blur(4px);
+        }
+    }
+
+    /* Quien pidió menos movimiento no recibe animaciones de adorno. */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
     }
 }

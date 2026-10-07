@@ -25,28 +25,28 @@ export default function PayrollCreate() {
                     Se creará una boleta por cada empleado activo con el cálculo sugerido (haber, bono de antigüedad,
                     aporte AFP 12.71% y RC-IVA). Podrás ajustar cada boleta antes de aprobar.
                 </p>
-                <form onSubmit={(e) => { e.preventDefault(); post('/admin/payrolls'); }} className="rounded-lg border bg-white p-4 shadow-sm space-y-4">
+                <form onSubmit={(e) => { e.preventDefault(); post('/admin/payrolls'); }} className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Mes *</Label>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm" value={data.period_month} onChange={(e) => setData('period_month', Number(e.target.value))}>
+                            <Label htmlFor="campo-mes">Mes *</Label>
+                            <select id="campo-mes" className="w-full rounded-md border px-3 py-2 text-sm" value={data.period_month} onChange={(e) => setData('period_month', Number(e.target.value))}>
                                 {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
                             </select>
                             {errors.period_month && <p className="mt-1 text-xs text-red-500">{errors.period_month}</p>}
                         </div>
                         <div>
-                            <Label>Año *</Label>
-                            <Input type="number" value={data.period_year} onChange={(e) => setData('period_year', Number(e.target.value))} />
+                            <Label htmlFor="campo-ano">Año *</Label>
+                            <Input id="campo-ano" type="number" value={data.period_year} onChange={(e) => setData('period_year', Number(e.target.value))} />
                             {errors.period_year && <p className="mt-1 text-xs text-red-500">{errors.period_year}</p>}
                         </div>
                     </div>
                     <div>
-                        <Label>Fecha de pago</Label>
-                        <Input type="date" value={data.pay_date} onChange={(e) => setData('pay_date', e.target.value)} />
+                        <Label htmlFor="campo-fecha-de-pago">Fecha de pago</Label>
+                        <Input id="campo-fecha-de-pago" type="date" value={data.pay_date} onChange={(e) => setData('pay_date', e.target.value)} />
                     </div>
                     <div>
-                        <Label>Notas</Label>
-                        <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+                        <Label htmlFor="campo-notas">Notas</Label>
+                        <textarea id="campo-notas" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
                     </div>
                     <div className="flex gap-2 pt-2">
                         <Button type="submit" disabled={processing}>Generar</Button>

@@ -72,7 +72,7 @@ export default function EmployeesIndex({ employees, departments, filters }: Prop
                     </select>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
                             <tr>
@@ -100,9 +100,9 @@ export default function EmployeesIndex({ employees, departments, filters }: Prop
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="sm" asChild><Link href={`/admin/employees/${e.id}`}><Eye className="h-4 w-4" /></Link></Button>
-                                            <Button variant="ghost" size="sm" asChild><Link href={`/admin/employees/${e.id}/edit`}><Pencil className="h-4 w-4" /></Link></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => destroy(e.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                            <Button variant="ghost" size="sm" asChild><Link aria-label="Ver detalle" href={`/admin/employees/${e.id}`}><Eye aria-hidden="true" className="h-4 w-4" /></Link></Button>
+                                            <Button variant="ghost" size="sm" asChild><Link aria-label="Editar" href={`/admin/employees/${e.id}/edit`}><Pencil aria-hidden="true" className="h-4 w-4" /></Link></Button>
+                                            <Button aria-label="Eliminar" variant="ghost" size="sm" onClick={() => destroy(e.id)}><Trash2 aria-hidden="true" className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -121,7 +121,7 @@ export default function EmployeesIndex({ employees, departments, filters }: Prop
                                 key={i}
                                 disabled={!l.url}
                                 onClick={() => l.url && router.visit(l.url, { preserveState: true })}
-                                className={`rounded border px-3 py-1 text-sm ${l.active ? 'bg-gray-900 text-white' : 'bg-white text-gray-600'} ${!l.url ? 'opacity-40' : ''}`}
+                                className={`rounded border px-3 py-1 text-sm ${l.active ? 'bg-gray-900 text-white' : 'bg-card text-gray-600'} ${!l.url ? 'opacity-40' : ''}`}
                                 dangerouslySetInnerHTML={{ __html: l.label }}
                             />
                         ))}

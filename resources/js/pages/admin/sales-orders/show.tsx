@@ -87,39 +87,39 @@ export default function SalesOrderShow({ order, openShifts }: { order: Order; op
                 )}
 
                 {panel === 'ship' && (
-                    <form onSubmit={(e) => { e.preventDefault(); shipForm.post(`/admin/sales-orders/${order.id}/ship`); }} className="rounded-lg border bg-white p-4 shadow-sm">
+                    <form onSubmit={(e) => { e.preventDefault(); shipForm.post(`/admin/sales-orders/${order.id}/ship`); }} className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-3 font-semibold text-gray-700">Registrar envío</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div><Label>Transportista</Label><Input value={shipForm.data.carrier} onChange={(e) => shipForm.setData('carrier', e.target.value)} /></div>
-                            <div><Label>Número de guía / tracking</Label><Input value={shipForm.data.tracking_number} onChange={(e) => shipForm.setData('tracking_number', e.target.value)} /></div>
-                            <div className="md:col-span-2"><Label>Dirección</Label><Input value={shipForm.data.address} onChange={(e) => shipForm.setData('address', e.target.value)} /></div>
-                            <div><Label>Costo de envío</Label><Input type="number" step="0.01" min="0" value={shipForm.data.cost} onChange={(e) => shipForm.setData('cost', e.target.value)} /></div>
-                            <div><Label>Notas</Label><Input value={shipForm.data.notes} onChange={(e) => shipForm.setData('notes', e.target.value)} /></div>
+                            <div><Label htmlFor="campo-transportista">Transportista</Label><Input id="campo-transportista" value={shipForm.data.carrier} onChange={(e) => shipForm.setData('carrier', e.target.value)} /></div>
+                            <div><Label htmlFor="campo-numero-de-guia-tracking">Número de guía / tracking</Label><Input id="campo-numero-de-guia-tracking" value={shipForm.data.tracking_number} onChange={(e) => shipForm.setData('tracking_number', e.target.value)} /></div>
+                            <div className="md:col-span-2"><Label htmlFor="campo-direccion">Dirección</Label><Input id="campo-direccion" value={shipForm.data.address} onChange={(e) => shipForm.setData('address', e.target.value)} /></div>
+                            <div><Label htmlFor="campo-costo-de-envio">Costo de envío</Label><Input id="campo-costo-de-envio" type="number" step="0.01" min="0" value={shipForm.data.cost} onChange={(e) => shipForm.setData('cost', e.target.value)} /></div>
+                            <div><Label htmlFor="campo-notas">Notas</Label><Input id="campo-notas" value={shipForm.data.notes} onChange={(e) => shipForm.setData('notes', e.target.value)} /></div>
                         </div>
                         <div className="mt-3"><Button type="submit" disabled={shipForm.processing}>Guardar envío</Button></div>
                     </form>
                 )}
 
                 {panel === 'deliver' && (
-                    <form onSubmit={(e) => { e.preventDefault(); deliverForm.post(`/admin/sales-orders/${order.id}/deliver`); }} className="rounded-lg border bg-white p-4 shadow-sm">
+                    <form onSubmit={(e) => { e.preventDefault(); deliverForm.post(`/admin/sales-orders/${order.id}/deliver`); }} className="rounded-lg border bg-card p-4 shadow-sm">
                         <h2 className="mb-3 font-semibold text-gray-700">Entregar y generar venta</h2>
                         {openShifts.length === 0 ? (
                             <p className="text-sm text-red-500">No hay turnos de caja abiertos.</p>
                         ) : (
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <div>
-                                    <Label>Turno de caja</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={deliverForm.data.cash_shift_id} onChange={(e) => deliverForm.setData('cash_shift_id', e.target.value)}>
+                                    <Label htmlFor="campo-turno-de-caja">Turno de caja</Label>
+                                    <select id="campo-turno-de-caja" className="w-full rounded-md border px-3 py-2 text-sm" value={deliverForm.data.cash_shift_id} onChange={(e) => deliverForm.setData('cash_shift_id', e.target.value)}>
                                         {openShifts.map((s) => <option key={s.id} value={s.id}>{s.cash_register.store.name} · {s.cash_register.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>Método de pago</Label>
-                                    <select className="w-full rounded-md border px-3 py-2 text-sm" value={deliverForm.data.payment_method} onChange={(e) => deliverForm.setData('payment_method', e.target.value)}>
+                                    <Label htmlFor="campo-metodo-de-pago">Método de pago</Label>
+                                    <select id="campo-metodo-de-pago" className="w-full rounded-md border px-3 py-2 text-sm" value={deliverForm.data.payment_method} onChange={(e) => deliverForm.setData('payment_method', e.target.value)}>
                                         <option value="cash">Efectivo</option><option value="card">Tarjeta</option><option value="transfer">Transferencia</option><option value="mixed">Mixto</option>
                                     </select>
                                 </div>
-                                <div><Label>Monto pagado</Label><Input type="number" step="0.01" min="0" value={deliverForm.data.amount_paid} onChange={(e) => deliverForm.setData('amount_paid', e.target.value)} /></div>
+                                <div><Label htmlFor="campo-monto-pagado">Monto pagado</Label><Input id="campo-monto-pagado" type="number" step="0.01" min="0" value={deliverForm.data.amount_paid} onChange={(e) => deliverForm.setData('amount_paid', e.target.value)} /></div>
                                 <div className="md:col-span-3"><Button type="submit" disabled={deliverForm.processing}>Confirmar entrega</Button></div>
                             </div>
                         )}
@@ -127,7 +127,7 @@ export default function SalesOrderShow({ order, openShifts }: { order: Order; op
                 )}
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                         <h2 className="font-semibold text-gray-700">Cliente</h2>
                         {order.customer ? (
                             <>
@@ -137,7 +137,7 @@ export default function SalesOrderShow({ order, openShifts }: { order: Order; op
                         ) : <p className="text-sm text-gray-400">Sin cliente</p>}
                         {order.shipping_address && <p className="mt-2 text-sm text-gray-600"><span className="font-medium">Envío a:</span> {order.shipping_address}</p>}
                     </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm space-y-1">
+                    <div className="rounded-lg border bg-card p-4 shadow-sm space-y-1">
                         <h2 className="font-semibold text-gray-700">Envío</h2>
                         {order.shipment ? (
                             <div className="text-sm text-gray-600">
@@ -151,7 +151,7 @@ export default function SalesOrderShow({ order, openShifts }: { order: Order; op
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-white shadow-sm">
+                <div className="rounded-lg border bg-card shadow-sm">
                     <div className="border-b px-4 py-3 font-semibold text-gray-700">Artículos</div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
