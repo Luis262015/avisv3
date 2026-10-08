@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavGroup, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronsDownUp } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 const CLAVE_ALMACEN = 'sidebar-grupos';
@@ -36,6 +36,15 @@ function leerPreferencias(): Record<string, boolean> {
     } catch {
         // Un valor corrupto no debe dejar el menú sin pintar.
         return {};
+    }
+}
+
+function guardarPreferencias(preferencias: Record<string, boolean>): void {
+    try {
+        window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(preferencias));
+    } catch {
+        // Modo privado o almacenamiento lleno: se pierde la preferencia,
+        // pero el menú sigue funcionando.
     }
 }
 
@@ -72,17 +81,26 @@ export function NavMain({ items = [] }: { items: NavGroup[] }) {
     const recordar = useCallback((titulo: string, abierto: boolean) => {
         setPreferencias((previo) => {
             const siguiente = { ...previo, [titulo]: abierto };
-
-            try {
-                window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(siguiente));
-            } catch {
-                // Modo privado o almacenamiento lleno: se pierde la preferencia,
-                // pero el menú sigue funcionando.
-            }
+            guardarPreferencias(siguiente);
 
             return siguiente;
         });
     }, []);
+
+    // Se marcan todos como cerrados, también los que nacen abiertos. El grupo de
+    // la página actual no necesita excepción: se abre siempre, diga lo que diga
+    // la preferencia.
+    const plegarTodo = useCallback(() => {
+        const siguiente = Object.fromEntries(items.map((grupo) => [grupo.title, false]));
+        guardarPreferencias(siguiente);
+        setPreferencias(siguiente);
+    }, [items]);
+
+    const contieneLaPagina = (grupo: NavGroup) => grupo.items.some((item) => item.url === rutaActiva);
+
+    const hayAlgoQuePlegar = items.some(
+        (grupo) => !contieneLaPagina(grupo) && (preferencias[grupo.title] ?? grupo.defaultOpen ?? false),
+    );
 
     // Con el menú reducido a iconos no hay títulos de grupo que pulsar, así que
     // plegar dejaría entradas inalcanzables: ahí se muestran todas.
@@ -92,12 +110,26 @@ export function NavMain({ items = [] }: { items: NavGroup[] }) {
         // El menú no estaba dentro de ningún landmark: shadcn lo monta con divs,
         // así que no había forma de saltar la navegación con lector de pantalla.
         <nav aria-label="Navegación principal">
+            {plegable && (
+                <div className="flex justify-end px-2 pt-2">
+                    <button
+                        type="button"
+                        onClick={plegarTodo}
+                        disabled={!hayAlgoQuePlegar}
+                        className="text-sidebar-foreground/75 hover:text-white focus-visible:ring-sidebar-ring flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wider uppercase focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:opacity-40 disabled:hover:text-sidebar-foreground/75"
+                    >
+                        <ChevronsDownUp aria-hidden="true" className="size-3" />
+                        Colapsar todo
+                    </button>
+                </div>
+            )}
+
             {items.map((group) => {
-                const contieneLaPagina = group.items.some((item) => item.url === rutaActiva);
+                const esElGrupoActual = contieneLaPagina(group);
 
                 // Donde está la página actual se abre siempre: cerrarlo escondería
                 // el único elemento que dice dónde estás.
-                const abierto = contieneLaPagina || (preferencias[group.title] ?? group.defaultOpen ?? false);
+                const abierto = esElGrupoActual || (preferencias[group.title] ?? group.defaultOpen ?? false);
 
                 const entradas = (
                     <SidebarMenu>
@@ -122,7 +154,7 @@ export function NavMain({ items = [] }: { items: NavGroup[] }) {
                         onOpenChange={(valor) => recordar(group.title, valor)}
                         // El grupo de la página actual no se puede cerrar; anunciarlo
                         // como pulsable sería mentir.
-                        disabled={contieneLaPagina}
+                        disabled={esElGrupoActual}
                         className="group/grupo"
                     >
                         <SidebarGroup className="px-2 py-0">
