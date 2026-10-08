@@ -135,9 +135,9 @@ class SalesReportService
             ));
     }
 
-    /** @return Collection<int> */
-    private function saleIds(array $filters): Collection
+    /** Subquery, not a list of ids: binding one placeholder per sale exceeds MySQL's limit of 65,535. */
+    private function saleIds(array $filters): Builder
     {
-        return $this->baseQuery($filters)->pluck('sales.id');
+        return $this->baseQuery($filters)->select('sales.id');
     }
 }
