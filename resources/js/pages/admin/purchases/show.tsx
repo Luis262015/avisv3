@@ -23,8 +23,8 @@ interface Purchase {
     user: { name: string };
     items: PurchaseItem[];
     payable: { id: number; amount: string; amount_paid: string; balance: string; due_date: string; status: string; payments: Payment[] } | null;
-    auditLogs: AuditLog[];
-    purchaseOrder: { id: number; folio: string } | null;
+    audit_logs: AuditLog[];
+    purchase_order: { id: number; folio: string } | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -89,9 +89,9 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                             Registrada por {purchase.user.name} — {purchase.date}
                             {purchase.received_at && ` · Recibida: ${purchase.received_at}`}
                         </p>
-                        {purchase.purchaseOrder && (
+                        {purchase.purchase_order && (
                             <p className="text-sm text-gray-500">
-                                Orden de compra: <Link href={`/admin/purchase-orders/${purchase.purchaseOrder.id}`} className="text-blue-600 hover:underline font-mono">{purchase.purchaseOrder.folio}</Link>
+                                Orden de compra: <Link href={`/admin/purchase-orders/${purchase.purchase_order.id}`} className="text-blue-600 hover:underline font-mono">{purchase.purchase_order.folio}</Link>
                             </p>
                         )}
                     </div>
@@ -285,7 +285,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                 )}
 
                 {/* Audit log */}
-                {purchase.auditLogs.length > 0 && (
+                {purchase.audit_logs.length > 0 && (
                     <div className="rounded-lg border bg-card shadow-sm">
                         <div className="border-b px-4 py-3 font-semibold text-gray-700">Historial de auditoría</div>
                         <table className="w-full text-sm">
@@ -298,7 +298,7 @@ export default function PurchaseShow({ purchase }: { purchase: Purchase }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
-                                {purchase.auditLogs.map((log) => (
+                                {purchase.audit_logs.map((log) => (
                                     <tr key={log.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{log.created_at}</td>
                                         <td className="px-4 py-3"><span className="rounded bg-gray-100 px-2 py-0.5 font-mono text-xs">{log.action}</span></td>
